@@ -34,7 +34,7 @@
         "signature": {
           "alg": "Ed25519",
           "key_id": "test-key/v1",
-          "value": "pqY6PuCCe37JPBZmCp-UI7rmXiDsRz5fCRize7MpVdqmP69vJK5YkWxNys9Vj1WJYzOwlPDyZ_czm8XhubQ6Dw"
+          "value": "yKsEq4jFxep1KipvabW79vxu3FghNYgvpXWEThUNKzIotvvlA6i7hzUx9wSD042Gn4htO8QUZCXunS-OExvIAQ"
         }
       }
     },
@@ -59,7 +59,7 @@
         "signature": {
           "alg": "Ed25519",
           "key_id": "test-key/v1",
-          "value": "Kn1w7f1m4dvjTD3KWVw0uEX1YM0P6ztg-nJAPbQI-MAkPTJOLlUYC2hngZ7uqtfU4qGIDA3s841utXsUW645DA"
+          "value": "pl0uNusKgMLn3IOJJM-PryX0KxcZi6KJ5dhGx0cibS81fW_ssYfaJc8cbRo1KN2ZFb4Y5kgX4KnlBxxEbOChAg"
         }
       }
     },
@@ -86,7 +86,7 @@
         "signature": {
           "alg": "Ed25519",
           "key_id": "test-key/v1",
-          "value": "2ROVsviKZwgHp50wwPHU79wnZ1IfDFNL0U2V_qk3dKVkGUSp64buj8Ig_l01kuofKjwICd8LC9iJApAWuA7JBw"
+          "value": "Tp9fUBMk19MSbVR-9CagWMG2mnvPFvbN2yQOgtdb3DQSM0JQL3x-PwISwQwhqbMeabr4ygftuykqLG91lwI4Cg"
         }
       }
     },
@@ -127,7 +127,7 @@
         "signature": {
           "alg": "Ed25519",
           "key_id": "test-key/v1",
-          "value": "AZqlce5Fqi9-I4RdiXZbL0qFGf1BykfnwVxTIO26_5Jun5RuX71tKs-6Gay7_mVDiqFepESI-4FAuD0T7tEOCA"
+          "value": "vUdrmhPa-V3go2d3jcMJy2FvZ1FyRxjyOns1NRg9yBrAKHiDRq2z13Uwu161_egpm6zJ0DG076enYuVHYg9bAw"
         }
       }
     },
@@ -163,7 +163,7 @@
         "signature": {
           "alg": "Ed25519",
           "key_id": "test-key/v1",
-          "value": "9yM2vgONKNU8v2xeD2yWXAboUWZtTzky_3rwm29kjT_pluHZgKRLegYPw_EWZlb3-VuN_wKR2gWkCM5DX4t_CQ"
+          "value": "Q4WxNSlaRooxJETY0EVwQdK_Sqr9EBnnSugt44Z02kKLTukJiq2r6eLQrlhVZTcInd2xdH26P11kia5voJ75Aw"
         }
       }
     },
@@ -190,7 +190,7 @@
         "signature": {
           "alg": "Ed25519",
           "key_id": "test-key/v1",
-          "value": "Yc2dsDC6Pz4vtWc-FSoAo9VQofrZwu7Gknx9jO_pmFTJMLZZ_gbuUxkAOByAP7_BXxY8Z-o3VH-Kb050TwPoBw"
+          "value": "jLflmVpunMqU57XTv_hdx-M9Lpt4QBvnw-6XCX9Tcbx3PzDxxn8ST0SqJFIYkcRdwMEOEwGavliy20VxgKOIBw"
         }
       }
     }
@@ -217,7 +217,7 @@
         "signature": {
           "alg": "Ed25519",
           "key_id": "test-key/v1",
-          "value": "pqY6PuCCe37JPBZmCp-UI7rmXiDsRz5fCRize7MpVdqmP69vJK5YkWxNys9Vj1WJYzOwlPDyZ_czm8XhubQ6Dw"
+          "value": "yKsEq4jFxep1KipvabW79vxu3FghNYgvpXWEThUNKzIotvvlA6i7hzUx9wSD042Gn4htO8QUZCXunS-OExvIAQ"
         }
       }
     },
@@ -267,7 +267,7 @@
         "signature": {
           "alg": "Ed25519",
           "key_id": "unknown-key/v99",
-          "value": "pqY6PuCCe37JPBZmCp-UI7rmXiDsRz5fCRize7MpVdqmP69vJK5YkWxNys9Vj1WJYzOwlPDyZ_czm8XhubQ6Dw"
+          "value": "yKsEq4jFxep1KipvabW79vxu3FghNYgvpXWEThUNKzIotvvlA6i7hzUx9wSD042Gn4htO8QUZCXunS-OExvIAQ"
         }
       }
     },
@@ -292,7 +292,7 @@
         "signature": {
           "alg": "Ed25519",
           "key_id": "test-key/v1",
-          "value": "pqY6PuCCe37JPBZmCp-UI7rmXiDsRz5fCRize7MpVdqmP69vJK5YkWxNys9Vj1WJYzOwlPDyZ_czm8XhubQ6Dw"
+          "value": "yKsEq4jFxep1KipvabW79vxu3FghNYgvpXWEThUNKzIotvvlA6i7hzUx9wSD042Gn4htO8QUZCXunS-OExvIAQ"
         }
       }
     },
@@ -317,7 +317,7 @@
         "signature": {
           "alg": "Ed25519",
           "key_id": "test-key/v1",
-          "value": "pqY6PuCCe37JPBZmCp-UI7rmXiDsRz5fCRize7MpVdqmP69vJK5YkWxNys9Vj1WJYzOwlPDyZ_czm8XhubQ6Dw"
+          "value": "yKsEq4jFxep1KipvabW79vxu3FghNYgvpXWEThUNKzIotvvlA6i7hzUx9wSD042Gn4htO8QUZCXunS-OExvIAQ"
         },
         "extra_field": "should_be_rejected"
       }
@@ -342,7 +342,7 @@
         "signature": {
           "alg": "Ed25519",
           "key_id": "test-key/v1",
-          "value": "pqY6PuCCe37JPBZmCp-UI7rmXiDsRz5fCRize7MpVdqmP69vJK5YkWxNys9Vj1WJYzOwlPDyZ_czm8XhubQ6Dw"
+          "value": "yKsEq4jFxep1KipvabW79vxu3FghNYgvpXWEThUNKzIotvvlA6i7hzUx9wSD042Gn4htO8QUZCXunS-OExvIAQ"
         }
       }
     },
@@ -367,7 +367,7 @@
         "signature": {
           "alg": "Ed25519",
           "key_id": "test-key/v1",
-          "value": "52Ahsi27YTAQaUOHIqatPHukXgVDki38glKtFL1ZUUxXs1aOH5U2dRALPvhis6jmaLA9yZjgPpXxiwhdUbv6Aw"
+          "value": "5Jvz8ivaibAp0-Q7HjC6401o-3MQzsyZJ46SxRjaTcMoTnhexO6Rz7NgUv7KQJu0pYjmYc0eyrRp5cZVSHDACA"
         }
       }
     },
@@ -393,7 +393,7 @@
         "signature": {
           "alg": "Ed25519",
           "key_id": "test-key/v1",
-          "value": "WAUnsP3XD8R3Oyx_Nn7sO-nrxjMIPfa8D6VPOHwJgxmRUgs7OAR6LjFlipXe-nBDQr0X8mxwiI0aE6LsW82ZBg"
+          "value": "P1cQ_9iAfbYNXcTff3VvD7UaueBbX6lEtGFTbadyAHQ_YeXZhOgmHzaZHoLEefrh11Ej06-i335eOAJPUvmwBQ"
         }
       }
     },
@@ -417,7 +417,7 @@
         "signature": {
           "alg": "Ed25519",
           "key_id": "test-key/v1",
-          "value": "48aueJo14uQZnZVSi00KACq5csUVDkXw9KubcmrgSdGGr7sWZy16MPwRTatcL-_SUi2a0qsTxK-KHLeE0XYKBQ"
+          "value": "L7U5vEBt6vfynf1E-Wf_oI9nQOdnlMaJBoPd37FgQauJrjwcpa5889RWxMyQirIdtVA0byaoO4CiGvNxYMMODg"
         }
       }
     },
@@ -442,7 +442,7 @@
         "signature": {
           "alg": "Ed25519",
           "key_id": "test-key/v1",
-          "value": "hkH3G909vgoIwkOFt0jy63jHAM2E-dLk23CR_uO_wP_mx4aEyfCu_GclgnbuGkOkMVsssm20jOlJ5eVkvjUdAA"
+          "value": "BN9JnA-1ZXyKDqxrsY8gBF8-PF6cscdaxl4Uv54rLAn3SbxI8yGcsNVv8eaYwSg7mCdZf_qgcW8GlPu6ROUABQ"
         }
       }
     },
@@ -467,7 +467,7 @@
         "signature": {
           "alg": "Ed25519",
           "key_id": "test-key/v1",
-          "value": "Ptrc2eTvUr35CT1yS1bwz4z87lWi0gvVlDzhQ3_xrSIL1d-cMRJ6GUDBKIEj9IkHIBlQT1GcOSPyPN5wmyL4Cw"
+          "value": "yYr-4kEP6Y3P-MR0FpmPxFmzjQT1kFZ3I_uLaqK0gZZlORLaq7xwE9EmiW9u_5Bv-PNcLoya2g1zK8FHnyTHBw"
         }
       }
     },
@@ -492,7 +492,7 @@
         "signature": {
           "alg": "Ed25519",
           "key_id": "test-key/v1",
-          "value": "mE0W9ZBilnKctGkirbdg4e5sJTjxZ_N_wLG9pElFIjC5ljP1dqUdEQ8bvN3s0KsguFPiqq1PSjup8Y_jOitXCQ"
+          "value": "9CCaIAKYAZGMjFxCvfj0fNoq14j02Ey6ENlsDoxh69Duzq4anIRMC-U9F94rS-HKnYXMaq-h2pK4CLAymtXHAg"
         }
       }
     },
@@ -517,7 +517,7 @@
         "signature": {
           "alg": "Ed25519",
           "key_id": "test-key/v1",
-          "value": "GltsJl7bqDuaDa0brpHGlXb5AGcKCdM-Om3W4r9-e_NbkdzfsDkVykTIXn2dgPn3ZjtrBpYm6W6V9Div_T-LCA"
+          "value": "h8lL3l1oCRHG04HWhdWLisYhsxQRPoKI6NeE2OxUcVz4AS9Vi2Cz2weXICVSqEn0L4SRF8_zm1GYqjpZ7rdwBw"
         }
       }
     }
