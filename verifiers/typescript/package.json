@@ -1,0 +1,50 @@
+{
+  "name": "@allowly/verifier",
+  "version": "1.0.0-draft.1",
+  "description": "Reference verifier for the Allowly Receipt Format. Verifies signed receipts of AI agent authorization decisions.",
+  "type": "module",
+  "main": "./dist/verifier.js",
+  "types": "./dist/verifier.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/verifier.d.ts",
+      "import": "./dist/verifier.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "test": "node --test test.js",
+    "prepublishOnly": "npm run build"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "keywords": [
+    "allowly",
+    "receipt",
+    "ed25519",
+    "verification",
+    "audit",
+    "ai-agents",
+    "authorization"
+  ],
+  "license": "Apache-2.0",
+  "homepage": "https://github.com/allowly/receipt-format",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/allowly/receipt-format.git",
+    "directory": "verifiers/typescript"
+  },
+  "bugs": {
+    "url": "https://github.com/allowly/receipt-format/issues"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.0",
+    "@types/node": "^20.0.0"
+  }
+}

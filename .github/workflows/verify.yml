@@ -1,0 +1,70 @@
+name: verify
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  python:
+    name: Python verifier
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        working-directory: verifiers/python
+        run: pip install -r requirements.txt
+      - name: Run against test vectors
+        working-directory: verifiers/python
+        run: python test_vectors.py ../../test-vectors.json
+
+  typescript:
+    name: TypeScript verifier
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Install dependencies
+        working-directory: verifiers/typescript
+        run: npm install
+      - name: Build
+        working-directory: verifiers/typescript
+        run: npx tsc
+      - name: Run against test vectors
+        working-directory: verifiers/typescript
+        run: node dist/test_vectors.js ../../test-vectors.json
+
+  cross-check:
+    name: Regenerate vectors and verify both still pass
+    runs-on: ubuntu-latest
+    needs: [python, typescript]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Install Python deps
+        run: pip install -r verifiers/python/requirements.txt
+      - name: Install TS deps
+        working-directory: verifiers/typescript
+        run: npm install
+      - name: Regenerate vectors
+        run: python scripts/gen_vectors.py
+      - name: Python verifier must still pass
+        working-directory: verifiers/python
+        run: python test_vectors.py ../../test-vectors.json
+      - name: Build and run TS verifier
+        working-directory: verifiers/typescript
+        run: |
+          npx tsc
+          node dist/test_vectors.js ../../test-vectors.json
+      - name: Fail if vectors drift without being committed
+        run: git diff --exit-code test-vectors.json
