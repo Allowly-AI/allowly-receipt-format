@@ -13,7 +13,7 @@ The format is vendor-neutral on purpose. Any service making agent authorization 
 ## Repo layout
 
 - `spec/receipt-format.md` — the normative specification.
-- `verifiers/python/` — reference Python verifier (single file, minimal deps).
+- `verifiers/python/` — reference Python verifier (`allowly-receipt-format` on PyPI).
 - `verifiers/typescript/` — reference TypeScript verifier (`@allowly/verifier` on npm).
 - `test-vectors.json` — shared test vectors every implementation must pass.
 - `GOVERNANCE.md` — how decisions about the spec get made.
@@ -25,9 +25,13 @@ The format is vendor-neutral on purpose. Any service making agent authorization 
 Verify a receipt in Python:
 
 ```bash
-cd verifiers/python
-pip install -r requirements.txt
-python verifier.py path/to/receipt.json path/to/keys.json
+pip install allowly-receipt-format
+allowly-receipt-verify path/to/receipt.json path/to/keys.json
+```
+
+```python
+from allowly_receipt_format import verify_receipt, load_keys_from_json
+verify_receipt(receipt, load_keys_from_json(keys_doc))
 ```
 
 Verify a receipt in TypeScript:
@@ -43,7 +47,7 @@ const valid = await verifyReceipt(receipt, publicKeys);
 
 ## Status
 
-**v1.0.0-draft.** Public review. Breaking changes possible before v1.0.0 final.
+**v1.0.0.** Stable v1 receipt format and reference verifier test vectors.
 
 ## Licensing
 

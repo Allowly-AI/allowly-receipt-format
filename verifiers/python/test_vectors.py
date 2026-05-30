@@ -8,7 +8,7 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-from verifier import verify_receipt, load_keys_from_json, VerificationError
+from allowly_receipt_format import verify_receipt, load_keys_from_json, VerificationError
 
 
 def main(vectors_path: str) -> int:

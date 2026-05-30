@@ -1,5 +1,21 @@
 # Changelog
 
+## v1.0.0 — 2026-05-29
+
+Final v1.0.0 release of the Allowly Receipt Format.
+
+### Python
+
+- Package the Python reference verifier as `allowly-receipt-format` with import path
+  `allowly_receipt_format`.
+- Add the `allowly-receipt-verify` console script.
+- Add typed verifier exceptions:
+  - `SchemaError`
+  - `UnknownKeyError`
+  - `KeyOutsideActiveWindowError`
+  - `SignatureMismatchError`
+- Keep all typed exceptions under the existing `VerificationError` base class.
+
 ## v1.0.0-draft — 2026-04-21
 
 Initial public draft of the Allowly Receipt Format.

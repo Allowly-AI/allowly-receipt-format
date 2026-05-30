@@ -15,11 +15,19 @@ jobs:
         with:
           python-version: "3.12"
       - name: Install dependencies
-        working-directory: verifiers/python
-        run: pip install -r requirements.txt
+        run: pip install -e verifiers/python
       - name: Run against test vectors
         working-directory: verifiers/python
         run: python test_vectors.py ../../test-vectors.json
+      - name: Check typed exception taxonomy
+        working-directory: verifiers/python
+        run: python test_exception_types.py ../../test-vectors.json
+      - name: Build package
+        working-directory: verifiers/python
+        run: |
+          python -m pip install build twine
+          python -m build
+          python -m twine check dist/*
 
   typescript:
     name: TypeScript verifier
@@ -52,7 +60,7 @@ jobs:
         with:
           node-version: "20"
       - name: Install Python deps
-        run: pip install -r verifiers/python/requirements.txt
+        run: pip install -e verifiers/python
       - name: Install TS deps
         working-directory: verifiers/typescript
         run: npm install

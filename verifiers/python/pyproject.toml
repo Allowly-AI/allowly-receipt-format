@@ -1,0 +1,43 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "allowly-receipt-format"
+version = "1.0.0"
+description = "Reference Python verifier for the Allowly Receipt Format"
+readme = "README.md"
+requires-python = ">=3.10"
+license = "Apache-2.0"
+authors = [
+    { name = "Allowly", email = "support@allowly.ai" },
+]
+keywords = ["allowly", "receipts", "audit", "ed25519", "verification"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Security :: Cryptography",
+    "Typing :: Typed",
+]
+dependencies = [
+    "cryptography>=42.0",
+]
+
+[project.urls]
+Homepage = "https://allowly.ai"
+Repository = "https://github.com/Allowly-AI/allowly-receipt-format"
+Specification = "https://github.com/Allowly-AI/allowly-receipt-format/tree/main/spec"
+Issues = "https://github.com/Allowly-AI/allowly-receipt-format/issues"
+
+[project.scripts]
+allowly-receipt-verify = "allowly_receipt_format.verifier:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+allowly_receipt_format = ["py.typed"]
