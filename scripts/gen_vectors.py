@@ -115,7 +115,31 @@ rich_context = sign({
     "policy_version": "2026-04-17.1",
 })
 
-# --- Authorization receipts (should verify) ---
+escalate_action = sign({
+    "version": "1.0",
+    "receipt_id": "rcp_01HXZESCALATE000000000000",
+    "workspace_id": "ws_test",
+    "issued_at": "2026-04-21T16:10:00.000Z",
+    "decision": "escalate",
+    "reason": "escalation_required",
+    "user_id": "emp_8821",
+    "agent_id": "referral_outreach",
+    "scope": "candidate.delete",
+    "resource": "candidate:123",
+    "context": {
+        "escalation": {
+            "id": "esc_01HXZESCALATION000000000",
+            "event": "requested",
+            "status": "pending",
+            "scope": "candidate.delete",
+            "escalation_to": "compliance",
+        }
+    },
+    "authorization_id": "auth_escalate",
+    "policy_version": "2026-04-17.1",
+})
+
+# --- Event receipts (should verify) ---
 
 authorization_create = sign({
     "version": "1.0",
@@ -152,6 +176,31 @@ authorization_revoke = sign({
     "resource": None,
     "context": {"revoked_by": "user"},
     "authorization_id": "auth_01HXZ2A0K1L2M3N4P5Q6R7S8T9",
+    "policy_version": "2026-04-17.1",
+})
+
+escalation_resolve_approved = sign({
+    "version": "1.0",
+    "receipt_id": "rcp_01HXZESCRESOLVE0000000000",
+    "workspace_id": "ws_test",
+    "issued_at": "2026-04-21T16:15:00.000Z",
+    "decision": "escalation_approved",
+    "reason": "escalation_resolved_by_approver",
+    "user_id": "emp_8821",
+    "agent_id": "referral_outreach",
+    "event": "escalation.resolve",
+    "resource": "candidate:123",
+    "context": {
+        "escalation": {
+            "id": "esc_01HXZESCALATION000000000",
+            "event": "resolved",
+            "status": "approved",
+            "scope": "candidate.delete",
+            "escalation_to": "compliance",
+            "resolved_by": "compliance:1",
+        }
+    },
+    "authorization_id": "auth_escalate",
     "policy_version": "2026-04-17.1",
 })
 
@@ -309,7 +358,7 @@ keys_doc = {
 }
 
 vectors = {
-    "spec_version": "1.0.0-draft.2",
+    "spec_version": "1.0.0-draft.3",
     "public_keys": keys_doc,
     "should_verify": [
         {"name": "action_minimal_allow", "kind": "action",
@@ -324,12 +373,18 @@ vectors = {
         {"name": "action_rich_context", "kind": "action",
          "description": "nested context exercising canonicalization",
          "receipt": rich_context},
+        {"name": "action_escalate", "kind": "action",
+         "description": "escalate action receipt with escalation context",
+         "receipt": escalate_action},
         {"name": "authorization_create", "kind": "authorization",
          "description": "authorization.create receipt with event field",
          "receipt": authorization_create},
         {"name": "authorization_revoke", "kind": "authorization",
          "description": "authorization.revoke receipt with event field",
          "receipt": authorization_revoke},
+        {"name": "escalation_resolve_approved", "kind": "event",
+         "description": "escalation.resolve receipt with approved decision and resource",
+         "receipt": escalation_resolve_approved},
     ],
     "should_reject": [
         {"name": "tampered_payload",
@@ -357,7 +412,7 @@ vectors = {
          "expected_reason": "missing top-level fields",
          "receipt": missing_field},
         {"name": "bad_decision_value",
-         "description": "decision is not allow/deny/confirm",
+         "description": "decision is not allow/deny/confirm/escalate",
          "expected_reason": "action receipt must have decision in",
          "receipt": bad_decision},
         {"name": "both_scope_and_event",
@@ -382,7 +437,7 @@ vectors = {
          "receipt": event_with_resource},
         {"name": "pairing_scope_with_lifecycle_decision",
          "description": "action receipt with decision=authorization_granted",
-         "expected_reason": "requires an authorization receipt",
+         "expected_reason": "requires an event receipt",
          "receipt": scope_with_lifecycle_decision},
     ],
 }

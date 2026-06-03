@@ -1,5 +1,18 @@
 # Changelog
 
+## Unreleased
+
+### Format
+
+- Add `escalate` as a valid action receipt decision.
+- Add `escalation.resolve` event receipts with `escalation_approved` and `escalation_rejected` decisions.
+- Clarify that authorization create/revoke receipts keep `resource: null`, while escalation resolution receipts may carry the resource binding.
+
+### Verification
+
+- Update Python and TypeScript reference verifiers to accept escalation action and event receipts.
+- Regenerate shared test vectors with escalation coverage.
+
 ## v1.0.0 — 2026-05-29
 
 Final v1.0.0 release of the Allowly Receipt Format.

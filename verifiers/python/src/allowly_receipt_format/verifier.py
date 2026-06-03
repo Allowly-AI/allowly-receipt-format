@@ -32,12 +32,14 @@ from cryptography.exceptions import InvalidSignature
 
 
 SPEC_VERSION = "1.0"
-ACTION_DECISIONS = {"allow", "deny", "confirm"}
-AUTHORIZATION_LIFECYCLE_EVENTS = {
-    "authorization.create": "authorization_granted",
-    "authorization.revoke": "authorization_revoked",
+ACTION_DECISIONS = {"allow", "deny", "confirm", "escalate"}
+EVENT_DECISIONS = {
+    "authorization.create": {"authorization_granted"},
+    "authorization.revoke": {"authorization_revoked"},
+    "escalation.resolve": {"escalation_approved", "escalation_rejected"},
 }
-AUTHORIZATION_LIFECYCLE_DECISIONS = {"authorization_granted", "authorization_revoked"}
+AUTHORIZATION_LIFECYCLE_EVENTS = {"authorization.create", "authorization.revoke"}
+EVENT_ONLY_DECISIONS = {decision for decisions in EVENT_DECISIONS.values() for decision in decisions}
 REQUIRED_FIELDS = {
     "version", "receipt_id", "workspace_id", "issued_at", "decision", "reason",
     "user_id", "agent_id", "resource", "context",
@@ -184,37 +186,37 @@ def verify_receipt(
         )
 
     if has_event:
-        # Authorization receipt
+        # Event receipt
         event = receipt["event"]
         if not isinstance(event, str):
             raise SchemaError("event must be a string")
-        if event not in AUTHORIZATION_LIFECYCLE_EVENTS:
+        if event not in EVENT_DECISIONS:
             raise SchemaError(
-                f"event must be one of {sorted(AUTHORIZATION_LIFECYCLE_EVENTS)}, got {event!r}"
+                f"event must be one of {sorted(EVENT_DECISIONS)}, got {event!r}"
             )
-        expected_decision = AUTHORIZATION_LIFECYCLE_EVENTS[event]
-        if decision != expected_decision:
+        expected_decisions = EVENT_DECISIONS[event]
+        if decision not in expected_decisions:
             raise SchemaError(
-                f"authorization receipt with event={event!r} must have "
-                f"decision={expected_decision!r}, got {decision!r}"
+                f"event receipt with event={event!r} must have "
+                f"decision in {sorted(expected_decisions)}, got {decision!r}"
             )
         if authorization_id is None:
             raise SchemaError(
-                f"authorization receipt with event={event!r} must have non-null authorization_id"
+                f"event receipt with event={event!r} must have non-null authorization_id"
             )
-        if resource is not None:
+        if event in AUTHORIZATION_LIFECYCLE_EVENTS and resource is not None:
             raise SchemaError(
-                f"authorization receipt with event={event!r} must have null resource"
+                f"authorization lifecycle receipt with event={event!r} must have null resource"
             )
     else:
         # Action receipt (has_scope is True)
         scope = receipt["scope"]
         if not isinstance(scope, str):
             raise SchemaError("scope must be a string")
-        # Reject reserved authorization-lifecycle decisions on action receipts.
-        if decision in AUTHORIZATION_LIFECYCLE_DECISIONS:
+        # Reject reserved event-only decisions on action receipts.
+        if decision in EVENT_ONLY_DECISIONS:
             raise SchemaError(
-                f"decision={decision!r} requires an authorization receipt (event field), "
+                f"decision={decision!r} requires an event receipt (event field), "
                 f"got an action receipt with scope={scope!r}"
             )
         if decision not in ACTION_DECISIONS:

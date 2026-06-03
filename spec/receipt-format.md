@@ -1,6 +1,6 @@
 # Allowly Receipt Format Specification
 
-**Version:** 1.0.0-draft.2
+**Version:** 1.0.0-draft.3
 **Status:** Draft — public review
 **License:** This specification is published under CC-BY 4.0. Reference implementations are Apache 2.0.
 
@@ -8,14 +8,14 @@
 
 ## 1. Purpose
 
-A *receipt* is a signed, immutable record of a single authorization event — either an authorization decision made by an authorization-check service at the moment an agent or human acted, or a lifecycle event on the authorization itself (creation, revocation). This document specifies the canonical format, signature scheme, and verification algorithm so that any party holding a receipt and the issuer's public key can verify the receipt offline, without contacting the issuer.
+A *receipt* is a signed, immutable record of a single authorization event — either an authorization decision made by an authorization-check service at the moment an agent or human acted, or an event tied to the authorization itself (creation, revocation, third-party escalation resolution). This document specifies the canonical format, signature scheme, and verification algorithm so that any party holding a receipt and the issuer's public key can verify the receipt offline, without contacting the issuer.
 
 Two kinds of receipts share the same format:
 
-- **Action receipts** record a single authorization decision: *at time T, the issuer decided that action A by agent G on behalf of user U was allowed, denied, or required confirmation, under authorization C.* These are produced by the issuer's `/check` endpoint.
-- **Authorization receipts** record an authorization lifecycle event: *at time T, user U authorized agent G with scopes S,* or *at time T, that authorization was revoked.* These are produced when an authorization is created or revoked.
+- **Action receipts** record a single authorization decision: *at time T, the issuer decided that action A by agent G on behalf of user U was allowed, denied, required confirmation, or required escalation, under authorization C.* These are produced by the issuer's `/check` endpoint.
+- **Event receipts** record events tied to the authorization itself: *at time T, user U authorized agent G with scopes S,* *at time T, that authorization was revoked,* or *at time T, a third-party escalation was approved or rejected.* These are produced when an authorization is created/revoked or when an escalation is resolved.
 
-Both kinds of receipts use the same JSON structure, the same canonicalization, the same signature scheme, and the same verifier. They differ only in the values of a few fields (§3.3). An auditor presented with a dispute typically needs both: the authorization receipt proves *what was authorized*, the action receipts prove *what happened under that authorization*.
+Both kinds of receipts use the same JSON structure, the same canonicalization, the same signature scheme, and the same verifier. They differ only in the values of a few fields (§3.3). An auditor presented with a dispute typically needs both: event receipts prove *what was authorized and who approved later escalation*, while action receipts prove *what happened under that authorization*.
 
 The goals of this format are, in order:
 
@@ -30,9 +30,9 @@ Non-goals: this spec does not define the *decision logic* that produced the rece
 
 The key words **MUST**, **MUST NOT**, **SHOULD**, **SHOULD NOT**, and **MAY** in this document are to be interpreted as described in RFC 2119 and RFC 8174.
 
-- **Receipt** — a JSON object conforming to §3 plus its signature. Either an action receipt or an authorization receipt. A receipt always carries a real Ed25519 signature; an in-flight pending state is a transport-layer concept the issuer surfaces separately (§5.3).
+- **Receipt** — a JSON object conforming to §3 plus its signature. Either an action receipt or an event receipt. A receipt always carries a real Ed25519 signature; an in-flight pending state is a transport-layer concept the issuer surfaces separately (§5.3).
 - **Action receipt** — a receipt recording a single authorization decision at the moment of an action. See §3.3.
-- **Authorization receipt** — a receipt recording an authorization lifecycle event (creation or revocation). See §3.3.
+- **Event receipt** — a receipt recording an authorization-related event (creation, revocation, or escalation resolution). See §3.3.
 - **Issuer** — the entity that produced and signed the receipt. Identified by `workspace_id`.
 - **Subject** — the end-user on whose behalf an agent acted, or who granted the authorization. Identified by `user_id`.
 - **Verifier** — any party validating a receipt.
@@ -81,11 +81,11 @@ A receipt is a JSON object with exactly the following top-level fields. Unknown 
 | `reason` | string | yes | Machine-readable reason code. Human-readable strings MUST NOT appear here. |
 | `user_id` | string | yes | Opaque identifier of the end-user. Customer-defined; issuers and verifiers MUST NOT assume any particular structure. SHOULD NOT contain personally identifiable information (§10.6). |
 | `agent_id` | string | yes | Opaque identifier of the agent or acting principal. Customer-defined. For human-initiated actions, this identifies the actor's role (e.g. `controller`, `dba`). |
-| `scope` | string \| absent | conditional | Present on action receipts. The scope name being checked (e.g. `email.send`, `contact.enrich`). Format is issuer-defined but conventionally dotted. **MUST be absent on authorization receipts.** |
-| `event` | string \| absent | conditional | Present on authorization receipts. One of `"authorization.create"` or `"authorization.revoke"`. **MUST be absent on action receipts.** |
-| `resource` | string \| null | yes | An identifier for the target of the action, or `null` (always `null` for authorization receipts, or for action receipts whose scope has no resource). Issuers MUST NOT include the resource's contents, only an identifier. |
+| `scope` | string \| absent | conditional | Present on action receipts. The scope name being checked (e.g. `email.send`, `contact.enrich`). Format is issuer-defined but conventionally dotted. **MUST be absent on event receipts.** |
+| `event` | string \| absent | conditional | Present on event receipts. One of `"authorization.create"`, `"authorization.revoke"`, or `"escalation.resolve"`. **MUST be absent on action receipts.** |
+| `resource` | string \| null | yes | An identifier for the target of the action, or `null`. Always `null` for authorization create/revoke receipts. For `escalation.resolve`, this MAY carry the resource the escalation was bound to. Issuers MUST NOT include the resource's contents, only an identifier. |
 | `context` | object | yes | An opaque object of additional facts the issuer considered. Contents are issuer-defined. Verifiers MUST preserve the object byte-for-byte during canonicalization. MAY be empty (`{}`). |
-| `authorization_id` | string \| null | yes | The authorization record this receipt relates to. For action receipts: the authorization that authorized the decision, or `null` if no authorization matched. For authorization receipts: the `authorization_id` being created or revoked (never `null`). |
+| `authorization_id` | string \| null | yes | The authorization record this receipt relates to. For action receipts: the authorization that authorized the decision, or `null` if no authorization matched. For event receipts: the related `authorization_id` (never `null`). |
 | `policy_version` | string | yes | Version of the issuer's decision logic at time of issue. Format is issuer-defined. |
 | `signature` | object | yes | See §5. |
 
@@ -101,28 +101,31 @@ Receipts come in two kinds, distinguished by which of two mutually exclusive fie
 
 - `scope` — present, set to the scope name being checked. Conventionally dotted (`email.send`, `contact.enrich`, `payment.approve`).
 - `event` — **MUST be absent.**
-- `decision` — one of `"allow"`, `"deny"`, `"confirm"`.
+- `decision` — one of `"allow"`, `"deny"`, `"confirm"`, `"escalate"`.
 - `authorization_id` — the matching authorization, or `null` if no authorization matched.
 - `resource` — an identifier for the action's target, or `null`.
 
-**Authorization receipts** record an authorization lifecycle event. They are produced when an authorization is created or revoked.
+**Event receipts** record an authorization-related event. They are produced when an authorization is created/revoked or when a third-party escalation is resolved.
 
 - `event` — present, one of:
   - `"authorization.create"` — the customer recorded that a user approved a set of scopes for an agent.
   - `"authorization.revoke"` — the authorization was revoked (by the user, by the customer, or automatically on expiry).
+  - `"escalation.resolve"` — a third-party approver approved or rejected a pending escalation.
 - `scope` — **MUST be absent.**
 - `decision` — one of:
   - `"authorization_granted"` — paired with `event: "authorization.create"`.
   - `"authorization_revoked"` — paired with `event: "authorization.revoke"`.
-- `authorization_id` — the authorization being created or revoked. **MUST NOT** be `null` on an authorization receipt.
-- `resource` — **MUST** be `null` on an authorization receipt.
-- `context` — conventionally carries lifecycle metadata: the full scope set at creation, `expires_at`, `requires_confirm_for`, the creation source (`csv_upload`, `onboarding_modal`), an optional `csv_hash` or similar integrity identifier, and for revocations a `revoked_by` field (`user`, `admin`, `expired`, `tombstone`).
+  - `"escalation_approved"` — paired with `event: "escalation.resolve"` when the approver approved.
+  - `"escalation_rejected"` — paired with `event: "escalation.resolve"` when the approver rejected.
+- `authorization_id` — the authorization being created, revoked, or escalated. **MUST NOT** be `null` on an event receipt.
+- `resource` — **MUST** be `null` for authorization create/revoke receipts. For `escalation.resolve`, this MAY carry the resource the escalation was bound to.
+- `context` — conventionally carries lifecycle metadata: the full scope set at creation, `expires_at`, `requires_confirm_for`, `requires_escalation_for`, the creation source (`csv_upload`, `onboarding_modal`), an optional `csv_hash` or similar integrity identifier, for revocations a `revoked_by` field (`user`, `admin`, `expired`, `tombstone`), and for escalation resolution an `escalation` object containing the escalation id, scope, approver label, resolution status, and approver identity.
 
 Verifiers **MUST** enforce the following:
 
 - Exactly one of `scope` and `event` is present. Receipts with both fields, or with neither, are rejected.
-- If `event` is present, it MUST be one of `"authorization.create"` or `"authorization.revoke"`. The corresponding `decision` MUST be the matching value (`authorization_granted` or `authorization_revoked`). `authorization_id` MUST NOT be `null`. `resource` MUST be `null`.
-- If `scope` is present, `decision` MUST be one of `"allow"`, `"deny"`, `"confirm"`. The reserved authorization-lifecycle decisions (`authorization_granted`, `authorization_revoked`) MUST NOT appear on action receipts.
+- If `event` is present, it MUST be one of `"authorization.create"`, `"authorization.revoke"`, or `"escalation.resolve"`. The corresponding `decision` MUST be valid for that event. `authorization_id` MUST NOT be `null`. `resource` MUST be `null` for authorization create/revoke receipts.
+- If `scope` is present, `decision` MUST be one of `"allow"`, `"deny"`, `"confirm"`, or `"escalate"`. The reserved event-only decisions (`authorization_granted`, `authorization_revoked`, `escalation_approved`, `escalation_rejected`) MUST NOT appear on action receipts.
 
 The two-field discriminator design (rather than a single overloaded field) makes the receipt kind explicit at the schema level. A field's presence tells you what kind of receipt it is; pairing rules become trivial to enforce.
 
@@ -163,7 +166,8 @@ An auditor can reconstruct the full story of an authorization by querying all re
 
 1. Exactly one `authorization.create` receipt (the authorization grant itself).
 2. Zero or more action receipts (each check that matched this authorization).
-3. At most one `authorization.revoke` receipt (if and when the authorization was revoked).
+3. Zero or more `escalation.resolve` receipts for third-party escalation decisions under this authorization.
+4. At most one `authorization.revoke` receipt (if and when the authorization was revoked).
 
 The chain is self-verifying: every receipt is independently signed, ordered by `issued_at`, and cryptographically tied to the same `authorization_id`. Producing this chain is the primary artifact customers present in disputes.
 
@@ -202,7 +206,7 @@ The payload for the example in §3 canonicalizes to (linebreaks for display only
 "ws_01HXA1B2C3D4E5F6G7H8J9K0L1"}
 ```
 
-Note: `scope` and `event` are mutually exclusive — the canonical form contains exactly one of them, never both. The lexicographic key sort places `event` before `scope`, which matters for canonicalization correctness when generating authorization receipts vs action receipts.
+Note: `scope` and `event` are mutually exclusive — the canonical form contains exactly one of them, never both. The lexicographic key sort places `event` before `scope`, which matters for canonicalization correctness when generating event receipts vs action receipts.
 
 ## 5. Signature
 
@@ -306,15 +310,16 @@ A verifier given a receipt `R` and the issuer's public keys **MUST** perform all
 2. **Schema check.** Assert all fields in §3.1 are present with the correct types. Assert no unknown top-level fields are present. Assert `R.signature.value` is a non-empty string that decodes from base64url to exactly 64 bytes — this rejects placeholders, empty strings, and pending markers on shape alone.
 3. **Receipt kind and pairing check.** Determine the receipt kind from which discriminator field is present, and enforce the corresponding constraints:
    - Exactly one of `scope` and `event` MUST be present. Reject if both are present, or if neither is present.
-   - **If `event` is present** (authorization receipt):
-     - `event` MUST be one of `"authorization.create"` or `"authorization.revoke"`.
+   - **If `event` is present** (event receipt):
+     - `event` MUST be one of `"authorization.create"`, `"authorization.revoke"`, or `"escalation.resolve"`.
      - If `event == "authorization.create"`: `decision` MUST equal `"authorization_granted"`.
      - If `event == "authorization.revoke"`: `decision` MUST equal `"authorization_revoked"`.
+     - If `event == "escalation.resolve"`: `decision` MUST be one of `"escalation_approved"` or `"escalation_rejected"`.
      - `authorization_id` MUST NOT be `null`.
-     - `resource` MUST be `null`.
+     - `resource` MUST be `null` for authorization create/revoke receipts.
    - **If `scope` is present** (action receipt):
-     - `decision` MUST be one of `"allow"`, `"deny"`, `"confirm"`.
-     - The reserved authorization-lifecycle decisions (`authorization_granted`, `authorization_revoked`) MUST NOT appear.
+     - `decision` MUST be one of `"allow"`, `"deny"`, `"confirm"`, or `"escalate"`.
+     - The reserved event-only decisions (`authorization_granted`, `authorization_revoked`, `escalation_approved`, `escalation_rejected`) MUST NOT appear.
 4. **Algorithm check.** Assert `R.signature.alg == "Ed25519"`.
 5. **Timestamp sanity.** Parse `R.issued_at` as RFC 3339. Assert it is not in the future (allowing a small skew, e.g. 5 minutes) and not absurdly far in the past (spec does not mandate a cutoff; verifier policy).
 6. **Canonicalize.** Produce the canonical payload bytes per §4.
@@ -327,7 +332,7 @@ A verifier given a receipt `R` and the issuer's public keys **MUST** perform all
 
 A valid action receipt attests that: *at `issued_at`, the issuer identified by `workspace_id` made `decision` about `scope` by `agent_id` on behalf of `user_id`, under `authorization_id`, with policy version `policy_version`.*
 
-A valid authorization receipt attests that: *at `issued_at`, the issuer identified by `workspace_id` recorded an authorization lifecycle event (`event`) for `authorization_id`, with `user_id` and `agent_id` as the parties, and context detailing the scopes and metadata.*
+A valid event receipt attests that: *at `issued_at`, the issuer identified by `workspace_id` recorded an authorization-related event (`event`) for `authorization_id`, with `user_id` and `agent_id` as the parties, and context detailing the relevant scopes, metadata, or escalation resolution.*
 
 ### 7.1 What verification does NOT prove
 
@@ -355,10 +360,12 @@ Vectors include:
 - A `deny` receipt with `authorization_id: null`.
 - A receipt with non-ASCII characters in multiple fields (tests UTF-8 handling).
 - A receipt with a rich nested context object (tests canonicalization correctness).
+- An `escalate` receipt with escalation context.
 
-*Authorization receipts that MUST verify:*
+*Event receipts that MUST verify:*
 - A `authorization.create` receipt with scopes, expiry, and a `csv_hash` source identifier.
 - A `authorization.revoke` receipt with `revoked_by: "user"` in context.
+- An `escalation.resolve` receipt with an approved resolution and resource binding.
 
 *Receipts that MUST be rejected:*
 - A receipt with a tampered payload (signature fails).
@@ -373,7 +380,7 @@ Vectors include:
 - A receipt with `event: "authorization.create"` but `decision: "allow"` (pairing violation).
 - A receipt with `event: "authorization.revoke"` but `authorization_id: null` (pairing violation).
 - A receipt with `event: "authorization.create"` but a non-null `resource` (pairing violation).
-- An action receipt with `decision: "authorization_granted"` (reserved decision misuse).
+- An action receipt with an event-only decision such as `authorization_granted` (reserved decision misuse).
 
 ## 10. Security considerations
 
@@ -409,15 +416,20 @@ Recommended: customers use their internal opaque identifier (a ULID, UUID, or eq
 
 ## 11. Changelog
 
+- **1.0.0-draft.3 (2026-06-03)** — Escalation receipts.
+  - Added `escalate` as an action receipt decision.
+  - Added `escalation.resolve` event receipts with `escalation_approved` and `escalation_rejected` decisions.
+  - Clarified that authorization create/revoke events require `resource: null`, while escalation resolution may carry the resource binding.
+
 - **1.0.0-draft.2 (2026-05-09)** — Naming refinement.
-  - Replaced the overloaded `action` field with two mutually exclusive discriminator fields: `scope` (action receipts) and `event` (authorization receipts).
+  - Replaced the overloaded `action` field with two mutually exclusive discriminator fields: `scope` (action receipts) and `event` (event receipts).
   - Field's presence now carries the receipt kind explicitly. Pairing rules are simpler. Verifier logic shorter.
   - Reserved authorization-lifecycle event names (`authorization.create`, `authorization.revoke`) moved from `action` values to `event` values.
   - All existing pairing checks updated; test vectors regenerated.
 
 - **1.0.0-draft (2026-04-21)** — Initial public draft.
   - Flat receipt structure: no wrapping `subject` or `action` objects. `user_id`, `agent_id`, `action`, `resource`, and `context` are all top-level fields.
-  - Two receipt kinds share the same format: action receipts (decisioning) and authorization receipts (lifecycle).
+  - Two receipt kinds share the same format: action receipts (decisioning) and event receipts (lifecycle).
   - Single Ed25519 signature over the canonical payload.
   - Asynchronous signing handled at the transport layer; pending receipts are not part of the receipt format.
   - Internal integrity checks (e.g. HMAC) are permitted but explicitly out of scope.

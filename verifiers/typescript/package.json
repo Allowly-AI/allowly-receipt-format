@@ -18,7 +18,7 @@
   ],
   "scripts": {
     "build": "tsc",
-    "test": "node --test test.js",
+    "test": "npm run build && node dist/test_vectors.js ../../test-vectors.json",
     "prepublishOnly": "npm run build"
   },
   "engines": {

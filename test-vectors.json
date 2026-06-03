@@ -1,5 +1,5 @@
 {
-  "spec_version": "1.0.0-draft.2",
+  "spec_version": "1.0.0-draft.3",
   "public_keys": {
     "workspace_id": "ws_test",
     "keys": [
@@ -132,6 +132,39 @@
       }
     },
     {
+      "name": "action_escalate",
+      "kind": "action",
+      "description": "escalate action receipt with escalation context",
+      "receipt": {
+        "version": "1.0",
+        "receipt_id": "rcp_01HXZESCALATE000000000000",
+        "workspace_id": "ws_test",
+        "issued_at": "2026-04-21T16:10:00.000Z",
+        "decision": "escalate",
+        "reason": "escalation_required",
+        "user_id": "emp_8821",
+        "agent_id": "referral_outreach",
+        "scope": "candidate.delete",
+        "resource": "candidate:123",
+        "context": {
+          "escalation": {
+            "id": "esc_01HXZESCALATION000000000",
+            "event": "requested",
+            "status": "pending",
+            "scope": "candidate.delete",
+            "escalation_to": "compliance"
+          }
+        },
+        "authorization_id": "auth_escalate",
+        "policy_version": "2026-04-17.1",
+        "signature": {
+          "alg": "Ed25519",
+          "key_id": "test-key/v1",
+          "value": "nO4RmaN6_soJczVJMVJweXsn04zwMVWzNEPE1hG3dDgbK_KKfUHHxrnLphyla14q3YWUPCRRq1OGmZ-cAvNrDQ"
+        }
+      }
+    },
+    {
       "name": "authorization_create",
       "kind": "authorization",
       "description": "authorization.create receipt with event field",
@@ -191,6 +224,40 @@
           "alg": "Ed25519",
           "key_id": "test-key/v1",
           "value": "jLflmVpunMqU57XTv_hdx-M9Lpt4QBvnw-6XCX9Tcbx3PzDxxn8ST0SqJFIYkcRdwMEOEwGavliy20VxgKOIBw"
+        }
+      }
+    },
+    {
+      "name": "escalation_resolve_approved",
+      "kind": "event",
+      "description": "escalation.resolve receipt with approved decision and resource",
+      "receipt": {
+        "version": "1.0",
+        "receipt_id": "rcp_01HXZESCRESOLVE0000000000",
+        "workspace_id": "ws_test",
+        "issued_at": "2026-04-21T16:15:00.000Z",
+        "decision": "escalation_approved",
+        "reason": "escalation_resolved_by_approver",
+        "user_id": "emp_8821",
+        "agent_id": "referral_outreach",
+        "event": "escalation.resolve",
+        "resource": "candidate:123",
+        "context": {
+          "escalation": {
+            "id": "esc_01HXZESCALATION000000000",
+            "event": "resolved",
+            "status": "approved",
+            "scope": "candidate.delete",
+            "escalation_to": "compliance",
+            "resolved_by": "compliance:1"
+          }
+        },
+        "authorization_id": "auth_escalate",
+        "policy_version": "2026-04-17.1",
+        "signature": {
+          "alg": "Ed25519",
+          "key_id": "test-key/v1",
+          "value": "O-UpBfsOL8X4hSqK_dBpJwyVpGGogttm71QB2Di5J1OofKC8YtQoJ77x6j_C9scRfyoWTgm35uFn4crqmvdOBQ"
         }
       }
     }
@@ -348,7 +415,7 @@
     },
     {
       "name": "bad_decision_value",
-      "description": "decision is not allow/deny/confirm",
+      "description": "decision is not allow/deny/confirm/escalate",
       "expected_reason": "action receipt must have decision in",
       "receipt": {
         "version": "1.0",
@@ -499,7 +566,7 @@
     {
       "name": "pairing_scope_with_lifecycle_decision",
       "description": "action receipt with decision=authorization_granted",
-      "expected_reason": "requires an authorization receipt",
+      "expected_reason": "requires an event receipt",
       "receipt": {
         "version": "1.0",
         "receipt_id": "rcp_01HXZPAIR4000000000000000",
