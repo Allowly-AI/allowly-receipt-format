@@ -45,9 +45,10 @@ REQUIRED_FIELDS = {
     "user_id", "agent_id", "resource", "context",
     "authorization_id", "policy_version", "signature",
 }
+OPTIONAL_FIELDS = {"policy_eval"}
 # Exactly one of these must be present:
 DISCRIMINATOR_FIELDS = {"scope", "event"}
-ALL_TOP_LEVEL_FIELDS = REQUIRED_FIELDS | DISCRIMINATOR_FIELDS
+ALL_TOP_LEVEL_FIELDS = REQUIRED_FIELDS | DISCRIMINATOR_FIELDS | OPTIONAL_FIELDS
 MAX_FUTURE_SKEW = timedelta(minutes=5)
 __all__ = [
     "KeyOutsideActiveWindowError",
@@ -208,6 +209,8 @@ def verify_receipt(
             raise SchemaError(
                 f"authorization lifecycle receipt with event={event!r} must have null resource"
             )
+        if "policy_eval" in receipt:
+            raise SchemaError("policy_eval must be absent on event receipts")
     else:
         # Action receipt (has_scope is True)
         scope = receipt["scope"]
@@ -302,6 +305,60 @@ def _check_schema(receipt: dict[str, Any]) -> None:
         raise SchemaError(
             f"signature.value must decode to 64 bytes (Ed25519), got {len(sig_bytes)}"
         )
+
+    if "policy_eval" in receipt:
+        _check_policy_eval(receipt["policy_eval"])
+
+
+def _is_policy_scalar(value: Any) -> bool:
+    return value is None or isinstance(value, (str, bool)) or (
+        isinstance(value, int) and not isinstance(value, bool)
+    )
+
+
+def _is_policy_condition_value(value: Any) -> bool:
+    if _is_policy_scalar(value):
+        return True
+    return isinstance(value, list) and all(_is_policy_scalar(item) for item in value)
+
+
+def _check_policy_eval(value: Any) -> None:
+    if not isinstance(value, dict):
+        raise SchemaError("policy_eval must be an object")
+    expected = {"matched_condition", "field_value"}
+    extra = set(value.keys()) - expected
+    missing = expected - set(value.keys())
+    if extra:
+        raise SchemaError(f"policy_eval has unknown fields: {sorted(extra)}")
+    if missing:
+        raise SchemaError(f"policy_eval missing fields: {sorted(missing)}")
+
+    matched = value["matched_condition"]
+    if matched is not None:
+        if not isinstance(matched, dict):
+            raise SchemaError("policy_eval.matched_condition must be an object or null")
+        condition_fields = {"field", "op", "value"}
+        extra = set(matched.keys()) - condition_fields
+        missing = condition_fields - set(matched.keys())
+        if extra:
+            raise SchemaError(
+                f"policy_eval.matched_condition has unknown fields: {sorted(extra)}"
+            )
+        if missing:
+            raise SchemaError(
+                f"policy_eval.matched_condition missing fields: {sorted(missing)}"
+            )
+        if not isinstance(matched["field"], str):
+            raise SchemaError("policy_eval.matched_condition.field must be a string")
+        if not isinstance(matched["op"], str):
+            raise SchemaError("policy_eval.matched_condition.op must be a string")
+        if not _is_policy_condition_value(matched["value"]):
+            raise SchemaError(
+                "policy_eval.matched_condition.value must be string, integer, boolean, null, or an array of those"
+            )
+
+    if not _is_policy_scalar(value["field_value"]):
+        raise SchemaError("policy_eval.field_value must be string, integer, boolean, or null")
 
 
 def _find_key(

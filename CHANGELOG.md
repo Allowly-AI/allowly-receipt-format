@@ -7,11 +7,17 @@
 - Add `escalate` as a valid action receipt decision.
 - Add `escalation.resolve` event receipts with `escalation_approved` and `escalation_rejected` decisions.
 - Clarify that authorization create/revoke receipts keep `resource: null`, while escalation resolution receipts may carry the resource binding.
+- Replace the spec text with `1.0.0-draft.5`.
+- Add optional `policy_eval` on action receipts to record which immutable authorization condition routed a decision.
+- Remove `authorization.update`, `authorization_updated`, and `authorization_version`; authorization changes are revoke + create.
+- Document `replaces` lineage metadata for superseding authorizations.
+- Document the `confirm_when` / `escalate_when` issuer convention as a non-normative policy authoring shape.
 
 ### Verification
 
 - Update Python and TypeScript reference verifiers to accept escalation action and event receipts.
-- Regenerate shared test vectors with escalation coverage.
+- Update Python and TypeScript reference verifiers to validate strict `policy_eval` shape.
+- Regenerate shared test vectors with escalation, immutable authorization, and `policy_eval` coverage.
 
 ## v1.0.0 — 2026-05-29
 

@@ -1,5 +1,5 @@
 {
-  "spec_version": "1.0.0-draft.3",
+  "spec_version": "1.0.0-draft.5",
   "public_keys": {
     "workspace_id": "ws_test",
     "keys": [
@@ -165,6 +165,155 @@
       }
     },
     {
+      "name": "action_confirm_condition_matched",
+      "kind": "action",
+      "description": "confirm action receipt with policy_eval matched_condition",
+      "receipt": {
+        "version": "1.0",
+        "receipt_id": "rcp_01J0Z7Q4BORDERLINE0CONFIRM",
+        "workspace_id": "ws_test",
+        "issued_at": "2026-06-09T17:04:09.114Z",
+        "decision": "confirm",
+        "reason": "confirm_condition_matched",
+        "user_id": "cand_55ab2",
+        "agent_id": "scout_referrals",
+        "scope": "hiring.reject_application",
+        "resource": "application:req_2207:cand_55ab2",
+        "context": {
+          "initiated_by": "agent",
+          "score": 68,
+          "threshold": 70,
+          "score_delta": 2,
+          "opt_out": false
+        },
+        "authorization_id": "auth_conditional",
+        "policy_version": "2026-06-01.2",
+        "policy_eval": {
+          "matched_condition": {
+            "field": "score_delta",
+            "op": "lt",
+            "value": 5
+          },
+          "field_value": 2
+        },
+        "signature": {
+          "alg": "Ed25519",
+          "key_id": "test-key/v1",
+          "value": "zA9T1NQVqdVtf-9ll4H7EGAzc4y38jcGqlNZCLUxC2xA3BzS2mzGj-xU_yIhe8g_cje1e5sBtBoPyQUG-C6hAQ"
+        }
+      }
+    },
+    {
+      "name": "action_confirm_condition_in_matched",
+      "kind": "action",
+      "description": "confirm action receipt with policy_eval in-condition array value",
+      "receipt": {
+        "version": "1.0",
+        "receipt_id": "rcp_01J0Z7Q4INRULE00CONFIRM",
+        "workspace_id": "ws_test",
+        "issued_at": "2026-06-09T17:04:39.114Z",
+        "decision": "confirm",
+        "reason": "condition_requires_user_confirmation",
+        "user_id": "cand_55ab2",
+        "agent_id": "scout_referrals",
+        "scope": "hiring.reject_application",
+        "resource": "application:req_2207:cand_55ab2",
+        "context": {
+          "initiated_by": "agent",
+          "rule_fired": "employment_gap"
+        },
+        "authorization_id": "auth_conditional",
+        "policy_version": "2026-06-01.2",
+        "policy_eval": {
+          "matched_condition": {
+            "field": "rule_fired",
+            "op": "in",
+            "value": [
+              "employment_gap",
+              "availability"
+            ]
+          },
+          "field_value": "employment_gap"
+        },
+        "signature": {
+          "alg": "Ed25519",
+          "key_id": "test-key/v1",
+          "value": "Co6ykWny2NmJ7Y4TOYq0t4Na6rjFojP_N7VhXc0dC0Unh6id6qc-MRnclvp7WANsnZA6dqJ4BhrlNs-grbf5CA"
+        }
+      }
+    },
+    {
+      "name": "action_allow_conditions_evaluated",
+      "kind": "action",
+      "description": "allow action receipt with policy_eval attesting no condition matched",
+      "receipt": {
+        "version": "1.0",
+        "receipt_id": "rcp_01J0Z7Q4CONDITIONOKALLOW",
+        "workspace_id": "ws_test",
+        "issued_at": "2026-06-09T17:05:09.114Z",
+        "decision": "allow",
+        "reason": "authorization_granted_scope_active",
+        "user_id": "cand_55ab2",
+        "agent_id": "scout_referrals",
+        "scope": "hiring.reject_application",
+        "resource": "application:req_2207:cand_55ab2",
+        "context": {
+          "initiated_by": "agent",
+          "score": 82,
+          "threshold": 70,
+          "score_delta": 12,
+          "opt_out": false
+        },
+        "authorization_id": "auth_conditional",
+        "policy_version": "2026-06-01.2",
+        "policy_eval": {
+          "matched_condition": null,
+          "field_value": null
+        },
+        "signature": {
+          "alg": "Ed25519",
+          "key_id": "test-key/v1",
+          "value": "v1H9lbuwSp3yNNQT6bf8NcgR5ghRSmZPcRMHK9GnorIVhnjnuNIzKo-kvxYJ9rVzXvzk8ZtjI8EHVIun-QLDBA"
+        }
+      }
+    },
+    {
+      "name": "action_confirm_context_field_missing",
+      "kind": "action",
+      "description": "confirm action receipt with fail-closed missing context field",
+      "receipt": {
+        "version": "1.0",
+        "receipt_id": "rcp_01J0Z7Q4MISSING0CONFIRM",
+        "workspace_id": "ws_test",
+        "issued_at": "2026-06-09T17:06:09.114Z",
+        "decision": "confirm",
+        "reason": "context_field_missing",
+        "user_id": "cand_55ab2",
+        "agent_id": "scout_referrals",
+        "scope": "hiring.reject_application",
+        "resource": "application:req_2207:cand_55ab2",
+        "context": {
+          "initiated_by": "agent",
+          "threshold": 70
+        },
+        "authorization_id": "auth_conditional",
+        "policy_version": "2026-06-01.2",
+        "policy_eval": {
+          "matched_condition": {
+            "field": "score_delta",
+            "op": "lt",
+            "value": 5
+          },
+          "field_value": null
+        },
+        "signature": {
+          "alg": "Ed25519",
+          "key_id": "test-key/v1",
+          "value": "PDC9G473HWZyhfgr1nFFXTvV5XueEWEvFO7KT-PjfPPP6Axdftkd-axIHwKXovhBam5z8WOUk6ikziqCifCqDA"
+        }
+      }
+    },
+    {
       "name": "authorization_create",
       "kind": "authorization",
       "description": "authorization.create receipt with event field",
@@ -197,6 +346,58 @@
           "alg": "Ed25519",
           "key_id": "test-key/v1",
           "value": "Q4WxNSlaRooxJETY0EVwQdK_Sqr9EBnnSugt44Z02kKLTukJiq2r6eLQrlhVZTcInd2xdH26P11kia5voJ75Aw"
+        }
+      }
+    },
+    {
+      "name": "authorization_create_replaces",
+      "kind": "authorization",
+      "description": "authorization.create receipt with replaces lineage and conditional constraints",
+      "receipt": {
+        "version": "1.0",
+        "receipt_id": "rcp_01J0Z7Q4AUTHREPLACES0000",
+        "workspace_id": "ws_test",
+        "issued_at": "2026-06-09T17:00:00.000Z",
+        "decision": "authorization_granted",
+        "reason": "user_approved_via_customer_ui",
+        "user_id": "cand_55ab2",
+        "agent_id": "scout_referrals",
+        "event": "authorization.create",
+        "resource": null,
+        "context": {
+          "scopes": [
+            {
+              "name": "hiring.reject_application",
+              "constraints": {
+                "confirm_when": [
+                  {
+                    "field": "score_delta",
+                    "lt": 5
+                  },
+                  {
+                    "field": "opt_out",
+                    "eq": true
+                  }
+                ],
+                "escalate_when": [
+                  {
+                    "field": "score",
+                    "exists": false
+                  }
+                ]
+              }
+            }
+          ],
+          "replaces": "auth_previous_conditional",
+          "expires_at": "2026-12-31T00:00:00Z",
+          "source": "customer_policy_upload"
+        },
+        "authorization_id": "auth_conditional",
+        "policy_version": "2026-06-01.2",
+        "signature": {
+          "alg": "Ed25519",
+          "key_id": "test-key/v1",
+          "value": "WAwscOefba5aRcWQj-0RTdBl9Ssm10K6AHqzOdRs9EtW32oiNJtdhNr75V-XvJB4rsVEaZ5sckXE_mT6gxd5Dg"
         }
       }
     },
@@ -489,6 +690,31 @@
       }
     },
     {
+      "name": "authorization_update_event_rejected",
+      "description": "authorization.update event was removed in draft.5",
+      "expected_reason": "event must be one of",
+      "receipt": {
+        "version": "1.0",
+        "receipt_id": "rcp_01J0Z7Q4AUTHUPDATE00000",
+        "workspace_id": "ws_test",
+        "issued_at": "2026-06-09T17:10:00.000Z",
+        "decision": "authorization_updated",
+        "reason": "removed_in_draft5",
+        "user_id": "emp_8821",
+        "agent_id": "referral_outreach",
+        "event": "authorization.update",
+        "resource": null,
+        "context": {},
+        "authorization_id": "auth_bad",
+        "policy_version": "2026-06-01.2",
+        "signature": {
+          "alg": "Ed25519",
+          "key_id": "test-key/v1",
+          "value": "Ck6pKh67I6uw3JDq1sshM96gvDqV1Kef51dkp2t8qQinMhnArX5Hq4VGwOqMH5yld7QEMFpBqadAnX8uicIPDA"
+        }
+      }
+    },
+    {
       "name": "pairing_event_create_wrong_decision",
       "description": "event=authorization.create but decision=allow",
       "expected_reason": "must have decision",
@@ -560,6 +786,210 @@
           "alg": "Ed25519",
           "key_id": "test-key/v1",
           "value": "9CCaIAKYAZGMjFxCvfj0fNoq14j02Ey6ENlsDoxh69Duzq4anIRMC-U9F94rS-HKnYXMaq-h2pK4CLAymtXHAg"
+        }
+      }
+    },
+    {
+      "name": "policy_eval_on_event_receipt",
+      "description": "event receipt carrying policy_eval",
+      "expected_reason": "policy_eval must be absent on event receipts",
+      "receipt": {
+        "version": "1.0",
+        "receipt_id": "rcp_01J0Z7Q4POLICYEVENT000",
+        "workspace_id": "ws_test",
+        "issued_at": "2026-06-09T17:11:00.000Z",
+        "decision": "authorization_granted",
+        "reason": "bad_policy_eval_on_event",
+        "user_id": "emp_8821",
+        "agent_id": "referral_outreach",
+        "event": "authorization.create",
+        "resource": null,
+        "context": {},
+        "authorization_id": "auth_bad",
+        "policy_version": "2026-06-01.2",
+        "policy_eval": {
+          "matched_condition": null,
+          "field_value": null
+        },
+        "signature": {
+          "alg": "Ed25519",
+          "key_id": "test-key/v1",
+          "value": "p8wYWMDrsGvTS904prRpZX-JEisH3bIYGThniYn8rB2fGPo1UXdRexw3sRsixARzXRu-DPTvexYvuuj2eXFeAw"
+        }
+      }
+    },
+    {
+      "name": "policy_eval_authorization_version_rejected",
+      "description": "policy_eval must not carry draft.4 authorization_version",
+      "expected_reason": "policy_eval has unknown fields",
+      "receipt": {
+        "version": "1.0",
+        "receipt_id": "rcp_01J0Z7Q4POLICYEXTRA00",
+        "workspace_id": "ws_test",
+        "issued_at": "2026-06-09T17:12:00.000Z",
+        "decision": "confirm",
+        "reason": "confirm_condition_matched",
+        "user_id": "cand_55ab2",
+        "agent_id": "scout_referrals",
+        "scope": "hiring.reject_application",
+        "resource": "application:req_2207:cand_55ab2",
+        "context": {
+          "score_delta": 2
+        },
+        "authorization_id": "auth_bad",
+        "policy_version": "2026-06-01.2",
+        "policy_eval": {
+          "matched_condition": {
+            "field": "score_delta",
+            "op": "lt",
+            "value": 5
+          },
+          "field_value": 2,
+          "authorization_version": 7
+        },
+        "signature": {
+          "alg": "Ed25519",
+          "key_id": "test-key/v1",
+          "value": "4QwfeRDIRDSJGjOzbduOtp5LfwGWYyTqk4RkvTUC6TrdjtPzdqqQmf399jTljl6PupJRW4SDwV_LPTdVlkz_BA"
+        }
+      }
+    },
+    {
+      "name": "policy_eval_missing_field_value",
+      "description": "policy_eval missing required field_value",
+      "expected_reason": "policy_eval missing fields",
+      "receipt": {
+        "version": "1.0",
+        "receipt_id": "rcp_01J0Z7Q4POLICYMISS000",
+        "workspace_id": "ws_test",
+        "issued_at": "2026-06-09T17:13:00.000Z",
+        "decision": "confirm",
+        "reason": "confirm_condition_matched",
+        "user_id": "cand_55ab2",
+        "agent_id": "scout_referrals",
+        "scope": "hiring.reject_application",
+        "resource": "application:req_2207:cand_55ab2",
+        "context": {
+          "score_delta": 2
+        },
+        "authorization_id": "auth_bad",
+        "policy_version": "2026-06-01.2",
+        "policy_eval": {
+          "matched_condition": {
+            "field": "score_delta",
+            "op": "lt",
+            "value": 5
+          }
+        },
+        "signature": {
+          "alg": "Ed25519",
+          "key_id": "test-key/v1",
+          "value": "2QoWjJDxxpnNWYbyJ3Wpp7HKjxbfb-bFIVAVvKVenTSmRGJzDssO6DxmVsD26TH445cAgIr9vMK9X6PPO5VvAg"
+        }
+      }
+    },
+    {
+      "name": "policy_eval_matched_condition_missing_op",
+      "description": "matched_condition missing required op",
+      "expected_reason": "policy_eval.matched_condition missing fields",
+      "receipt": {
+        "version": "1.0",
+        "receipt_id": "rcp_01J0Z7Q4POLICYNOOP000",
+        "workspace_id": "ws_test",
+        "issued_at": "2026-06-09T17:14:00.000Z",
+        "decision": "confirm",
+        "reason": "confirm_condition_matched",
+        "user_id": "cand_55ab2",
+        "agent_id": "scout_referrals",
+        "scope": "hiring.reject_application",
+        "resource": "application:req_2207:cand_55ab2",
+        "context": {
+          "score_delta": 2
+        },
+        "authorization_id": "auth_bad",
+        "policy_version": "2026-06-01.2",
+        "policy_eval": {
+          "matched_condition": {
+            "field": "score_delta",
+            "value": 5
+          },
+          "field_value": 2
+        },
+        "signature": {
+          "alg": "Ed25519",
+          "key_id": "test-key/v1",
+          "value": "DDBcDbwUOx4FpiTGXX2871ELoFRmPsSw4-JD1B_vYGbaBaIgCtkVf6TFNW43kWnlniTvR9VHJ0_YBc37ptGXDw"
+        }
+      }
+    },
+    {
+      "name": "policy_eval_matched_condition_extra_member",
+      "description": "matched_condition carrying an unknown member",
+      "expected_reason": "policy_eval.matched_condition has unknown fields",
+      "receipt": {
+        "version": "1.0",
+        "receipt_id": "rcp_01J0Z7Q4POLICYCONDEX",
+        "workspace_id": "ws_test",
+        "issued_at": "2026-06-09T17:15:00.000Z",
+        "decision": "confirm",
+        "reason": "confirm_condition_matched",
+        "user_id": "cand_55ab2",
+        "agent_id": "scout_referrals",
+        "scope": "hiring.reject_application",
+        "resource": "application:req_2207:cand_55ab2",
+        "context": {
+          "score_delta": 2
+        },
+        "authorization_id": "auth_bad",
+        "policy_version": "2026-06-01.2",
+        "policy_eval": {
+          "matched_condition": {
+            "field": "score_delta",
+            "op": "lt",
+            "value": 5,
+            "debug": true
+          },
+          "field_value": 2
+        },
+        "signature": {
+          "alg": "Ed25519",
+          "key_id": "test-key/v1",
+          "value": "1XyvZ8Po7G_JJ4DK_S1mvLAL4DidNNdNZubnbnmE0ee5CKby1tHT8Mzvt8Q69wO5IZGkrSoMFlKgl8rF-oNnDA"
+        }
+      }
+    },
+    {
+      "name": "policy_eval_field_value_float",
+      "description": "policy_eval field_value uses a non-integer number",
+      "expected_reason": "policy_eval.field_value must be",
+      "receipt": {
+        "version": "1.0",
+        "receipt_id": "rcp_01J0Z7Q4POLICYFLOAT0",
+        "workspace_id": "ws_test",
+        "issued_at": "2026-06-09T17:16:00.000Z",
+        "decision": "confirm",
+        "reason": "confirm_condition_matched",
+        "user_id": "cand_55ab2",
+        "agent_id": "scout_referrals",
+        "scope": "hiring.reject_application",
+        "resource": "application:req_2207:cand_55ab2",
+        "context": {
+          "score_delta": 2
+        },
+        "authorization_id": "auth_bad",
+        "policy_version": "2026-06-01.2",
+        "policy_eval": {
+          "matched_condition": {
+            "field": "score_delta",
+            "op": "lt",
+            "value": 5
+          },
+          "field_value": 2.5
+        },
+        "signature": {
+          "alg": "Ed25519",
+          "key_id": "test-key/v1",
+          "value": "qcYjtufqU3EN6quxqr-ACeDtsaXKiVddH99LHJK_SV49MhADj6vdjCAWvU4YGqSh1kufAPbCuV7jrn-wGoIADA"
         }
       }
     },

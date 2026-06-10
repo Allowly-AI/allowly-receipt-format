@@ -4,6 +4,8 @@ An open format for **cryptographically signed, third-party-verifiable receipts**
 
 A receipt is a signed record of one decision: *at time T, issuer W decided that agent A may (or may not) perform action X on resource R for user U under authorization C.* Anyone holding the receipt and the issuer's Ed25519 public key can verify it offline, without contacting the issuer.
 
+Draft.5 adds conditional policy evidence: action receipts can include `policy_eval`, a small proof of which immutable authorization condition routed a decision to `confirm` or `escalate`.
+
 ## Why this exists
 
 AI agents are being given broad access to user data, and the audit story is currently *"trust the vendor's dashboard."* That's not enough for SOC 2, the EU AI Act, or any serious procurement review. The receipt format is the artifact that moves audit from "the vendor says so" to "here's a signature anyone can verify."
@@ -47,7 +49,7 @@ const valid = await verifyReceipt(receipt, publicKeys);
 
 ## Status
 
-**v1.0.0.** Stable v1 receipt format and reference verifier test vectors.
+**1.0.0-draft.5.** Draft receipt format and reference verifier test vectors. Draft.5 keeps authorizations immutable: there is no `authorization.update` and no `authorization_version`; `authorization_id` pins the rule set.
 
 ## Licensing
 
