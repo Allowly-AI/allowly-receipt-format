@@ -1,6 +1,6 @@
 # Allowly Receipt Format Specification
 
-**Version:** 1.0.0-draft.5
+**Version:** 1.0.0-draft.6
 **Status:** Draft — public review
 **License:** This specification is published under CC-BY 4.0. Reference implementations are Apache 2.0.
 
@@ -84,7 +84,7 @@ A receipt is a JSON object with the following top-level fields. All fields are r
 | `scope` | string \| absent | conditional | Present on action receipts. The scope name being checked (e.g. `email.send`, `contact.enrich`). Format is issuer-defined but conventionally dotted. **MUST be absent on event receipts.** |
 | `event` | string \| absent | conditional | Present on event receipts. One of `"authorization.create"`, `"authorization.revoke"`, or `"escalation.resolve"`. **MUST be absent on action receipts.** |
 | `resource` | string \| null | yes | An identifier for the target of the action, or `null`. Always `null` for authorization create/revoke receipts. For `escalation.resolve`, this MAY carry the resource the escalation was bound to. Issuers MUST NOT include the resource's contents, only an identifier. |
-| `context` | object | yes | An opaque object of additional facts the issuer considered. Contents are issuer-defined. Verifiers MUST preserve the object byte-for-byte during canonicalization. MAY be empty (`{}`). |
+| `context` | object | yes | An opaque object of additional facts the issuer considered. Contents are issuer-defined. Verifiers MUST canonicalize the object by the same §4 rules as the rest of the payload and MUST NOT alter its values, drop or add keys, or reorder arrays; nested object keys are re-sorted per rule 3 like any other object. MAY be empty (`{}`). |
 | `authorization_id` | string \| null | yes | The authorization record this receipt relates to. For action receipts: the authorization that authorized the decision, or `null` if no authorization matched. For event receipts: the related `authorization_id` (never `null`). |
 | `policy_version` | string | yes | Version of the issuer's decision logic at time of issue. Format is issuer-defined. |
 | `policy_eval` | object \| absent | optional | Action receipts only; **MUST be absent on event receipts.** Records the outcome of per-scope condition evaluation: which condition (if any) routed the decision, and the evaluated context value. The rules in force are pinned by `authorization_id` (§3.3). See §3.6. |
@@ -126,11 +126,18 @@ Receipts come in two kinds, distinguished by which of two mutually exclusive fie
   - `"escalation_rejected"` — paired with `event: "escalation.resolve"` when the approver rejected.
 - `authorization_id` — the authorization being created, revoked, or escalated. **MUST NOT** be `null` on an event receipt.
 - `resource` — **MUST** be `null` for authorization create/revoke receipts. For `escalation.resolve`, this MAY carry the resource the escalation was bound to.
-- `context` — conventionally carries lifecycle metadata: the full scope set at creation, `expires_at`, `requires_confirm_for`, `requires_escalation_for`, the creation source (`csv_upload`, `onboarding_modal`), an optional `csv_hash` or similar integrity identifier, an optional `replaces` field (see below); for revocations a `revoked_by` field (`user`, `admin`, `expired`, `tombstone`); and for escalation resolution an `escalation` object containing the escalation id, scope, approver label, resolution status, and approver identity.
+- `context` — conventionally carries lifecycle metadata: the full scope set at creation, `expires_at`, `requires_confirm_for`, `requires_escalation_for`, the creation source (`csv_upload`, `onboarding_modal`), an optional `csv_hash` or similar integrity identifier, an optional `replaces` field (see below); for revocations a `revoked_by` field (`user`, `admin`, `expired`, `tombstone`, or `superseded` when the revocation is part of a rule change) and, when `revoked_by` is `superseded`, an optional `superseded_by: "<authorization_id of the successor>"` forward pointer (see below); and for escalation resolution an `escalation` object containing the escalation id, scope, approver label, resolution status, and approver identity.
 
 **Authorizations are immutable.** There is no update event. Any change to an authorization — its scopes, per-scope constraints, or verb-routing rules (`requires_confirm_for`, `requires_escalation_for`, conditional routing) — is expressed as revoking the existing authorization and creating a new one, producing one signed `authorization.revoke` receipt and one signed `authorization.create` receipt. Because each `authorization_id` therefore refers to exactly one immutable rule set, the id alone pins the rules in force for every action receipt that references it; no revision counter is needed.
 
-**Lineage convention (non-normative).** When a new authorization supersedes an old one, the creation receipt's `context` MAY carry `replaces: "<authorization_id of the predecessor>"`. This lets auditors walk the succession of rule sets across revoke-and-create boundaries. Verifiers do not validate `replaces`; it is an audit convenience, not a chain-integrity mechanism.
+**Lineage convention (non-normative).** When a new authorization supersedes an old one, the change surfaces as a revoke of the predecessor plus a create of the successor. To make that supersession auditable rather than guessable, the two receipts SHOULD cross-reference each other:
+
+- the creation receipt's `context` SHOULD carry `replaces: "<authorization_id of the predecessor>"` (the backward pointer), and
+- the revocation receipt's `context` SHOULD carry `revoked_by: "superseded"` together with `superseded_by: "<authorization_id of the successor>"` (the forward pointer).
+
+The forward pointer matters because a revocation otherwise carries no signal distinguishing a rule change from a genuine, standalone shutdown: an auditor seeing only a revoke cannot tell whether a successor exists, and absence of an optional backward pointer on some later create proves nothing. With `revoked_by: "superseded"` on the revoke receipt, the classification is local to that one signed receipt — no forward scan over later creates, and no time-window ambiguity (a successor that has not yet appeared versus one that never will). An issuer that wants auditors to be able to rely on "a revocation without a supersession marker is a standalone revocation" therefore SHOULD emit the forward pointer whenever, and only whenever, the revocation is part of a rule change.
+
+Emitting the successor id on the revoke receipt requires the successor's `authorization_id` to be known at revoke time; see §8 for the recommended ordering. Verifiers do not validate `replaces`, `revoked_by`, or `superseded_by` — these are audit conveniences, not chain-integrity mechanisms (the whole receipt is issuer-signed, so a dishonest issuer can write any pointer it likes; the value is in making an honest issuer's intent legible).
 
 Verifiers **MUST** enforce the following:
 
@@ -196,7 +203,7 @@ An auditor can reconstruct the full story of an authorization by querying all re
 
 The chain is self-verifying: every receipt is independently signed, ordered by `issued_at`, and cryptographically tied to the same `authorization_id`. Producing this chain is the primary artifact customers present in disputes.
 
-Rule changes never mutate a chain. Changing scopes, constraints, or verb routing is expressed as revoking the old authorization and creating a new one (§3.3); the new creation receipt MAY carry `replaces` in context, so successive chains form a walkable lineage.
+Rule changes never mutate a chain. Changing scopes, constraints, or verb routing is expressed as revoking the old authorization and creating a new one (§3.3); the creation receipt SHOULD carry `replaces` and the revocation receipt SHOULD carry `revoked_by: "superseded"` with `superseded_by`, so successive chains form a walkable, bidirectionally linked lineage. Note that no-match denies (an action receipt with `authorization_id: null`, §3.1) pin no chain at all; if such a deny is issued during the gap between a revoke and its successor create, it belongs to no authorization and is reconstructable only from `issued_at` ordering. §8 recommends an ordering that minimizes this gap.
 
 ### 3.6 Conditional policy evaluation (`policy_eval`)
 
@@ -275,10 +282,10 @@ The canonical form is the payload serialized as JSON with the following normativ
 
 1. **Encoding.** UTF-8, no BOM.
 2. **Whitespace.** No whitespace between tokens. Specifically: no spaces, no tabs, no newlines anywhere outside of string values.
-3. **Object keys.** Sorted in lexicographic order by UTF-16 code unit (the default `Array.prototype.sort` order in JavaScript, and Python's `sorted()` on strings). Applied recursively to every object, including nested objects (such as `context`).
+3. **Object keys.** Sorted in lexicographic order by UTF-16 code unit (the default `Array.prototype.sort` order in JavaScript). Applied recursively to every object, including nested objects (such as `context`). **Caution:** this is *not* Unicode code-point order, and the two diverge for keys containing characters outside the Basic Multilingual Plane (e.g. an emoji key sorts *before* `U+FF61` under UTF-16 but *after* it by code point). Languages whose default string sort is by code point — including Python's `sorted()` — **MUST** sort keys by their UTF-16 big-endian encoding (in Python, `key=lambda k: k.encode("utf-16-be")`) to match this rule.
 4. **Array order.** Preserved as-is. Arrays are ordered data; verifiers **MUST NOT** sort them.
 5. **Strings.** Serialized with double quotes. The following characters **MUST** be escaped: `"` as `\"`, `\` as `\\`, and control characters `U+0000` through `U+001F` using `\uXXXX` lowercase-hex form (e.g. `\u000a` for newline). Non-ASCII characters **MUST NOT** be escaped; they appear as their UTF-8 byte sequence.
-6. **Numbers.** Integers serialized without a decimal point or exponent. Non-integer numbers **MUST NOT** appear in v1 receipts; if present, verifiers **MUST** reject the receipt.
+6. **Numbers.** Integers serialized without a decimal point or exponent. Non-integer numbers **MUST NOT** appear in v1 receipts; if present, verifiers **MUST** reject the receipt. Integers are further bounded to the I-JSON safe range, ±(2⁵³−1) inclusive (as in RFC 8785); a magnitude outside this range cannot be represented exactly by an IEEE-754 double consumer and **MUST** be rejected. Values that need a larger range MUST be expressed as strings.
 7. **Booleans and null.** Serialized as `true`, `false`, `null`.
 8. **Separators.** `,` between array/object elements, `:` between object keys and values. No surrounding whitespace.
 
@@ -421,6 +428,8 @@ A verifier given a receipt `R` and the issuer's public keys **MUST** perform all
    - Verify the Ed25519 signature against the canonical payload bytes per RFC 8032. If verification fails, reject.
 8. **Accept.** If all checks pass, the receipt is valid.
 
+**Workspace binding.** A `key_id` identifies a key, not a workspace, so a receipt verifies against any key document that happens to contain its `key_id`. The verifier MUST therefore obtain the correct key document — the one published for `R.workspace_id` (§6) — and SHOULD confirm `R.workspace_id` matches the workspace those keys were fetched for. The reference verifiers expose this as an optional `expected_workspace_id` / `expectedWorkspaceId` argument and the Python CLI enforces it automatically from the key document's `workspace_id`; callers that load keys by some other means are responsible for the binding themselves.
+
 A valid action receipt attests that: *at `issued_at`, the issuer identified by `workspace_id` made `decision` about `scope` by `agent_id` on behalf of `user_id`, under `authorization_id`, with policy version `policy_version`.*
 
 A valid event receipt attests that: *at `issued_at`, the issuer identified by `workspace_id` recorded an authorization-related event (`event`) for `authorization_id`, with `user_id` and `agent_id` as the parties, and context detailing the relevant scopes, metadata, or escalation resolution.*
@@ -442,6 +451,8 @@ Receipts are immutable and never revoked. A revocation of an authorization is it
 
 Authorizations are likewise immutable (§3.3): there is no update event, and a change to scopes, constraints, or verb-routing rules is expressed as revoke + create, never as mutation of an existing authorization.
 
+**Ordering of a supersession pair (non-normative).** When a revoke + create expresses a rule change, the two receipts are independently signed and the format does not constrain their relative `issued_at`. Issuers SHOULD nonetheless allocate the successor's `authorization_id` first, then issue the create at or before the revoke (`create.issued_at <= revoke.issued_at`), and set the cross-references described in §3.3 on both. This keeps the successor active for the whole window, so an action arriving mid-change matches the new rule set rather than falling into a gap where neither authorization is active and the resulting deny carries `authorization_id: null` (§3.5). The reverse ordering (revoke first) opens exactly that gap; the format permits it but auditors lose the ability to attribute denies issued inside the window to any rule set.
+
 ## 9. Test vectors
 
 Reference test vectors are provided in `test-vectors.json`. Implementations **MUST** pass all vectors in the `should_verify` group and **MUST** reject all vectors in the `should_reject` group with the specified reason.
@@ -458,11 +469,14 @@ Vectors include:
 - A `confirm` receipt with a `policy_eval.matched_condition.value` array for an `in` condition.
 - An `allow` receipt with `policy_eval.matched_condition: null` and `field_value: null` (conditions evaluated, none matched).
 - A `confirm` receipt with `reason: "context_field_missing"`, `matched_condition` set, `field_value: null` (fail-closed convention).
+- A receipt whose `context` contains control characters in a string value (tests the `\uXXXX` escaping of canonicalization rule 5).
+- A receipt whose `context` contains a key outside the Basic Multilingual Plane alongside a BMP key (tests the UTF-16 code-unit key sort of rule 3).
 
 *Event receipts that MUST verify:*
 - A `authorization.create` receipt with scopes, expiry, and a `csv_hash` source identifier.
 - A `authorization.create` receipt carrying a `replaces` lineage pointer in context (§3.3).
 - A `authorization.revoke` receipt with `revoked_by: "user"` in context.
+- A `authorization.revoke` receipt with `revoked_by: "superseded"` and a `superseded_by` forward pointer (§3.3 lineage convention).
 - An `escalation.resolve` receipt with an approved resolution and resource binding.
 
 *Receipts that MUST be rejected:*
@@ -483,6 +497,9 @@ Vectors include:
 - An action receipt whose `policy_eval` carries an unknown extra member (schema violation, §3.6.1).
 - An action receipt whose `policy_eval.matched_condition` is missing `op` (schema violation, §3.6.1).
 - An action receipt with a non-integer number in `policy_eval.field_value` (canonicalization rule 6).
+- An action receipt with an integer outside the I-JSON safe range, ±(2⁵³−1) (canonicalization rule 6).
+- A receipt whose `issued_at` lacks a timezone offset (timestamp not a full RFC 3339 instant, §7 step 5).
+- A receipt whose `signature.value` carries padding or non-base64url characters (§5.1).
 - An action receipt with an event-only decision such as `authorization_granted` (reserved decision misuse).
 
 ## 10. Security considerations
@@ -493,7 +510,12 @@ If an issuer's Ed25519 private key is compromised, all receipts signed under tha
 
 ### 10.2 Canonicalization fragility
 
-Incorrect canonicalization is the most common implementation bug in JSON signing schemes. The specific rules in §4 are chosen to be implementable with standard library functions in most languages (`JSON.stringify` in JavaScript with sorted keys, `json.dumps` in Python with `sort_keys=True`, `separators=(",", ":")`, and `ensure_ascii=False`), but implementers **MUST** verify against the reference test vectors before trusting their implementation.
+Incorrect canonicalization is the most common implementation bug in JSON signing schemes. Two pitfalls deserve specific warning, because a naive use of stdlib JSON serializers gets them wrong while still passing simple test vectors:
+
+- **Key sort order (rule 3).** A stdlib "sort keys" option typically sorts by Unicode code point, not UTF-16 code unit. The two agree for all-BMP keys and diverge only for keys containing supplementary characters — so the bug is invisible until such a key appears. Python's `json.dumps(sort_keys=True)` is wrong here; sort keys explicitly by `encode("utf-16-be")` instead (see rule 3).
+- **Control-character escaping (rule 5).** Stdlib serializers emit short escapes (`\n`, `\t`) for control characters; rule 5 requires the `\uXXXX` form. Python's `json.dumps` is wrong here too. A hand-rolled string encoder (as in both reference verifiers) is required.
+
+Because of these, `json.dumps(sort_keys=True, separators=(",", ":"), ensure_ascii=False)` is **not** a conforming canonicalizer despite being a common suggestion; the reference Python verifier uses a hand-rolled serializer. JavaScript's default `Array.prototype.sort` does implement UTF-16 order, but `JSON.stringify` still mishandles control characters, so the TypeScript verifier also hand-rolls string encoding. Implementers **MUST** verify against the reference test vectors — which now include a supplementary-plane key and embedded control characters — before trusting their implementation.
 
 ### 10.3 Replay
 
@@ -530,6 +552,14 @@ Issuers and customers **SHOULD**:
 The format cannot police the semantics of what customers evaluate; this guidance marks the boundary between an audit artifact and a data-retention liability.
 
 ## 11. Changelog
+
+- **1.0.0-draft.6 (2026-06-10)** — Canonicalization correctness; supersession lineage.
+  - **Fixed two canonicalization defects in the reference verifiers** that broke cross-language signature verification (§4.2, §10.2). (1) Key sort: §4.2 rule 3 mandates UTF-16 code-unit order, but the Python verifier's `json.dumps(sort_keys=True)` sorted by code point — divergent for supplementary-plane keys. (2) Control characters: rule 5 mandates the `\uXXXX` form, but `json.dumps` emitted short escapes (`\n`). The Python verifier now uses a hand-rolled serializer; both defects are covered by new test vectors. Corrected the §4.2 rule 3 and §10.2 prose, which had wrongly claimed `json.dumps` was conforming.
+  - **Bounded integers to the I-JSON safe range** ±(2⁵³−1) (§4.2 rule 6). Out-of-range integers lose precision in IEEE-754 consumers and could render with an exponent; both verifiers now reject them.
+  - **Stricter input validation in both verifiers:** `issued_at` must be a full RFC 3339 instant with an explicit offset (rejecting timezone-less / date-only strings the TS verifier previously parsed in local time), and `signature.value` must be unpadded base64url with no out-of-alphabet characters (§5.1).
+  - **Supersession lineage made bidirectional (non-normative).** Added `revoked_by: "superseded"` and the `superseded_by` forward pointer on `authorization.revoke` receipts, upgraded the `replaces` backward pointer from MAY to SHOULD when a creation supersedes, and added an ordering recommendation (`create.issued_at <= revoke.issued_at`) so a rule change does not open a gap in which denies carry `authorization_id: null` (§3.3, §3.5, §8).
+  - Clarified the §3.1 `context` row: "preserve byte-for-byte" (unimplementable after JSON parsing) replaced with canonicalize-by-the-same-rules, no value/key/array-order changes.
+  - Wire `version` stays `"1.0"` per the §3.2 lockstep policy; spec, both verifiers, and vectors regenerated together. The validation changes reject some inputs draft.5 verifiers accepted, but every receipt that verified under draft.5 and contains no supplementary-plane keys or control characters is byte-identical under draft.6.
 
 - **1.0.0-draft.5 (2026-06-09)** — Immutability restored; versioning policy.
   - **Removed `authorization.update`** and the `authorization_updated` decision. Authorizations are immutable: any change to scopes, constraints, or verb-routing rules is expressed as revoke + create (§3.3, §8). The authorization chain (§3.5) is again create → actions → escalation resolutions → revoke.

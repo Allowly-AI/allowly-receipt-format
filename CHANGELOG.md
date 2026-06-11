@@ -7,17 +7,24 @@
 - Add `escalate` as a valid action receipt decision.
 - Add `escalation.resolve` event receipts with `escalation_approved` and `escalation_rejected` decisions.
 - Clarify that authorization create/revoke receipts keep `resource: null`, while escalation resolution receipts may carry the resource binding.
-- Replace the spec text with `1.0.0-draft.5`.
+- Replace the spec text with `1.0.0-draft.6`.
 - Add optional `policy_eval` on action receipts to record which immutable authorization condition routed a decision.
 - Remove `authorization.update`, `authorization_updated`, and `authorization_version`; authorization changes are revoke + create.
 - Document `replaces` lineage metadata for superseding authorizations.
 - Document the `confirm_when` / `escalate_when` issuer convention as a non-normative policy authoring shape.
+- Make supersession lineage bidirectional: add `revoked_by: "superseded"` and the `superseded_by` forward pointer on revoke receipts, upgrade `replaces` to SHOULD when superseding, and recommend `create.issued_at <= revoke.issued_at` ordering (§3.3, §3.5, §8).
+- Bound integers to the I-JSON safe range ±(2⁵³−1) in canonicalization rule 6.
+- Correct the §4.2 rule 3 / §10.2 prose that wrongly claimed `json.dumps(sort_keys=True)` is a conforming canonicalizer.
+- Replace the unimplementable "preserve `context` byte-for-byte" wording (§3.1).
 
 ### Verification
 
 - Update Python and TypeScript reference verifiers to accept escalation action and event receipts.
 - Update Python and TypeScript reference verifiers to validate strict `policy_eval` shape.
-- Regenerate shared test vectors with escalation, immutable authorization, and `policy_eval` coverage.
+- **Fix two cross-language canonicalization defects:** the Python verifier now sorts object keys by UTF-16 code unit (was code point) and escapes control characters as `\uXXXX` (was short escapes like `\n`), using a hand-rolled serializer instead of `json.dumps`.
+- Reject integers outside the I-JSON safe range in both verifiers.
+- Require `issued_at` to be a full RFC 3339 instant with an explicit offset (the TS verifier previously parsed timezone-less strings in local time) and `signature.value` to be unpadded base64url with no out-of-alphabet characters.
+- Regenerate shared test vectors with escalation, immutable authorization, `policy_eval`, supersession-lineage, control-character, supplementary-plane-key, out-of-range-integer, bad-timestamp, and bad-signature-encoding coverage.
 
 ## v1.0.0 — 2026-05-29
 

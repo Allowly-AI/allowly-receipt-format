@@ -45,6 +45,14 @@ except VerificationError as e:
     print(f"invalid: {e}")
 ```
 
+Pass `expected_workspace_id` to bind the receipt to a workspace — a `key_id`
+alone does not (spec §7, "Workspace binding"). The `allowly-receipt-verify` CLI
+enforces this automatically using the key document's `workspace_id`:
+
+```python
+verify_receipt(receipt, keys, expected_workspace_id="ws_01HXA1B2C3D4E5F6G7H8J9K0L1")
+```
+
 The package exposes typed verifier exceptions:
 
 - `SchemaError`

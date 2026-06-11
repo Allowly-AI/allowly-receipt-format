@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import base64
 import json
+import re
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from typing import Any
@@ -50,6 +51,14 @@ OPTIONAL_FIELDS = {"policy_eval"}
 DISCRIMINATOR_FIELDS = {"scope", "event"}
 ALL_TOP_LEVEL_FIELDS = REQUIRED_FIELDS | DISCRIMINATOR_FIELDS | OPTIONAL_FIELDS
 MAX_FUTURE_SKEW = timedelta(minutes=5)
+# I-JSON / RFC 8785 safe-integer bound. Integers outside ±(2^53-1) cannot be
+# represented exactly by IEEE-754 double consumers (e.g. JavaScript verifiers),
+# so v1 receipts MUST NOT carry them (spec §4.2 rule 6).
+MAX_SAFE_INTEGER = 2**53 - 1
+_B64URL_RE = re.compile(r"^[A-Za-z0-9_-]*$")
+_RFC3339_RE = re.compile(
+    r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:\d{2})$"
+)
 __all__ = [
     "KeyOutsideActiveWindowError",
     "PublicKey",
@@ -94,16 +103,28 @@ class PublicKey:
 
 
 def _b64url_decode(s: str) -> bytes:
-    """Decode base64url without padding."""
+    """Decode base64url without padding.
+
+    The input MUST use the URL-safe alphabet (`A-Z a-z 0-9 - _`) with no
+    padding. ``base64.urlsafe_b64decode`` silently ignores out-of-alphabet
+    bytes, so we reject them explicitly to enforce spec §5.1.
+    """
+    if not _B64URL_RE.match(s):
+        raise ValueError(f"not unpadded base64url: {s!r}")
     padding = "=" * (-len(s) % 4)
     return base64.urlsafe_b64decode(s + padding)
 
 
 def _parse_rfc3339(s: str) -> datetime:
-    """Parse RFC 3339 timestamp. Requires Z suffix or explicit offset."""
-    if s.endswith("Z"):
-        s = s[:-1] + "+00:00"
-    dt = datetime.fromisoformat(s)
+    """Parse an RFC 3339 timestamp. Requires Z suffix or explicit offset.
+
+    A timezone-less or date-only string is rejected: without an offset the
+    instant is ambiguous and verifiers would disagree on the key-window check.
+    """
+    if not isinstance(s, str) or not _RFC3339_RE.match(s):
+        raise SchemaError(f"not an RFC 3339 timestamp with timezone: {s!r}")
+    iso = s[:-1] + "+00:00" if s.endswith("Z") else s
+    dt = datetime.fromisoformat(iso)
     if dt.tzinfo is None:
         raise SchemaError(f"timestamp missing timezone: {s}")
     return dt
@@ -119,24 +140,79 @@ def canonicalize(payload: dict[str, Any]) -> bytes:
       - Object keys sorted lexicographically (UTF-16 code unit order)
       - Array order preserved
       - Integers only; no floats
-      - Non-ASCII passed through as UTF-8 (ensure_ascii=False)
+      - Non-ASCII passed through as UTF-8
+
+    NOTE: this is a hand-rolled serializer, not ``json.dumps(sort_keys=True,
+    ...)``. The stdlib helper diverges from the spec in two ways that silently
+    break cross-language signature verification:
+      1. It sorts keys by Unicode code point, but §4.2 rule 3 mandates UTF-16
+         code-unit order — these differ for non-BMP keys (e.g. an emoji key
+         sorts *before* U+FF61 under UTF-16, *after* under code point).
+      2. It emits short escapes like ``\\n`` for control characters, but §4.2
+         rule 5 mandates the lowercase ``\\uXXXX`` form.
     """
     _assert_no_floats(payload)
-    return json.dumps(
-        payload,
-        sort_keys=True,
-        separators=(",", ":"),
-        ensure_ascii=False,
-        allow_nan=False,
-    ).encode("utf-8")
+    return _encode_value(payload).encode("utf-8")
+
+
+def _utf16_sort_key(key: str) -> bytes:
+    """Sort key for UTF-16 code-unit lexicographic order (spec §4.2 rule 3)."""
+    return key.encode("utf-16-be")
+
+
+def _encode_value(v: Any) -> str:
+    if v is None:
+        return "null"
+    if isinstance(v, bool):  # before int: bool is an int subclass.
+        return "true" if v else "false"
+    if isinstance(v, int):
+        return str(v)
+    if isinstance(v, str):
+        return _encode_string(v)
+    if isinstance(v, dict):
+        items = sorted(v.items(), key=lambda kv: _utf16_sort_key(kv[0]))
+        return "{" + ",".join(
+            _encode_string(k) + ":" + _encode_value(val) for k, val in items
+        ) + "}"
+    if isinstance(v, list):
+        return "[" + ",".join(_encode_value(item) for item in v) + "]"
+    raise SchemaError(f"unsupported type in payload: {type(v).__name__}")
+
+
+def _encode_string(s: str) -> str:
+    """Serialize a JSON string per §4.2 rule 5.
+
+    Escapes only `"`, `\\`, and control chars U+0000-U+001F (as lowercase
+    `\\uXXXX`). Non-ASCII is passed through as its UTF-8 byte sequence.
+    """
+    out = ['"']
+    for ch in s:
+        if ch == '"':
+            out.append('\\"')
+        elif ch == "\\":
+            out.append("\\\\")
+        elif ord(ch) < 0x20:
+            out.append(f"\\u{ord(ch):04x}")
+        else:
+            out.append(ch)
+    out.append('"')
+    return "".join(out)
 
 
 def _assert_no_floats(obj: Any) -> None:
-    """v1 receipts MUST NOT contain non-integer numbers."""
+    """v1 receipts MUST NOT contain non-integer numbers, nor integers outside
+    the I-JSON safe range (spec §4.2 rule 6)."""
     if isinstance(obj, bool):
         return  # bool is a subclass of int in Python; allow.
     if isinstance(obj, float):
         raise SchemaError("v1 receipts must not contain non-integer numbers")
+    if isinstance(obj, int):
+        if abs(obj) > MAX_SAFE_INTEGER:
+            raise SchemaError(
+                f"integer {obj} exceeds the safe range ±(2^53-1); v1 receipts "
+                f"must not carry integers that lose precision in IEEE-754 doubles"
+            )
+        return
     if isinstance(obj, dict):
         for v in obj.values():
             _assert_no_floats(v)
@@ -150,6 +226,7 @@ def verify_receipt(
     public_keys: list[PublicKey],
     *,
     now: datetime | None = None,
+    expected_workspace_id: str | None = None,
 ) -> None:
     """
     Verify a receipt. Raises VerificationError on any failure.
@@ -158,6 +235,10 @@ def verify_receipt(
         receipt: the full receipt dict (payload + signature).
         public_keys: list of known public keys for the workspace.
         now: override current time (for testing). Defaults to datetime.now(UTC).
+        expected_workspace_id: if given, the receipt's ``workspace_id`` MUST
+            equal it. Key ids alone do not bind a receipt to a workspace, so
+            pass the workspace the keys were published for to prevent a receipt
+            from verifying against another workspace's key document.
     """
     now = now or datetime.now(timezone.utc)
 
@@ -165,6 +246,15 @@ def verify_receipt(
     if receipt.get("version") != SPEC_VERSION:
         raise SchemaError(
             f"unsupported version: {receipt.get('version')!r} (want {SPEC_VERSION!r})"
+        )
+
+    if (
+        expected_workspace_id is not None
+        and receipt.get("workspace_id") != expected_workspace_id
+    ):
+        raise SchemaError(
+            f"workspace_id mismatch: receipt has {receipt.get('workspace_id')!r}, "
+            f"expected {expected_workspace_id!r}"
         )
 
     # Step 2: schema check (includes signature.value shape — rejects placeholders)
@@ -403,9 +493,12 @@ def main(argv: list[str] | None = None) -> int:
         keys_doc = json.load(f)
 
     keys = load_keys_from_json(keys_doc)
+    # The keys document is published per workspace; bind the receipt to it so a
+    # receipt cannot verify against another workspace's keys that share a key_id.
+    expected_workspace_id = keys_doc.get("workspace_id")
 
     try:
-        verify_receipt(receipt, keys)
+        verify_receipt(receipt, keys, expected_workspace_id=expected_workspace_id)
         print(f"OK  receipt_id={receipt['receipt_id']} decision={receipt['decision']}")
         return 0
     except VerificationError as e:

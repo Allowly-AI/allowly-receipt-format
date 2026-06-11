@@ -91,7 +91,15 @@ export interface Receipt {
 // Base64url
 // ---------------------------------------------------------------------------
 
+const B64URL_RE = /^[A-Za-z0-9_-]*$/;
+
 function b64urlDecode(s: string): Uint8Array {
+  // Buffer.from(..., "base64") silently drops out-of-alphabet characters and
+  // accepts padding / the standard alphabet, so we gate on the URL-safe,
+  // unpadded form explicitly to enforce spec §5.1.
+  if (!B64URL_RE.test(s)) {
+    throw new VerificationError(`not unpadded base64url: ${JSON.stringify(s)}`);
+  }
   const padded = s + "=".repeat((4 - (s.length % 4)) % 4);
   const standard = padded.replace(/-/g, "+").replace(/_/g, "/");
   const binary = Buffer.from(standard, "base64");
@@ -112,6 +120,14 @@ function assertNoFloats(obj: unknown): void {
   if (typeof obj === "number") {
     if (!Number.isInteger(obj)) {
       throw new VerificationError("v1 receipts must not contain non-integer numbers");
+    }
+    // Integers outside the I-JSON safe range (±(2^53-1)) lose precision in
+    // doubles and would render with an exponent (e.g. "1e+21"), violating
+    // §4.2 rule 6. Number.isSafeInteger excludes them.
+    if (!Number.isSafeInteger(obj)) {
+      throw new VerificationError(
+        "integer exceeds the safe range ±(2^53-1); v1 receipts must not carry integers that lose precision in IEEE-754 doubles",
+      );
     }
     return;
   }
@@ -171,7 +187,7 @@ function encodeString(s: string): string {
 export async function verifyReceipt(
   receipt: Record<string, unknown>,
   publicKeys: PublicKey[],
-  opts: { now?: Date } = {},
+  opts: { now?: Date; expectedWorkspaceId?: string } = {},
 ): Promise<void> {
   const now = opts.now ?? new Date();
 
@@ -179,6 +195,18 @@ export async function verifyReceipt(
   if (receipt.version !== SPEC_VERSION) {
     throw new VerificationError(
       `unsupported version: ${JSON.stringify(receipt.version)} (want "${SPEC_VERSION}")`,
+    );
+  }
+
+  // Key ids alone do not bind a receipt to a workspace. If the caller passes the
+  // workspace the keys were published for, require the receipt to match it.
+  if (
+    opts.expectedWorkspaceId !== undefined &&
+    receipt.workspace_id !== opts.expectedWorkspaceId
+  ) {
+    throw new VerificationError(
+      `workspace_id mismatch: receipt has ${JSON.stringify(receipt.workspace_id)}, ` +
+        `expected ${JSON.stringify(opts.expectedWorkspaceId)}`,
     );
   }
 
@@ -417,7 +445,15 @@ function checkPolicyEval(value: unknown): void {
   }
 }
 
+const RFC3339_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:\d{2})$/;
+
 function parseRFC3339(s: string): Date {
+  // `new Date(s)` alone accepts timezone-less and date-only strings, parsing
+  // them in *local* time — which makes the key-window check machine-dependent.
+  // Require a full RFC 3339 instant with an explicit offset (Z or ±HH:MM).
+  if (typeof s !== "string" || !RFC3339_RE.test(s)) {
+    throw new VerificationError(`not an RFC 3339 timestamp with timezone: ${JSON.stringify(s)}`);
+  }
   const d = new Date(s);
   if (isNaN(d.getTime())) {
     throw new VerificationError(`invalid RFC 3339 timestamp: ${s}`);

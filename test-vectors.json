@@ -1,5 +1,5 @@
 {
-  "spec_version": "1.0.0-draft.5",
+  "spec_version": "1.0.0-draft.6",
   "public_keys": {
     "workspace_id": "ws_test",
     "keys": [
@@ -429,6 +429,34 @@
       }
     },
     {
+      "name": "authorization_revoke_superseded",
+      "kind": "authorization",
+      "description": "authorization.revoke with revoked_by=superseded and superseded_by forward pointer",
+      "receipt": {
+        "version": "1.0",
+        "receipt_id": "rcp_01HXZREVOKESUPERSEDED0000",
+        "workspace_id": "ws_test",
+        "issued_at": "2026-05-15T09:12:00.000Z",
+        "decision": "authorization_revoked",
+        "reason": "superseded_by_new_authorization",
+        "user_id": "emp_8821",
+        "agent_id": "referral_outreach",
+        "event": "authorization.revoke",
+        "resource": null,
+        "context": {
+          "revoked_by": "superseded",
+          "superseded_by": "auth_conditional"
+        },
+        "authorization_id": "auth_01HXZ2A0K1L2M3N4P5Q6R7S8T9",
+        "policy_version": "2026-04-17.1",
+        "signature": {
+          "alg": "Ed25519",
+          "key_id": "test-key/v1",
+          "value": "7BYSPRUFhrYKIeGg_yDGBpsDJNHjLZz6HiNtjut5U5b5VZjvxheEuNeFhNZdEGBX55F3BfI0AFkPrDKQibGXBA"
+        }
+      }
+    },
+    {
       "name": "escalation_resolve_approved",
       "kind": "event",
       "description": "escalation.resolve receipt with approved decision and resource",
@@ -459,6 +487,62 @@
           "alg": "Ed25519",
           "key_id": "test-key/v1",
           "value": "O-UpBfsOL8X4hSqK_dBpJwyVpGGogttm71QB2Di5J1OofKC8YtQoJ77x6j_C9scRfyoWTgm35uFn4crqmvdOBQ"
+        }
+      }
+    },
+    {
+      "name": "action_control_chars_context",
+      "kind": "action",
+      "description": "context string with control characters (tests \\uXXXX escaping, rule 5)",
+      "receipt": {
+        "version": "1.0",
+        "receipt_id": "rcp_01HXZCONTROLCHARS00000000",
+        "workspace_id": "ws_test",
+        "issued_at": "2026-04-21T16:20:00.000Z",
+        "decision": "allow",
+        "reason": "authorization_granted_scope_active",
+        "user_id": "emp_8821",
+        "agent_id": "referral_outreach",
+        "scope": "notes.append",
+        "resource": "note:42",
+        "context": {
+          "note": "line1\nline2\ttab\r\u0000end"
+        },
+        "authorization_id": "auth_control",
+        "policy_version": "2026-04-17.1",
+        "signature": {
+          "alg": "Ed25519",
+          "key_id": "test-key/v1",
+          "value": "J1M2ea5VILJ4pPP1Yk8RDxz1sg12nj8XdL3RLvpUOiK5hpJRog239Ur8qKsEbFATTq4Sk_PUDGF1NT_bsvmWAQ"
+        }
+      }
+    },
+    {
+      "name": "action_non_bmp_context_key",
+      "kind": "action",
+      "description": "context with a supplementary-plane key (tests UTF-16 key sort, rule 3)",
+      "receipt": {
+        "version": "1.0",
+        "receipt_id": "rcp_01HXZNONBMPKEY0000000000",
+        "workspace_id": "ws_test",
+        "issued_at": "2026-04-21T16:25:00.000Z",
+        "decision": "allow",
+        "reason": "authorization_granted_scope_active",
+        "user_id": "emp_8821",
+        "agent_id": "referral_outreach",
+        "scope": "emoji.tag",
+        "resource": "post:7",
+        "context": {
+          "😀_reaction": 1,
+          "｡_marker": 2,
+          "plain": "x"
+        },
+        "authorization_id": "auth_nonbmp",
+        "policy_version": "2026-04-17.1",
+        "signature": {
+          "alg": "Ed25519",
+          "key_id": "test-key/v1",
+          "value": "9auHErCv0WYM4YMWpaj971roki3HiRDcsOdyDanKAkpTIiy433t8vaCZ8EYC-jebcpV1Cbz8-lnoLux1KW66BQ"
         }
       }
     }
@@ -990,6 +1074,83 @@
           "alg": "Ed25519",
           "key_id": "test-key/v1",
           "value": "qcYjtufqU3EN6quxqr-ACeDtsaXKiVddH99LHJK_SV49MhADj6vdjCAWvU4YGqSh1kufAPbCuV7jrn-wGoIADA"
+        }
+      }
+    },
+    {
+      "name": "integer_out_of_safe_range",
+      "description": "context integer exceeds the I-JSON safe range ±(2^53-1)",
+      "expected_reason": "safe range",
+      "receipt": {
+        "version": "1.0",
+        "receipt_id": "rcp_01HXZBIGINT00000000000000",
+        "workspace_id": "ws_test",
+        "issued_at": "2026-04-21T14:32:17.482Z",
+        "decision": "allow",
+        "reason": "authorization_granted_scope_active",
+        "user_id": "emp_8821",
+        "agent_id": "referral_outreach",
+        "scope": "outreach.send",
+        "resource": "edge:emp_8821:conn_9f2a",
+        "context": {
+          "amount": 9007199254740992
+        },
+        "authorization_id": "auth_bigint",
+        "policy_version": "2026-04-17.1",
+        "signature": {
+          "alg": "Ed25519",
+          "key_id": "test-key/v1",
+          "value": "wItqdaqrRu4iGHXOp63jLvf5o8c61WTfukYokjn9dj7lDaE9Y_b0vq01fu8D7RzNu4ljLkDOJ3Kkvd1BC6Z_Dg"
+        }
+      }
+    },
+    {
+      "name": "issued_at_no_timezone",
+      "description": "issued_at lacks a timezone offset (not a full RFC 3339 instant)",
+      "expected_reason": "RFC 3339 timestamp with timezone",
+      "receipt": {
+        "version": "1.0",
+        "receipt_id": "rcp_01HXZMINIMAL0000000000000",
+        "workspace_id": "ws_test",
+        "issued_at": "2026-04-21T14:32:17.482",
+        "decision": "allow",
+        "reason": "authorization_granted_scope_active",
+        "user_id": "emp_8821",
+        "agent_id": "referral_outreach",
+        "scope": "outreach.send",
+        "resource": "edge:emp_8821:conn_9f2a",
+        "context": {},
+        "authorization_id": "auth_01HXZ2A0K1L2M3N4P5Q6R7S8T9",
+        "policy_version": "2026-04-17.1",
+        "signature": {
+          "alg": "Ed25519",
+          "key_id": "test-key/v1",
+          "value": "yKsEq4jFxep1KipvabW79vxu3FghNYgvpXWEThUNKzIotvvlA6i7hzUx9wSD042Gn4htO8QUZCXunS-OExvIAQ"
+        }
+      }
+    },
+    {
+      "name": "signature_value_padded",
+      "description": "signature.value carries base64 padding / non-base64url characters",
+      "expected_reason": "base64url",
+      "receipt": {
+        "version": "1.0",
+        "receipt_id": "rcp_01HXZMINIMAL0000000000000",
+        "workspace_id": "ws_test",
+        "issued_at": "2026-04-21T14:32:17.482Z",
+        "decision": "allow",
+        "reason": "authorization_granted_scope_active",
+        "user_id": "emp_8821",
+        "agent_id": "referral_outreach",
+        "scope": "outreach.send",
+        "resource": "edge:emp_8821:conn_9f2a",
+        "context": {},
+        "authorization_id": "auth_01HXZ2A0K1L2M3N4P5Q6R7S8T9",
+        "policy_version": "2026-04-17.1",
+        "signature": {
+          "alg": "Ed25519",
+          "key_id": "test-key/v1",
+          "value": "yKsEq4jFxep1KipvabW79vxu3FghNYgvpXWEThUNKzIotvvlA6i7hzUx9wSD042Gn4htO8QUZCXunS-OExvIAQ=="
         }
       }
     },

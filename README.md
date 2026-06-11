@@ -4,7 +4,7 @@ An open format for **cryptographically signed, third-party-verifiable receipts**
 
 A receipt is a signed record of one decision: *at time T, issuer W decided that agent A may (or may not) perform action X on resource R for user U under authorization C.* Anyone holding the receipt and the issuer's Ed25519 public key can verify it offline, without contacting the issuer.
 
-Draft.5 adds conditional policy evidence: action receipts can include `policy_eval`, a small proof of which immutable authorization condition routed a decision to `confirm` or `escalate`.
+Action receipts can include `policy_eval`, a small proof of which immutable authorization condition routed a decision to `confirm` or `escalate`. Draft.6 fixes two cross-language canonicalization defects in the reference verifiers and makes supersession lineage bidirectional (a revoked authorization can now point forward to its successor).
 
 ## Why this exists
 
@@ -49,7 +49,7 @@ const valid = await verifyReceipt(receipt, publicKeys);
 
 ## Status
 
-**1.0.0-draft.5.** Draft receipt format and reference verifier test vectors. Draft.5 keeps authorizations immutable: there is no `authorization.update` and no `authorization_version`; `authorization_id` pins the rule set.
+**1.0.0-draft.6.** Draft receipt format and reference verifier test vectors. Authorizations stay immutable: there is no `authorization.update` and no `authorization_version`; `authorization_id` pins the rule set. Draft.6 corrects two canonicalization defects (UTF-16 key sort, control-character escaping) so the Python and TypeScript verifiers agree byte-for-byte, bounds integers to the I-JSON safe range, and adds a bidirectional supersession lineage (`revoked_by: "superseded"` / `superseded_by`).
 
 ## Licensing
 

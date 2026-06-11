@@ -50,6 +50,7 @@ Verifies a receipt. Resolves on success, throws `VerificationError` on any failu
 - `receipt` — the full receipt object (payload + signature).
 - `publicKeys` — array of `PublicKey` objects. Get these via `loadKeysFromJson`.
 - `opts.now` — optional `Date` override for time checks. Defaults to `new Date()`.
+- `opts.expectedWorkspaceId` — optional. If set, the receipt's `workspace_id` must equal it. Pass the workspace the keys were published for (spec §7, "Workspace binding"); a `key_id` alone does not bind a receipt to a workspace.
 
 ### `canonicalize(payload)`
 

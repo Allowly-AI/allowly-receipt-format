@@ -340,6 +340,66 @@ escalation_resolve_approved = sign({
     "policy_version": "2026-04-17.1",
 })
 
+# Control characters in a context string value: canonicalization rule 5 requires
+# the lowercase backslash-uXXXX form for U+0000..U+001F, not short escapes. A
+# verifier that emits short escapes produces different canonical bytes and fails.
+control_chars_context = sign({
+    "version": "1.0",
+    "receipt_id": "rcp_01HXZCONTROLCHARS00000000",
+    "workspace_id": "ws_test",
+    "issued_at": "2026-04-21T16:20:00.000Z",
+    "decision": "allow",
+    "reason": "authorization_granted_scope_active",
+    "user_id": "emp_8821",
+    "agent_id": "referral_outreach",
+    "scope": "notes.append",
+    "resource": "note:42",
+    "context": {"note": "line1\nline2\ttab\r\x00end"},
+    "authorization_id": "auth_control",
+    "policy_version": "2026-04-17.1",
+})
+
+# Supplementary-plane (non-BMP) key alongside a BMP key: canonicalization rule 3
+# sorts by UTF-16 code unit, under which an emoji key (surrogate D83D...) sorts
+# BEFORE U+FF61 ("｡"). Code-point sorting reverses these two, yielding different
+# canonical bytes. The emoji also exercises a 4-byte UTF-8 sequence in a key.
+non_bmp_key_context = sign({
+    "version": "1.0",
+    "receipt_id": "rcp_01HXZNONBMPKEY0000000000",
+    "workspace_id": "ws_test",
+    "issued_at": "2026-04-21T16:25:00.000Z",
+    "decision": "allow",
+    "reason": "authorization_granted_scope_active",
+    "user_id": "emp_8821",
+    "agent_id": "referral_outreach",
+    "scope": "emoji.tag",
+    "resource": "post:7",
+    "context": {"\U0001f600_reaction": 1, "｡_marker": 2, "plain": "x"},
+    "authorization_id": "auth_nonbmp",
+    "policy_version": "2026-04-17.1",
+})
+
+# Revoke receipt with the bidirectional supersession lineage (§3.3): revoked_by
+# "superseded" plus a superseded_by forward pointer to the successor authorization.
+authorization_revoke_superseded = sign({
+    "version": "1.0",
+    "receipt_id": "rcp_01HXZREVOKESUPERSEDED0000",
+    "workspace_id": "ws_test",
+    "issued_at": "2026-05-15T09:12:00.000Z",
+    "decision": "authorization_revoked",
+    "reason": "superseded_by_new_authorization",
+    "user_id": "emp_8821",
+    "agent_id": "referral_outreach",
+    "event": "authorization.revoke",
+    "resource": None,
+    "context": {
+        "revoked_by": "superseded",
+        "superseded_by": "auth_conditional",
+    },
+    "authorization_id": "auth_01HXZ2A0K1L2M3N4P5Q6R7S8T9",
+    "policy_version": "2026-04-17.1",
+})
+
 # --- should_reject ---
 
 tampered = json.loads(json.dumps(minimal_allow))
@@ -620,6 +680,36 @@ policy_eval_float_value = sign({
 })
 policy_eval_float_value["policy_eval"]["field_value"] = 2.5
 
+# Integer outside the I-JSON safe range ±(2^53-1) in context. Signed clean with a
+# placeholder, then the out-of-range value is injected: the verifier rejects it at
+# canonicalization (rule 6), before signature verification.
+integer_out_of_range = sign({
+    "version": "1.0",
+    "receipt_id": "rcp_01HXZBIGINT00000000000000",
+    "workspace_id": "ws_test",
+    "issued_at": "2026-04-21T14:32:17.482Z",
+    "decision": "allow",
+    "reason": "authorization_granted_scope_active",
+    "user_id": "emp_8821",
+    "agent_id": "referral_outreach",
+    "scope": "outreach.send",
+    "resource": "edge:emp_8821:conn_9f2a",
+    "context": {"amount": 0},
+    "authorization_id": "auth_bigint",
+    "policy_version": "2026-04-17.1",
+})
+integer_out_of_range["context"]["amount"] = 2**53  # one past the safe range
+
+# issued_at without a timezone offset. Not a full RFC 3339 instant; rejected at the
+# timestamp step before signature verification.
+timestamp_no_timezone = json.loads(json.dumps(minimal_allow))
+timestamp_no_timezone["issued_at"] = "2026-04-21T14:32:17.482"
+
+# signature.value carrying base64 padding (and thus a non-base64url character).
+# Rejected on the schema-level signature shape check.
+signature_padded = json.loads(json.dumps(minimal_allow))
+signature_padded["signature"]["value"] = minimal_allow["signature"]["value"] + "=="
+
 # --- Assemble ---
 
 keys_doc = {
@@ -636,7 +726,7 @@ keys_doc = {
 }
 
 vectors = {
-    "spec_version": "1.0.0-draft.5",
+    "spec_version": "1.0.0-draft.6",
     "public_keys": keys_doc,
     "should_verify": [
         {"name": "action_minimal_allow", "kind": "action",
@@ -675,9 +765,18 @@ vectors = {
         {"name": "authorization_revoke", "kind": "authorization",
          "description": "authorization.revoke receipt with event field",
          "receipt": authorization_revoke},
+        {"name": "authorization_revoke_superseded", "kind": "authorization",
+         "description": "authorization.revoke with revoked_by=superseded and superseded_by forward pointer",
+         "receipt": authorization_revoke_superseded},
         {"name": "escalation_resolve_approved", "kind": "event",
          "description": "escalation.resolve receipt with approved decision and resource",
          "receipt": escalation_resolve_approved},
+        {"name": "action_control_chars_context", "kind": "action",
+         "description": "context string with control characters (tests \\uXXXX escaping, rule 5)",
+         "receipt": control_chars_context},
+        {"name": "action_non_bmp_context_key", "kind": "action",
+         "description": "context with a supplementary-plane key (tests UTF-16 key sort, rule 3)",
+         "receipt": non_bmp_key_context},
     ],
     "should_reject": [
         {"name": "tampered_payload",
@@ -756,6 +855,18 @@ vectors = {
          "description": "policy_eval field_value uses a non-integer number",
          "expected_reason": "policy_eval.field_value must be",
          "receipt": policy_eval_float_value},
+        {"name": "integer_out_of_safe_range",
+         "description": "context integer exceeds the I-JSON safe range ±(2^53-1)",
+         "expected_reason": "safe range",
+         "receipt": integer_out_of_range},
+        {"name": "issued_at_no_timezone",
+         "description": "issued_at lacks a timezone offset (not a full RFC 3339 instant)",
+         "expected_reason": "RFC 3339 timestamp with timezone",
+         "receipt": timestamp_no_timezone},
+        {"name": "signature_value_padded",
+         "description": "signature.value carries base64 padding / non-base64url characters",
+         "expected_reason": "base64url",
+         "receipt": signature_padded},
         {"name": "pairing_scope_with_lifecycle_decision",
          "description": "action receipt with decision=authorization_granted",
          "expected_reason": "requires an event receipt",
