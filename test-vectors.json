@@ -30,11 +30,11 @@
         "resource": "edge:emp_8821:conn_9f2a",
         "context": {},
         "authorization_id": "auth_01HXZ2A0K1L2M3N4P5Q6R7S8T9",
-        "policy_version": "2026-04-17.1",
+        "engine_version": "2026-04-17.1",
         "signature": {
           "alg": "Ed25519",
           "key_id": "test-key/v1",
-          "value": "2a_qFyGsaG5HUIRmOrAivR263egjDfUo8kjIWs-2ADPIfugdlZKL80rRwkrQRPctZfV7q7-hWhmQ2_2upMorDA"
+          "value": "CK5XKYXf0Ka2OYQ6BpcjTUrBsXsbdgazZmohCTt4bovdnsq1e2JrOZOjiBfIr8VJNLzFCsn7wDRAwEAkdGZyBg"
         }
       }
     },
@@ -55,11 +55,11 @@
         "resource": "gdrive:file:xyz",
         "context": {},
         "authorization_id": null,
-        "policy_version": "2026-04-17.1",
+        "engine_version": "2026-04-17.1",
         "signature": {
           "alg": "Ed25519",
           "key_id": "test-key/v1",
-          "value": "nZUT0lArfsGn68nSvalFnGC_R5kNVPWMvcp2bJxoUsL-G7gljDwBfjjQm1DpCKZYetbE38CJruVyG_TNnqYPBA"
+          "value": "i8PkiR8Upc4yUattlJ-WNAara6qTkOIDOpIz-3u6QR2lu-CbQ5Vq1hIZ1NU1wSYy1BIN236cIyVbLjna2qX2CA"
         }
       }
     },
@@ -82,11 +82,11 @@
           "note": "Zürich → København"
         },
         "authorization_id": "auth_unicode",
-        "policy_version": "2026-04-17.1",
+        "engine_version": "2026-04-17.1",
         "signature": {
           "alg": "Ed25519",
           "key_id": "test-key/v1",
-          "value": "xKPKYzju9kPO1UKBY32I8oqiFiyb_wtLk49PM-vuD9Kaek8nCYLPlSjTy5J5UuU17v5oz5LGxNvoHDW8OGT8Aw"
+          "value": "phjxv-fityhWE1ARwD2DWvVHSNOQZ_OoB2TaK2qr54vScDqFDprq_8Y2L7Q37s-EtLl9AzrUBBA6u0kiK-iNAA"
         }
       }
     },
@@ -123,11 +123,11 @@
           "null_val": null
         },
         "authorization_id": "auth_rich",
-        "policy_version": "2026-04-17.1",
+        "engine_version": "2026-04-17.1",
         "signature": {
           "alg": "Ed25519",
           "key_id": "test-key/v1",
-          "value": "IqsEhqHRwkwb1kDUmP8v0815QgeRzPPKCKKi4ETSH_VJHa0ml6VSNqgwwqCXyPjZOoPonCEIVALFCusGgHSMBw"
+          "value": "Iva-Y7aCReqiwd9LFCSsmvDyhELhng76W_TwNP62xuOiT2KHxbiFcheL6bW2T2c0h_yrN_52cPVI117xMbYzDw"
         }
       }
     },
@@ -156,11 +156,11 @@
           }
         },
         "authorization_id": "auth_escalate",
-        "policy_version": "2026-04-17.1",
+        "engine_version": "2026-04-17.1",
         "signature": {
           "alg": "Ed25519",
           "key_id": "test-key/v1",
-          "value": "YmO61Pu8sSmz6EBxLjxk7tiWGKFSH0cQHpNWHYtzNBbb7VhCE8SoBNIXn_uOMZ7iVFFhUXn_qtNpatmXsq1XCA"
+          "value": "e3zDBi2W3GAywKlNY_ZUaBfOTuZLj0UNxUkGlb_3j_v1Er9W4FxpNTB0n4RJ0tYpFbWfcCZRcmTSbFZ1L9bmDw"
         }
       }
     },
@@ -187,7 +187,7 @@
           "opt_out": false
         },
         "authorization_id": "auth_conditional",
-        "policy_version": "2026-06-01.2",
+        "engine_version": "2026-06-01.2",
         "policy_eval": {
           "matched_condition": {
             "field": "score_delta",
@@ -199,7 +199,7 @@
         "signature": {
           "alg": "Ed25519",
           "key_id": "test-key/v1",
-          "value": "v5eQq4GscjRctbEQI6XAzfI8ncCcgoikHzRVggeyiGf56gvDJGICOYpAR6-p3KESIjJuX-m-D8ByktztWcT5Cw"
+          "value": "h_25UBYGWxAl3lwq4OFr9N9lySbcaLhn_2BjDON0EFy_grTyInxUe8VnotQHNw5sE03RdrDdzXMnLWVdz6_pCQ"
         }
       }
     },
@@ -223,7 +223,7 @@
           "rule_fired": "employment_gap"
         },
         "authorization_id": "auth_conditional",
-        "policy_version": "2026-06-01.2",
+        "engine_version": "2026-06-01.2",
         "policy_eval": {
           "matched_condition": {
             "field": "rule_fired",
@@ -238,7 +238,7 @@
         "signature": {
           "alg": "Ed25519",
           "key_id": "test-key/v1",
-          "value": "69jNbhIfihZENt8_STlESQowCH5IolRp0pvW6g0XKj_1KmsXbeXuV2ZRFKc52Pg5l3ZzxAv1YJkNzcVcPzCbCQ"
+          "value": "8pto-32w7ilTbBlm_-W_FGt1cjEPr0a4gat-t9J5IbGCrvtXE1LisUHP5cLAfIkgUSJS-TrH9Zrex7Ta0b2qCA"
         }
       }
     },
@@ -265,7 +265,7 @@
           "opt_out": false
         },
         "authorization_id": "auth_conditional",
-        "policy_version": "2026-06-01.2",
+        "engine_version": "2026-06-01.2",
         "policy_eval": {
           "matched_condition": null,
           "field_value": null
@@ -273,7 +273,7 @@
         "signature": {
           "alg": "Ed25519",
           "key_id": "test-key/v1",
-          "value": "XBnyZJwweObKbfU0-C2xPNRaKZnQVDluWX8lM82gxCtxqgcNinZzkw8grsu1tL2V4f0PCzBZa-8EKwXBJ-UiDQ"
+          "value": "aHZuQwGffdLfodiHvPaDrwgf-non2jh4CpRUC0RUFZgo7nL_Ag7QJIkVZHJfg1aZ0n8c0MoZWveoj_mVvz2hAg"
         }
       }
     },
@@ -297,7 +297,7 @@
           "threshold": 70
         },
         "authorization_id": "auth_conditional",
-        "policy_version": "2026-06-01.2",
+        "engine_version": "2026-06-01.2",
         "policy_eval": {
           "matched_condition": {
             "field": "score_delta",
@@ -309,7 +309,7 @@
         "signature": {
           "alg": "Ed25519",
           "key_id": "test-key/v1",
-          "value": "cIF6eV5FfS002LhUNLSjFGLvGul_vf35loyREehXieXoMZwRszNDIuvDEr9ZIHBd0_FfZeDLmKnubkTS1nGhDg"
+          "value": "w_Y7g7OUf9WxCtVz79fGBFooXgEBNkxTygbOaurkHsAdIL2Hao297XXPPBXc_jHrptX0H2IDOzVjUHA4-_hFCA"
         }
       }
     },
@@ -341,11 +341,11 @@
           "csv_hash": "sha256:abc123"
         },
         "authorization_id": "auth_01HXZ2A0K1L2M3N4P5Q6R7S8T9",
-        "policy_version": "2026-04-17.1",
+        "engine_version": "2026-04-17.1",
         "signature": {
           "alg": "Ed25519",
           "key_id": "test-key/v1",
-          "value": "QOPTo0CINOccXqtGiAMZOrYZUnzyk8FqrzWN9qSNepUkvhJz9k8cQ7kthwl7yxKeXNIvzXeL9eXVZnJgYJnGAw"
+          "value": "mWhsk932hV4M2OFbQH0pGOsmLUDPfdvi1Glu-tkRII7H8rd0cckgsZzAHR5pke6VLW79xmmkxlP8DYI9aCymBg"
         }
       }
     },
@@ -393,11 +393,11 @@
           "source": "customer_policy_upload"
         },
         "authorization_id": "auth_conditional",
-        "policy_version": "2026-06-01.2",
+        "engine_version": "2026-06-01.2",
         "signature": {
           "alg": "Ed25519",
           "key_id": "test-key/v1",
-          "value": "vFVXTn8wtTgpgMELWkTBByRDVaFMwbKkHB5OS1glKAfkGvuQvKEqJxNuOF9Qfvr7466WFg6-XBDvh1_jw4xFAA"
+          "value": "lsD5CvtidNq_IRtYAWtGwjhtRqdZ4eQOJlhvxmq1YCAgMNF8FgXFW6SHeZm5VlajIITpsjCvYy1xvzi9ct9RAA"
         }
       }
     },
@@ -420,11 +420,11 @@
           "revoked_by": "user"
         },
         "authorization_id": "auth_01HXZ2A0K1L2M3N4P5Q6R7S8T9",
-        "policy_version": "2026-04-17.1",
+        "engine_version": "2026-04-17.1",
         "signature": {
           "alg": "Ed25519",
           "key_id": "test-key/v1",
-          "value": "jLflmVpunMqU57XTv_hdx-M9Lpt4QBvnw-6XCX9Tcbx3PzDxxn8ST0SqJFIYkcRdwMEOEwGavliy20VxgKOIBw"
+          "value": "SYkn3VJSChS3yInK3ErWl3EluehoYUuvSUwXxdzRez1qNwGOzcgo7byeOPkFaQRLG5zVokbfoMO03RwuDR_ZBQ"
         }
       }
     },
@@ -448,11 +448,11 @@
           "superseded_by": "auth_conditional"
         },
         "authorization_id": "auth_01HXZ2A0K1L2M3N4P5Q6R7S8T9",
-        "policy_version": "2026-04-17.1",
+        "engine_version": "2026-04-17.1",
         "signature": {
           "alg": "Ed25519",
           "key_id": "test-key/v1",
-          "value": "7BYSPRUFhrYKIeGg_yDGBpsDJNHjLZz6HiNtjut5U5b5VZjvxheEuNeFhNZdEGBX55F3BfI0AFkPrDKQibGXBA"
+          "value": "jyE0Cr2DL_ExcvSpc42i8NNcFw9PeR5YaNnnjZTZYaDjSS1HBvzwu3lV79YiS3S0yHxZv_4fyHV1uVfdVydQAg"
         }
       }
     },
@@ -482,11 +482,11 @@
           }
         },
         "authorization_id": "auth_escalate",
-        "policy_version": "2026-04-17.1",
+        "engine_version": "2026-04-17.1",
         "signature": {
           "alg": "Ed25519",
           "key_id": "test-key/v1",
-          "value": "1QhSAcBkrjltF-mLHirf5iaLX4GZ5_At0hutldwAvzGMfMzmKTTrBDZX5a8Ng5viOYTZKmzbwyOBzzF-Vb0xCQ"
+          "value": "-47YvO76KGZh1RFrekc4gBZRyXf5qrgwLaGPtEbmkwt_Tb5QohvuQdl5GahPm4DiNHszSQAzQ8bRBklhwnB-CA"
         }
       }
     },
@@ -509,11 +509,11 @@
           "note": "line1\nline2\ttab\r\u0000end"
         },
         "authorization_id": "auth_control",
-        "policy_version": "2026-04-17.1",
+        "engine_version": "2026-04-17.1",
         "signature": {
           "alg": "Ed25519",
           "key_id": "test-key/v1",
-          "value": "H-f7Jm5rbeEVX0o8gRDwDrreveyq4XyOcM37h1Uuom7tMkTXVnoqYYUeTtByZ1-IAcR9yRwqfHiqD7qD1xO_Aw"
+          "value": "rXPHSivGuiJBO9b83DaTbjN_fBaFKaeTC7qFv_aa-kN-RI_zWMRwNSVWbky4iTKD4_A6xybwfPB6rCER290PBQ"
         }
       }
     },
@@ -538,11 +538,11 @@
           "plain": "x"
         },
         "authorization_id": "auth_nonbmp",
-        "policy_version": "2026-04-17.1",
+        "engine_version": "2026-04-17.1",
         "signature": {
           "alg": "Ed25519",
           "key_id": "test-key/v1",
-          "value": "MUajNlzBU9OuT9pbqwvHKOvz_p9MzEOkz_NAOqEVoonxNfdfaMfL_RArGubc0CbSm63CtOPzbKGWoOjeVZYmCA"
+          "value": "pT01s1fwxjBLcFoVhAtOQFEjZoiFKIvN2Nwj_jObJj5bp7lRG51S-EYg4k5HlrrBPgrZ-HcJ8LVnTj06rtdZCw"
         }
       }
     }
@@ -565,11 +565,11 @@
         "resource": "edge:emp_8821:conn_9f2a",
         "context": {},
         "authorization_id": "auth_01HXZ2A0K1L2M3N4P5Q6R7S8T9",
-        "policy_version": "2026-04-17.1",
+        "engine_version": "2026-04-17.1",
         "signature": {
           "alg": "Ed25519",
           "key_id": "test-key/v1",
-          "value": "2a_qFyGsaG5HUIRmOrAivR263egjDfUo8kjIWs-2ADPIfugdlZKL80rRwkrQRPctZfV7q7-hWhmQ2_2upMorDA"
+          "value": "CK5XKYXf0Ka2OYQ6BpcjTUrBsXsbdgazZmohCTt4bovdnsq1e2JrOZOjiBfIr8VJNLzFCsn7wDRAwEAkdGZyBg"
         }
       }
     },
@@ -590,7 +590,7 @@
         "resource": "edge:emp_8821:conn_9f2a",
         "context": {},
         "authorization_id": "auth_01HXZ2A0K1L2M3N4P5Q6R7S8T9",
-        "policy_version": "2026-04-17.1",
+        "engine_version": "2026-04-17.1",
         "signature": {
           "alg": "Ed25519",
           "key_id": "test-key/v1",
@@ -615,11 +615,11 @@
         "resource": "edge:emp_8821:conn_9f2a",
         "context": {},
         "authorization_id": "auth_01HXZ2A0K1L2M3N4P5Q6R7S8T9",
-        "policy_version": "2026-04-17.1",
+        "engine_version": "2026-04-17.1",
         "signature": {
           "alg": "Ed25519",
           "key_id": "unknown-key/v99",
-          "value": "2a_qFyGsaG5HUIRmOrAivR263egjDfUo8kjIWs-2ADPIfugdlZKL80rRwkrQRPctZfV7q7-hWhmQ2_2upMorDA"
+          "value": "CK5XKYXf0Ka2OYQ6BpcjTUrBsXsbdgazZmohCTt4bovdnsq1e2JrOZOjiBfIr8VJNLzFCsn7wDRAwEAkdGZyBg"
         }
       }
     },
@@ -640,11 +640,11 @@
         "resource": "edge:emp_8821:conn_9f2a",
         "context": {},
         "authorization_id": "auth_01HXZ2A0K1L2M3N4P5Q6R7S8T9",
-        "policy_version": "2026-04-17.1",
+        "engine_version": "2026-04-17.1",
         "signature": {
           "alg": "Ed25519",
           "key_id": "test-key/v1",
-          "value": "2a_qFyGsaG5HUIRmOrAivR263egjDfUo8kjIWs-2ADPIfugdlZKL80rRwkrQRPctZfV7q7-hWhmQ2_2upMorDA"
+          "value": "CK5XKYXf0Ka2OYQ6BpcjTUrBsXsbdgazZmohCTt4bovdnsq1e2JrOZOjiBfIr8VJNLzFCsn7wDRAwEAkdGZyBg"
         }
       }
     },
@@ -665,11 +665,11 @@
         "resource": "edge:emp_8821:conn_9f2a",
         "context": {},
         "authorization_id": "auth_01HXZ2A0K1L2M3N4P5Q6R7S8T9",
-        "policy_version": "2026-04-17.1",
+        "engine_version": "2026-04-17.1",
         "signature": {
           "alg": "Ed25519",
           "key_id": "test-key/v1",
-          "value": "2a_qFyGsaG5HUIRmOrAivR263egjDfUo8kjIWs-2ADPIfugdlZKL80rRwkrQRPctZfV7q7-hWhmQ2_2upMorDA"
+          "value": "CK5XKYXf0Ka2OYQ6BpcjTUrBsXsbdgazZmohCTt4bovdnsq1e2JrOZOjiBfIr8VJNLzFCsn7wDRAwEAkdGZyBg"
         },
         "extra_field": "should_be_rejected"
       }
@@ -690,11 +690,11 @@
         "action": "outreach.send",
         "resource": "edge:emp_8821:conn_9f2a",
         "context": {},
-        "policy_version": "2026-04-17.1",
+        "engine_version": "2026-04-17.1",
         "signature": {
           "alg": "Ed25519",
           "key_id": "test-key/v1",
-          "value": "2a_qFyGsaG5HUIRmOrAivR263egjDfUo8kjIWs-2ADPIfugdlZKL80rRwkrQRPctZfV7q7-hWhmQ2_2upMorDA"
+          "value": "CK5XKYXf0Ka2OYQ6BpcjTUrBsXsbdgazZmohCTt4bovdnsq1e2JrOZOjiBfIr8VJNLzFCsn7wDRAwEAkdGZyBg"
         }
       }
     },
@@ -715,11 +715,11 @@
         "resource": "edge:emp_8821:conn_9f2a",
         "context": {},
         "authorization_id": "auth_bad",
-        "policy_version": "2026-04-17.1",
+        "engine_version": "2026-04-17.1",
         "signature": {
           "alg": "Ed25519",
           "key_id": "test-key/v1",
-          "value": "2LjxsZ7slMLc_NCwElM18hjFoMwBzVYeM6BtZts3wzaTC5L7YNBIhFwSEH8ccDO4fdDkOA2W2cBuJXfHnP08Ag"
+          "value": "tLMZntUXDB6p48UIYfMKlQxwj7SJU9bZNhiu6B1twW4JYa6nl3B1rTDrUjyWjs8R6igutBdbmabBalhXcrr_Bg"
         }
       }
     },
@@ -741,11 +741,11 @@
         "resource": "edge:emp_8821:conn_9f2a",
         "context": {},
         "authorization_id": "auth_bad",
-        "policy_version": "2026-04-17.1",
+        "engine_version": "2026-04-17.1",
         "signature": {
           "alg": "Ed25519",
           "key_id": "test-key/v1",
-          "value": "k-KpcJAbUCzBca03_7kHAzFbfDMcjSs66OgJrovtsekh0nCFNVbF7uOOS9xPCqygh6cPE_EOgcDw58GvyKBhCg"
+          "value": "T5Nq5Oqzkme5iAQ-OLzKiNWVRUO3o4iyS9VQcUynOMjfFAXXtUVH5ksOS295QkZtPAH50bofd3Kx5FrUS8m2DQ"
         }
       }
     },
@@ -765,11 +765,11 @@
         "resource": "edge:emp_8821:conn_9f2a",
         "context": {},
         "authorization_id": "auth_bad",
-        "policy_version": "2026-04-17.1",
+        "engine_version": "2026-04-17.1",
         "signature": {
           "alg": "Ed25519",
           "key_id": "test-key/v1",
-          "value": "L7U5vEBt6vfynf1E-Wf_oI9nQOdnlMaJBoPd37FgQauJrjwcpa5889RWxMyQirIdtVA0byaoO4CiGvNxYMMODg"
+          "value": "32568E22_uVD0bUZz1iit4SL_BNzzhu3z0ESlPuNq75RiVvDEzPIaGioaFwejijlDJB__WoGr4wNkarSeuiHBQ"
         }
       }
     },
@@ -790,11 +790,11 @@
         "resource": null,
         "context": {},
         "authorization_id": "auth_bad",
-        "policy_version": "2026-06-01.2",
+        "engine_version": "2026-06-01.2",
         "signature": {
           "alg": "Ed25519",
           "key_id": "test-key/v1",
-          "value": "Ck6pKh67I6uw3JDq1sshM96gvDqV1Kef51dkp2t8qQinMhnArX5Hq4VGwOqMH5yld7QEMFpBqadAnX8uicIPDA"
+          "value": "rZg_B-096XLcYojbW7qWFgwIPs6a90yECsv6UHf8FxZU1pq0ixxfbkN6oPVIH89_Euj7k_E0FYNpVD7UKczeBg"
         }
       }
     },
@@ -815,11 +815,11 @@
         "resource": null,
         "context": {},
         "authorization_id": "auth_bad",
-        "policy_version": "2026-04-17.1",
+        "engine_version": "2026-04-17.1",
         "signature": {
           "alg": "Ed25519",
           "key_id": "test-key/v1",
-          "value": "BN9JnA-1ZXyKDqxrsY8gBF8-PF6cscdaxl4Uv54rLAn3SbxI8yGcsNVv8eaYwSg7mCdZf_qgcW8GlPu6ROUABQ"
+          "value": "OudhYBm3zrAvKU1ahbQhizPrDVCfaTupS4yGnqNT8mzp5dBf0llyB69Nlog2_u91lC7eGrds6_h-2CjuzR1zBA"
         }
       }
     },
@@ -840,11 +840,11 @@
         "resource": null,
         "context": {},
         "authorization_id": null,
-        "policy_version": "2026-04-17.1",
+        "engine_version": "2026-04-17.1",
         "signature": {
           "alg": "Ed25519",
           "key_id": "test-key/v1",
-          "value": "yYr-4kEP6Y3P-MR0FpmPxFmzjQT1kFZ3I_uLaqK0gZZlORLaq7xwE9EmiW9u_5Bv-PNcLoya2g1zK8FHnyTHBw"
+          "value": "b2QEiHyggU-NhXUJ0vVXGDX_JtTYcwFfTGDFl_BjNwXynLnIJ-K7exHsb77QfR8YOFw684Yxpp4A4fHvTw2aAg"
         }
       }
     },
@@ -865,11 +865,11 @@
         "resource": "should_be_null",
         "context": {},
         "authorization_id": "auth_bad",
-        "policy_version": "2026-04-17.1",
+        "engine_version": "2026-04-17.1",
         "signature": {
           "alg": "Ed25519",
           "key_id": "test-key/v1",
-          "value": "9CCaIAKYAZGMjFxCvfj0fNoq14j02Ey6ENlsDoxh69Duzq4anIRMC-U9F94rS-HKnYXMaq-h2pK4CLAymtXHAg"
+          "value": "_3xRKOaLer5vYdApQq18Dg1pRidFrOzJ5PgTQexVBIuwAGB6z_JFZY9KxIb3OYmGaaBeNoBVR0ASYAN-NnzFCA"
         }
       }
     },
@@ -890,7 +890,7 @@
         "resource": null,
         "context": {},
         "authorization_id": "auth_bad",
-        "policy_version": "2026-06-01.2",
+        "engine_version": "2026-06-01.2",
         "policy_eval": {
           "matched_condition": null,
           "field_value": null
@@ -898,7 +898,7 @@
         "signature": {
           "alg": "Ed25519",
           "key_id": "test-key/v1",
-          "value": "p8wYWMDrsGvTS904prRpZX-JEisH3bIYGThniYn8rB2fGPo1UXdRexw3sRsixARzXRu-DPTvexYvuuj2eXFeAw"
+          "value": "0Y6im_TDdcAKkFJXUyftOmlNARuNl7K6xOKOdyoC8M8HYh8KDjUxPXODGluNA1gnsb8gTRLxLaNfpz2aX50MCg"
         }
       }
     },
@@ -921,7 +921,7 @@
           "score_delta": 2
         },
         "authorization_id": "auth_bad",
-        "policy_version": "2026-06-01.2",
+        "engine_version": "2026-06-01.2",
         "policy_eval": {
           "matched_condition": {
             "field": "score_delta",
@@ -934,7 +934,7 @@
         "signature": {
           "alg": "Ed25519",
           "key_id": "test-key/v1",
-          "value": "4YP5FxCn8dRSXu_PBRQDUa3VdlXw8ZjhPT52vWtHfTOVziRnuf0eNQS70S8RUc_uZc7FQR82r2wHswPzlATUAw"
+          "value": "67FiG7O31-72yNYawbB-aGWQauRIvf0oniNe7ge6xC19jIjyQXSfNWnWvEMVVv1j0R5XCxR2jlsKEpdKnAg8Dg"
         }
       }
     },
@@ -957,7 +957,7 @@
           "score_delta": 2
         },
         "authorization_id": "auth_bad",
-        "policy_version": "2026-06-01.2",
+        "engine_version": "2026-06-01.2",
         "policy_eval": {
           "matched_condition": {
             "field": "score_delta",
@@ -968,7 +968,7 @@
         "signature": {
           "alg": "Ed25519",
           "key_id": "test-key/v1",
-          "value": "GvH9Sb17mP0ROU9YIfbN0HxhsyBEQpHFmt3s3Omhv9QngKVZqcTqXVahotn01N-MUBDy05LAZPjft_eGOFbGAw"
+          "value": "fLOqrVb4GzWgZ1svaeQbQBqsBOEuZuTsQaQB1uv91BZOlOnYpZo1LEO76tNyBskXgf4cB1DVIxkINUZEIUr9Dw"
         }
       }
     },
@@ -991,7 +991,7 @@
           "score_delta": 2
         },
         "authorization_id": "auth_bad",
-        "policy_version": "2026-06-01.2",
+        "engine_version": "2026-06-01.2",
         "policy_eval": {
           "matched_condition": {
             "field": "score_delta",
@@ -1002,7 +1002,7 @@
         "signature": {
           "alg": "Ed25519",
           "key_id": "test-key/v1",
-          "value": "Ogk0stTtKKX60_BsP1haDV8YO0Qq0U22i9MSzhqgKLjgUVxrvBXZVgTvkDDSukvAqQAdtmChXbgMkqJMBxarCw"
+          "value": "cj-jy9pvzwPYONh4piWgZjcoShSjl8iJOETH2-aE4t-AFB2QbDg25WLVjHK66qyiD1TTtqvP5Pega8YxWB7cBQ"
         }
       }
     },
@@ -1025,7 +1025,7 @@
           "score_delta": 2
         },
         "authorization_id": "auth_bad",
-        "policy_version": "2026-06-01.2",
+        "engine_version": "2026-06-01.2",
         "policy_eval": {
           "matched_condition": {
             "field": "score_delta",
@@ -1038,7 +1038,7 @@
         "signature": {
           "alg": "Ed25519",
           "key_id": "test-key/v1",
-          "value": "8T4XRczfSMKTrT2TvB1_guTMtoMmQP0MY8dgG1wzbvI_Zg9-60WpOm_7lnLujVaE_ufBW0rRmighDzCuOsRbAQ"
+          "value": "PtQIxzKanDlM2QDGkpCb4ccLHYhomvJbQXa1U4m2_-VRwjyXDOxneu-mpVqdkISv_YyA7J1--HdNWdIaBSIVCw"
         }
       }
     },
@@ -1061,7 +1061,7 @@
           "score_delta": 2
         },
         "authorization_id": "auth_bad",
-        "policy_version": "2026-06-01.2",
+        "engine_version": "2026-06-01.2",
         "policy_eval": {
           "matched_condition": {
             "field": "score_delta",
@@ -1073,7 +1073,7 @@
         "signature": {
           "alg": "Ed25519",
           "key_id": "test-key/v1",
-          "value": "mc7V89DhbX5Wb4ZgGtCFnTOVWDsqgQf0r8-5GG909oeaVhW8Oh1uUd1yiigYfSNfXe2M-6ycku-xuO3lH9u9CQ"
+          "value": "St9wFI8jENHGwwkFLGSL9H9OkPyW9FhHHSK6q4n_g_U5DYeMMfPedxdKtaYBpSUZDTdwADV6Jn9oPnurv4gmAw"
         }
       }
     },
@@ -1096,11 +1096,11 @@
           "amount": 9007199254740992
         },
         "authorization_id": "auth_bigint",
-        "policy_version": "2026-04-17.1",
+        "engine_version": "2026-04-17.1",
         "signature": {
           "alg": "Ed25519",
           "key_id": "test-key/v1",
-          "value": "kXVyOQpN_oSbO4wZSPiS232YzJmZostAsvl8WbhmBNIWHP1JSWzV0iTNy2ir1QG3sbmUZn7q4s4hdww2NrvgBA"
+          "value": "3qUiySDVAvrIMX8VXmQZVBSqckSxXPNRr6W8x6PptC399TjtS4_jvf0aShFMB3gRFNJjqWyQpKU5c4unCAE1DQ"
         }
       }
     },
@@ -1121,11 +1121,11 @@
         "resource": "edge:emp_8821:conn_9f2a",
         "context": {},
         "authorization_id": "auth_01HXZ2A0K1L2M3N4P5Q6R7S8T9",
-        "policy_version": "2026-04-17.1",
+        "engine_version": "2026-04-17.1",
         "signature": {
           "alg": "Ed25519",
           "key_id": "test-key/v1",
-          "value": "2a_qFyGsaG5HUIRmOrAivR263egjDfUo8kjIWs-2ADPIfugdlZKL80rRwkrQRPctZfV7q7-hWhmQ2_2upMorDA"
+          "value": "CK5XKYXf0Ka2OYQ6BpcjTUrBsXsbdgazZmohCTt4bovdnsq1e2JrOZOjiBfIr8VJNLzFCsn7wDRAwEAkdGZyBg"
         }
       }
     },
@@ -1146,11 +1146,11 @@
         "resource": "edge:emp_8821:conn_9f2a",
         "context": {},
         "authorization_id": "auth_01HXZ2A0K1L2M3N4P5Q6R7S8T9",
-        "policy_version": "2026-04-17.1",
+        "engine_version": "2026-04-17.1",
         "signature": {
           "alg": "Ed25519",
           "key_id": "test-key/v1",
-          "value": "2a_qFyGsaG5HUIRmOrAivR263egjDfUo8kjIWs-2ADPIfugdlZKL80rRwkrQRPctZfV7q7-hWhmQ2_2upMorDA=="
+          "value": "CK5XKYXf0Ka2OYQ6BpcjTUrBsXsbdgazZmohCTt4bovdnsq1e2JrOZOjiBfIr8VJNLzFCsn7wDRAwEAkdGZyBg=="
         }
       }
     },
@@ -1171,11 +1171,11 @@
         "resource": "edge:emp_8821:conn_9f2a",
         "context": {},
         "authorization_id": "auth_bad",
-        "policy_version": "2026-04-17.1",
+        "engine_version": "2026-04-17.1",
         "signature": {
           "alg": "Ed25519",
           "key_id": "test-key/v1",
-          "value": "ZLOPRBfXDvbiaE4c-EzqcPJLd7PuqObnK7cAfXxtiX7rcO9y-euL4KJdl8bmxerqTy5TqULKeiuour1DjxlnBw"
+          "value": "hvzHgXy9QYeARY58iujudwRw2HFiSW2x3nW-AJqHz49io3unS2VAuqlkP5267hktAAN9sWFyUmf9imfsggDqCQ"
         }
       }
     }

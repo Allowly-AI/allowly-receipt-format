@@ -56,7 +56,7 @@ minimal_allow = sign({
     "resource": "edge:emp_8821:conn_9f2a",
     "context": {},
     "authorization_id": "auth_01HXZ2A0K1L2M3N4P5Q6R7S8T9",
-    "policy_version": "2026-04-17.1",
+    "engine_version": "2026-04-17.1",
 })
 
 deny_null_authorization = sign({
@@ -72,7 +72,7 @@ deny_null_authorization = sign({
     "resource": "gdrive:file:xyz",
     "context": {},
     "authorization_id": None,
-    "policy_version": "2026-04-17.1",
+    "engine_version": "2026-04-17.1",
 })
 
 unicode_resource = sign({
@@ -88,7 +88,7 @@ unicode_resource = sign({
     "resource": "imap:folder:受信箱",
     "context": {"note": "Zürich → København"},
     "authorization_id": "auth_unicode",
-    "policy_version": "2026-04-17.1",
+    "engine_version": "2026-04-17.1",
 })
 
 rich_context = sign({
@@ -112,7 +112,7 @@ rich_context = sign({
         "null_val": None,
     },
     "authorization_id": "auth_rich",
-    "policy_version": "2026-04-17.1",
+    "engine_version": "2026-04-17.1",
 })
 
 escalate_action = sign({
@@ -136,7 +136,7 @@ escalate_action = sign({
         }
     },
     "authorization_id": "auth_escalate",
-    "policy_version": "2026-04-17.1",
+    "engine_version": "2026-04-17.1",
 })
 
 confirm_condition_matched = sign({
@@ -158,7 +158,7 @@ confirm_condition_matched = sign({
         "opt_out": False,
     },
     "authorization_id": "auth_conditional",
-    "policy_version": "2026-06-01.2",
+    "engine_version": "2026-06-01.2",
     "policy_eval": {
         "matched_condition": {"field": "score_delta", "op": "lt", "value": 5},
         "field_value": 2,
@@ -181,7 +181,7 @@ confirm_condition_in_matched = sign({
         "rule_fired": "employment_gap",
     },
     "authorization_id": "auth_conditional",
-    "policy_version": "2026-06-01.2",
+    "engine_version": "2026-06-01.2",
     "policy_eval": {
         "matched_condition": {
             "field": "rule_fired",
@@ -211,7 +211,7 @@ allow_conditions_evaluated = sign({
         "opt_out": False,
     },
     "authorization_id": "auth_conditional",
-    "policy_version": "2026-06-01.2",
+    "engine_version": "2026-06-01.2",
     "policy_eval": {
         "matched_condition": None,
         "field_value": None,
@@ -234,7 +234,7 @@ confirm_context_field_missing = sign({
         "threshold": 70,
     },
     "authorization_id": "auth_conditional",
-    "policy_version": "2026-06-01.2",
+    "engine_version": "2026-06-01.2",
     "policy_eval": {
         "matched_condition": {"field": "score_delta", "op": "lt", "value": 5},
         "field_value": None,
@@ -262,7 +262,7 @@ authorization_create = sign({
         "csv_hash": "sha256:abc123",
     },
     "authorization_id": "auth_01HXZ2A0K1L2M3N4P5Q6R7S8T9",
-    "policy_version": "2026-04-17.1",
+    "engine_version": "2026-04-17.1",
 })
 
 authorization_create_replaces = sign({
@@ -296,7 +296,7 @@ authorization_create_replaces = sign({
         "source": "customer_policy_upload",
     },
     "authorization_id": "auth_conditional",
-    "policy_version": "2026-06-01.2",
+    "engine_version": "2026-06-01.2",
 })
 
 authorization_revoke = sign({
@@ -312,7 +312,7 @@ authorization_revoke = sign({
     "resource": None,
     "context": {"revoked_by": "user"},
     "authorization_id": "auth_01HXZ2A0K1L2M3N4P5Q6R7S8T9",
-    "policy_version": "2026-04-17.1",
+    "engine_version": "2026-04-17.1",
 })
 
 escalation_resolve_approved = sign({
@@ -337,7 +337,7 @@ escalation_resolve_approved = sign({
         }
     },
     "authorization_id": "auth_escalate",
-    "policy_version": "2026-04-17.1",
+    "engine_version": "2026-04-17.1",
 })
 
 # Control characters in a context string value: canonicalization rule 5 requires
@@ -356,7 +356,7 @@ control_chars_context = sign({
     "resource": "note:42",
     "context": {"note": "line1\nline2\ttab\r\x00end"},
     "authorization_id": "auth_control",
-    "policy_version": "2026-04-17.1",
+    "engine_version": "2026-04-17.1",
 })
 
 # Supplementary-plane (non-BMP) key alongside a BMP key: canonicalization rule 3
@@ -376,7 +376,7 @@ non_bmp_key_context = sign({
     "resource": "post:7",
     "context": {"\U0001f600_reaction": 1, "｡_marker": 2, "plain": "x"},
     "authorization_id": "auth_nonbmp",
-    "policy_version": "2026-04-17.1",
+    "engine_version": "2026-04-17.1",
 })
 
 # Revoke receipt with the bidirectional supersession lineage (§3.3): revoked_by
@@ -397,7 +397,7 @@ authorization_revoke_superseded = sign({
         "superseded_by": "auth_conditional",
     },
     "authorization_id": "auth_01HXZ2A0K1L2M3N4P5Q6R7S8T9",
-    "policy_version": "2026-04-17.1",
+    "engine_version": "2026-04-17.1",
 })
 
 # --- should_reject ---
@@ -433,7 +433,7 @@ bad_decision = sign({
     "resource": "edge:emp_8821:conn_9f2a",
     "context": {},
     "authorization_id": "auth_bad",
-    "policy_version": "2026-04-17.1",
+    "engine_version": "2026-04-17.1",
 })
 
 # Both action and event present
@@ -451,7 +451,7 @@ both_fields = sign({
     "resource": "edge:emp_8821:conn_9f2a",
     "context": {},
     "authorization_id": "auth_bad",
-    "policy_version": "2026-04-17.1",
+    "engine_version": "2026-04-17.1",
 })
 
 # Neither action nor event present
@@ -467,7 +467,7 @@ neither_field = sign({
     "resource": "edge:emp_8821:conn_9f2a",
     "context": {},
     "authorization_id": "auth_bad",
-    "policy_version": "2026-04-17.1",
+    "engine_version": "2026-04-17.1",
 })
 
 # event=authorization.create, decision=allow (wrong pairing)
@@ -484,7 +484,7 @@ event_wrong_decision = sign({
     "resource": None,
     "context": {},
     "authorization_id": "auth_bad",
-    "policy_version": "2026-04-17.1",
+    "engine_version": "2026-04-17.1",
 })
 
 # event=authorization.revoke, authorization_id=null (wrong)
@@ -501,7 +501,7 @@ event_null_authorization = sign({
     "resource": None,
     "context": {},
     "authorization_id": None,
-    "policy_version": "2026-04-17.1",
+    "engine_version": "2026-04-17.1",
 })
 
 # event=authorization.create, resource non-null (wrong)
@@ -518,7 +518,7 @@ event_with_resource = sign({
     "resource": "should_be_null",
     "context": {},
     "authorization_id": "auth_bad",
-    "policy_version": "2026-04-17.1",
+    "engine_version": "2026-04-17.1",
 })
 
 # Action receipt with authorization-lifecycle decision
@@ -535,7 +535,7 @@ action_with_lifecycle_decision = sign({
     "resource": "edge:emp_8821:conn_9f2a",
     "context": {},
     "authorization_id": "auth_bad",
-    "policy_version": "2026-04-17.1",
+    "engine_version": "2026-04-17.1",
 })
 
 authorization_update_event = sign({
@@ -551,7 +551,7 @@ authorization_update_event = sign({
     "resource": None,
     "context": {},
     "authorization_id": "auth_bad",
-    "policy_version": "2026-06-01.2",
+    "engine_version": "2026-06-01.2",
 })
 
 policy_eval_on_event = sign({
@@ -567,7 +567,7 @@ policy_eval_on_event = sign({
     "resource": None,
     "context": {},
     "authorization_id": "auth_bad",
-    "policy_version": "2026-06-01.2",
+    "engine_version": "2026-06-01.2",
     "policy_eval": {
         "matched_condition": None,
         "field_value": None,
@@ -587,7 +587,7 @@ policy_eval_extra_member = sign({
     "resource": "application:req_2207:cand_55ab2",
     "context": {"score_delta": 2},
     "authorization_id": "auth_bad",
-    "policy_version": "2026-06-01.2",
+    "engine_version": "2026-06-01.2",
     "policy_eval": {
         "matched_condition": {"field": "score_delta", "op": "lt", "value": 5},
         "field_value": 2,
@@ -608,7 +608,7 @@ policy_eval_missing_field_value = sign({
     "resource": "application:req_2207:cand_55ab2",
     "context": {"score_delta": 2},
     "authorization_id": "auth_bad",
-    "policy_version": "2026-06-01.2",
+    "engine_version": "2026-06-01.2",
     "policy_eval": {
         "matched_condition": {"field": "score_delta", "op": "lt", "value": 5},
     },
@@ -627,7 +627,7 @@ policy_eval_condition_missing_op = sign({
     "resource": "application:req_2207:cand_55ab2",
     "context": {"score_delta": 2},
     "authorization_id": "auth_bad",
-    "policy_version": "2026-06-01.2",
+    "engine_version": "2026-06-01.2",
     "policy_eval": {
         "matched_condition": {"field": "score_delta", "value": 5},
         "field_value": 2,
@@ -647,7 +647,7 @@ policy_eval_condition_extra_member = sign({
     "resource": "application:req_2207:cand_55ab2",
     "context": {"score_delta": 2},
     "authorization_id": "auth_bad",
-    "policy_version": "2026-06-01.2",
+    "engine_version": "2026-06-01.2",
     "policy_eval": {
         "matched_condition": {
             "field": "score_delta",
@@ -672,7 +672,7 @@ policy_eval_float_value = sign({
     "resource": "application:req_2207:cand_55ab2",
     "context": {"score_delta": 2},
     "authorization_id": "auth_bad",
-    "policy_version": "2026-06-01.2",
+    "engine_version": "2026-06-01.2",
     "policy_eval": {
         "matched_condition": {"field": "score_delta", "op": "lt", "value": 5},
         "field_value": 2,
@@ -696,7 +696,7 @@ integer_out_of_range = sign({
     "resource": "edge:emp_8821:conn_9f2a",
     "context": {"amount": 0},
     "authorization_id": "auth_bigint",
-    "policy_version": "2026-04-17.1",
+    "engine_version": "2026-04-17.1",
 })
 integer_out_of_range["context"]["amount"] = 2**53  # one past the safe range
 

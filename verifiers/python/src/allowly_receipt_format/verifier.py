@@ -44,7 +44,7 @@ EVENT_ONLY_DECISIONS = {decision for decisions in EVENT_DECISIONS.values() for d
 REQUIRED_FIELDS = {
     "version", "receipt_id", "workspace_id", "issued_at", "decision", "reason",
     "user_id", "agent_id", "resource", "context",
-    "authorization_id", "policy_version", "signature",
+    "authorization_id", "engine_version", "signature",
 }
 OPTIONAL_FIELDS = {"policy_eval"}
 # Exactly one of these must be present:
@@ -359,7 +359,7 @@ def _check_schema(receipt: dict[str, Any]) -> None:
     # String fields (always present)
     for field in ("version", "receipt_id", "workspace_id", "issued_at",
                   "decision", "reason", "user_id", "agent_id",
-                  "policy_version"):
+                  "engine_version"):
         if not isinstance(receipt[field], str):
             raise SchemaError(f"{field} must be a string")
 

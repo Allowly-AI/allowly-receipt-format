@@ -60,7 +60,7 @@ A receipt is a JSON object with the following top-level fields. All fields are r
     "session_id": "sess_7f2"
   },
   "authorization_id": "auth_01HXZ2A0K1L2M3N4P5Q6R7S8T9",
-  "policy_version": "2026-04-17.1",
+  "engine_version": "2026-04-17.1",
   "signature": {
     "alg": "Ed25519",
     "key_id": "projects/allowly-prod/locations/global/keyRings/allowly-signing/cryptoKeys/ws_01HXA1/cryptoKeyVersions/3",
@@ -86,7 +86,7 @@ A receipt is a JSON object with the following top-level fields. All fields are r
 | `resource` | string \| null | yes | An identifier for the target of the action, or `null`. Always `null` for authorization create/revoke receipts. For `escalation.resolve`, this MAY carry the resource the escalation was bound to. Issuers MUST NOT include the resource's contents, only an identifier. |
 | `context` | object | yes | An opaque object of additional facts the issuer considered. Contents are issuer-defined. Verifiers MUST canonicalize the object by the same §4 rules as the rest of the payload and MUST NOT alter its values, drop or add keys, or reorder arrays; nested object keys are re-sorted per rule 3 like any other object. MAY be empty (`{}`). |
 | `authorization_id` | string \| null | yes | The authorization record this receipt relates to. For action receipts: the authorization that authorized the decision, or `null` if no authorization matched. For event receipts: the related `authorization_id` (never `null`). |
-| `policy_version` | string | yes | Version of the issuer's decision logic at time of issue. Format is issuer-defined. |
+| `engine_version` | string | yes | Version of the issuer's decision logic at time of issue. Format is issuer-defined. |
 | `policy_eval` | object \| absent | optional | Action receipts only; **MUST be absent on event receipts.** Records the outcome of per-action condition evaluation: which condition (if any) routed the decision, and the evaluated context value. The rules in force are pinned by `authorization_id` (§3.3). See §3.6. |
 | `signature` | object | yes | See §5. |
 
@@ -183,7 +183,7 @@ The two-field discriminator design (rather than a single overloaded field) makes
     "csv_hash": "sha256:abc123..."
   },
   "authorization_id": "auth_01HXZ2A0K1L2M3N4P5Q6R7S8T9",
-  "policy_version": "2026-04-17.1",
+  "engine_version": "2026-04-17.1",
   "signature": {
     "alg": "Ed25519",
     "key_id": "projects/allowly-prod/locations/global/keyRings/allowly-signing/cryptoKeys/ws_01HXA1/cryptoKeyVersions/3",
@@ -231,7 +231,7 @@ Issuers that route action decisions through per-action conditions (for example: 
     "opt_out": false
   },
   "authorization_id": "auth_01HXZ2A0K1L2M3N4P5Q6R7S8T9",
-  "policy_version": "2026-06-01.2",
+  "engine_version": "2026-06-01.2",
   "policy_eval": {
     "matched_condition": { "field": "score_delta", "op": "lt", "value": 5 },
     "field_value": 2
@@ -258,7 +258,7 @@ When `policy_eval` is present, both members MUST be present:
 - `policy_eval` **MUST NOT** appear on event receipts. Verifiers MUST reject event receipts that carry it.
 - Per §4.2 rule 6, non-integer numbers MUST NOT appear anywhere inside `policy_eval`, including inside `matched_condition.value` arrays. Fractional thresholds or values MUST be expressed as scaled integers (e.g. basis points, micros) or strings.
 - Issuers **SHOULD** emit `policy_eval` on every action receipt for actions that carry conditions — including `allow` decisions, where `matched_condition: null` attests *evaluated, nothing fired*. An absence of flags is itself evidence.
-- Canonicalization note: the lexicographic key sort places `policy_eval` immediately before `policy_version` in the canonical form.
+- Canonicalization note: the lexicographic key sort places `engine_version` before `policy_eval` in the canonical form.
 
 #### 3.6.3 Fail-closed convention (non-normative)
 
@@ -294,13 +294,13 @@ The canonical form is the payload serialized as JSON with the following normativ
 The payload for the example in §3 canonicalizes to (linebreaks for display only; the actual canonical form is one line):
 
 ```
-{"agent_id":"referral_outreach","authorization_id":"auth_01HXZ2A0K1L2M3N4P5Q6R7S8T9",
+{"action":"outreach.send","agent_id":"referral_outreach","authorization_id":"auth_01HXZ2A0K1L2M3N4P5Q6R7S8T9",
 "context":{"initiated_by":"user","origin":"chat","session_id":"sess_7f2"},
-"decision":"allow","issued_at":"2026-04-21T14:32:17.482Z","policy_version":
-"2026-04-17.1","reason":"authorization_granted_action_active","receipt_id":
-"rcp_01HXZ2B3QW4N5M6P7R8S9T0V1W","resource":"edge:emp_8821:conn_9f2a","action":
-"outreach.send","user_id":"emp_8821","version":"1.0","workspace_id":
-"ws_01HXA1B2C3D4E5F6G7H8J9K0L1"}
+"decision":"allow","engine_version":"2026-04-17.1","issued_at":
+"2026-04-21T14:32:17.482Z","reason":"authorization_granted_action_active",
+"receipt_id":"rcp_01HXZ2B3QW4N5M6P7R8S9T0V1W","resource":
+"edge:emp_8821:conn_9f2a","user_id":"emp_8821","version":"1.0",
+"workspace_id":"ws_01HXA1B2C3D4E5F6G7H8J9K0L1"}
 ```
 
 Note: `action` and `event` are mutually exclusive — the canonical form contains exactly one of them, never both. The lexicographic key sort places `action` before `event`, which matters for canonicalization correctness when generating event receipts vs action receipts.
@@ -430,7 +430,7 @@ A verifier given a receipt `R` and the issuer's public keys **MUST** perform all
 
 **Workspace binding.** A `key_id` identifies a key, not a workspace, so a receipt verifies against any key document that happens to contain its `key_id`. The verifier MUST therefore obtain the correct key document — the one published for `R.workspace_id` (§6) — and SHOULD confirm `R.workspace_id` matches the workspace those keys were fetched for. The reference verifiers expose this as an optional `expected_workspace_id` / `expectedWorkspaceId` argument and the Python CLI enforces it automatically from the key document's `workspace_id`; callers that load keys by some other means are responsible for the binding themselves.
 
-A valid action receipt attests that: *at `issued_at`, the issuer identified by `workspace_id` made `decision` about `action` by `agent_id` on behalf of `user_id`, under `authorization_id`, with policy version `policy_version`.*
+A valid action receipt attests that: *at `issued_at`, the issuer identified by `workspace_id` made `decision` about `action` by `agent_id` on behalf of `user_id`, under `authorization_id`, with engine version `engine_version`.*
 
 A valid event receipt attests that: *at `issued_at`, the issuer identified by `workspace_id` recorded an authorization-related event (`event`) for `authorization_id`, with `user_id` and `agent_id` as the parties, and context detailing the relevant actions, metadata, or escalation resolution.*
 
@@ -465,7 +465,7 @@ Vectors include:
 - A receipt with non-ASCII characters in multiple fields (tests UTF-8 handling).
 - A receipt with a rich nested context object (tests canonicalization correctness).
 - An `escalate` receipt with escalation context.
-- A `confirm` receipt with a `policy_eval` block whose `matched_condition` fired (tests §3.6 schema and the `policy_eval` < `policy_version` canonical sort).
+- A `confirm` receipt with a `policy_eval` block whose `matched_condition` fired (tests §3.6 schema and the `engine_version` < `policy_eval` canonical sort).
 - A `confirm` receipt with a `policy_eval.matched_condition.value` array for an `in` condition.
 - An `allow` receipt with `policy_eval.matched_condition: null` and `field_value: null` (conditions evaluated, none matched).
 - A `confirm` receipt with `reason: "context_field_missing"`, `matched_condition` set, `field_value: null` (fail-closed convention).
