@@ -1,5 +1,5 @@
 {
-  "spec_version": "1.0.0-draft.6",
+  "spec_version": "1.0.0",
   "public_keys": {
     "workspace_id": "ws_test",
     "keys": [

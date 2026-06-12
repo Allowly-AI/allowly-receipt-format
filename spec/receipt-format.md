@@ -1,7 +1,7 @@
 # Allowly Receipt Format Specification
 
-**Version:** 1.0.0-draft.6
-**Status:** Draft — public review
+**Version:** 1.0.0
+**Status:** Stable
 **License:** This specification is published under CC-BY 4.0. Reference implementations are Apache 2.0.
 
 ---
@@ -553,6 +553,7 @@ The format cannot police the semantics of what customers evaluate; this guidance
 
 ## 11. Changelog
 
+- **1.0.0 (2026-06-12)** — Stable release. Finalizes draft.6 unchanged; the wire `version` stays `"1.0"`. No format, canonicalization, or verifier behavior changes from draft.6 — this entry only drops the draft label.
 - **1.0.0-draft.6 (2026-06-10)** — Canonicalization correctness; supersession lineage.
   - **Fixed two canonicalization defects in the reference verifiers** that broke cross-language signature verification (§4.2, §10.2). (1) Key sort: §4.2 rule 3 mandates UTF-16 code-unit order, but the Python verifier's `json.dumps(sort_keys=True)` sorted by code point — divergent for supplementary-plane keys. (2) Control characters: rule 5 mandates the `\uXXXX` form, but `json.dumps` emitted short escapes (`\n`). The Python verifier now uses a hand-rolled serializer; both defects are covered by new test vectors. Corrected the §4.2 rule 3 and §10.2 prose, which had wrongly claimed `json.dumps` was conforming.
   - **Bounded integers to the I-JSON safe range** ±(2⁵³−1) (§4.2 rule 6). Out-of-range integers lose precision in IEEE-754 consumers and could render with an exponent; both verifiers now reject them.

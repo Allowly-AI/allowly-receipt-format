@@ -1,13 +1,16 @@
 # Changelog
 
-## Unreleased
+## v1.0.0 — 2026-06-12
+
+Stable v1.0.0 release of the Allowly Receipt Format. Finalizes the draft.6
+review unchanged; the wire `version` stays `"1.0"`. Supersedes the earlier
+2026-05-29 packaging cut (the format kept evolving through draft.6 after it).
 
 ### Format
 
 - Add `escalate` as a valid action receipt decision.
 - Add `escalation.resolve` event receipts with `escalation_approved` and `escalation_rejected` decisions.
 - Clarify that authorization create/revoke receipts keep `resource: null`, while escalation resolution receipts may carry the resource binding.
-- Replace the spec text with `1.0.0-draft.6`.
 - Add optional `policy_eval` on action receipts to record which immutable authorization condition routed a decision.
 - Remove update-style authorization receipts; authorization changes are revoke + create.
 - Document `replaces` lineage metadata for superseding authorizations.
@@ -25,10 +28,6 @@
 - Reject integers outside the I-JSON safe range in both verifiers.
 - Require `issued_at` to be a full RFC 3339 instant with an explicit offset (the TS verifier previously parsed timezone-less strings in local time) and `signature.value` to be unpadded base64url with no out-of-alphabet characters.
 - Regenerate shared test vectors with escalation, immutable authorization, `policy_eval`, supersession-lineage, control-character, supplementary-plane-key, out-of-range-integer, bad-timestamp, and bad-signature-encoding coverage.
-
-## v1.0.0 — 2026-05-29
-
-Final v1.0.0 release of the Allowly Receipt Format.
 
 ### Python
 
