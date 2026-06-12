@@ -38,7 +38,7 @@ const REQUIRED_FIELDS = new Set([
   "authorization_id", "policy_version", "signature",
 ]);
 const OPTIONAL_FIELDS = new Set(["policy_eval"]);
-const DISCRIMINATOR_FIELDS = new Set(["scope", "event"]);
+const DISCRIMINATOR_FIELDS = new Set(["action", "event"]);
 const ALL_TOP_LEVEL_FIELDS = new Set([
   ...REQUIRED_FIELDS,
   ...DISCRIMINATOR_FIELDS,
@@ -70,7 +70,7 @@ export interface Receipt {
   reason: string;
   user_id: string;
   agent_id: string;
-  scope?: string;
+  action?: string;
   event?: string;
   resource: string | null;
   context: Record<string, unknown>;
@@ -215,17 +215,17 @@ export async function verifyReceipt(
   const r = receipt as unknown as Receipt;
 
   // Step 3: receipt kind and pairing
-  const hasScope = "scope" in receipt;
+  const hasAction = "action" in receipt;
   const hasEvent = "event" in receipt;
 
-  if (hasScope && hasEvent) {
+  if (hasAction && hasEvent) {
     throw new VerificationError(
-      "receipt has both 'scope' and 'event'; exactly one must be present",
+      "receipt has both 'action' and 'event'; exactly one must be present",
     );
   }
-  if (!hasScope && !hasEvent) {
+  if (!hasAction && !hasEvent) {
     throw new VerificationError(
-      "receipt has neither 'scope' nor 'event'; exactly one must be present",
+      "receipt has neither 'action' nor 'event'; exactly one must be present",
     );
   }
 
@@ -260,14 +260,14 @@ export async function verifyReceipt(
       throw new VerificationError("policy_eval must be absent on event receipts");
     }
   } else {
-    const scope = (receipt as Record<string, unknown>).scope;
-    if (typeof scope !== "string") {
-      throw new VerificationError("scope must be a string");
+    const action = (receipt as Record<string, unknown>).action;
+    if (typeof action !== "string") {
+      throw new VerificationError("action must be a string");
     }
     if (EVENT_ONLY_DECISIONS.has(r.decision)) {
       throw new VerificationError(
         `decision=${JSON.stringify(r.decision)} requires an event receipt (event field), ` +
-          `got an action receipt with scope=${JSON.stringify(scope)}`,
+          `got an action receipt with action=${JSON.stringify(action)}`,
       );
     }
     if (!ACTION_DECISIONS.has(r.decision)) {

@@ -13,7 +13,7 @@ A *receipt* is a signed, immutable record of a single authorization event — ei
 Two kinds of receipts share the same format:
 
 - **Action receipts** record a single authorization decision: *at time T, the issuer decided that action A by agent G on behalf of user U was allowed, denied, required confirmation, or required escalation, under authorization C.* These are produced by the issuer's `/check` endpoint.
-- **Event receipts** record events tied to the authorization itself: *at time T, user U authorized agent G with scopes S,* *at time T, that authorization was revoked,* or *at time T, a third-party escalation was approved or rejected.* These are produced when an authorization is created/revoked or when an escalation is resolved.
+- **Event receipts** record events tied to the authorization itself: *at time T, user U authorized agent G with actions A,* *at time T, that authorization was revoked,* or *at time T, a third-party escalation was approved or rejected.* These are produced when an authorization is created/revoked or when an escalation is resolved.
 
 Both kinds of receipts use the same JSON structure, the same canonicalization, the same signature scheme, and the same verifier. They differ only in the values of a few fields (§3.3). An auditor presented with a dispute typically needs both: event receipts prove *what was authorized and who approved later escalation*, while action receipts prove *what happened under that authorization*.
 
@@ -40,7 +40,7 @@ The key words **MUST**, **MUST NOT**, **SHOULD**, **SHOULD NOT**, and **MAY** in
 
 ## 3. Receipt structure
 
-A receipt is a JSON object with the following top-level fields. All fields are required except where marked conditional (`scope`/`event`, by receipt kind) or optional (`policy_eval`, §3.6). Unknown fields **MUST NOT** be present in v1 receipts; verifiers **MUST** reject receipts containing unknown top-level fields.
+A receipt is a JSON object with the following top-level fields. All fields are required except where marked conditional (`action`/`event`, by receipt kind) or optional (`policy_eval`, §3.6). Unknown fields **MUST NOT** be present in v1 receipts; verifiers **MUST** reject receipts containing unknown top-level fields.
 
 ```json
 {
@@ -49,10 +49,10 @@ A receipt is a JSON object with the following top-level fields. All fields are r
   "workspace_id": "ws_01HXA1B2C3D4E5F6G7H8J9K0L1",
   "issued_at": "2026-04-21T14:32:17.482Z",
   "decision": "allow",
-  "reason": "authorization_granted_scope_active",
+  "reason": "authorization_granted_action_active",
   "user_id": "emp_8821",
   "agent_id": "referral_outreach",
-  "scope": "outreach.send",
+  "action": "outreach.send",
   "resource": "edge:emp_8821:conn_9f2a",
   "context": {
     "initiated_by": "user",
@@ -81,13 +81,13 @@ A receipt is a JSON object with the following top-level fields. All fields are r
 | `reason` | string | yes | Machine-readable reason code. Human-readable strings MUST NOT appear here. |
 | `user_id` | string | yes | Opaque identifier of the end-user. Customer-defined; issuers and verifiers MUST NOT assume any particular structure. SHOULD NOT contain personally identifiable information (§10.6). |
 | `agent_id` | string | yes | Opaque identifier of the agent or acting principal. Customer-defined. For human-initiated actions, this identifies the actor's role (e.g. `controller`, `dba`). |
-| `scope` | string \| absent | conditional | Present on action receipts. The scope name being checked (e.g. `email.send`, `contact.enrich`). Format is issuer-defined but conventionally dotted. **MUST be absent on event receipts.** |
+| `action` | string \| absent | conditional | Present on action receipts. The action name being checked (e.g. `email.send`, `contact.enrich`). Format is issuer-defined but conventionally dotted. **MUST be absent on event receipts.** |
 | `event` | string \| absent | conditional | Present on event receipts. One of `"authorization.create"`, `"authorization.revoke"`, or `"escalation.resolve"`. **MUST be absent on action receipts.** |
 | `resource` | string \| null | yes | An identifier for the target of the action, or `null`. Always `null` for authorization create/revoke receipts. For `escalation.resolve`, this MAY carry the resource the escalation was bound to. Issuers MUST NOT include the resource's contents, only an identifier. |
 | `context` | object | yes | An opaque object of additional facts the issuer considered. Contents are issuer-defined. Verifiers MUST canonicalize the object by the same §4 rules as the rest of the payload and MUST NOT alter its values, drop or add keys, or reorder arrays; nested object keys are re-sorted per rule 3 like any other object. MAY be empty (`{}`). |
 | `authorization_id` | string \| null | yes | The authorization record this receipt relates to. For action receipts: the authorization that authorized the decision, or `null` if no authorization matched. For event receipts: the related `authorization_id` (never `null`). |
 | `policy_version` | string | yes | Version of the issuer's decision logic at time of issue. Format is issuer-defined. |
-| `policy_eval` | object \| absent | optional | Action receipts only; **MUST be absent on event receipts.** Records the outcome of per-scope condition evaluation: which condition (if any) routed the decision, and the evaluated context value. The rules in force are pinned by `authorization_id` (§3.3). See §3.6. |
+| `policy_eval` | object \| absent | optional | Action receipts only; **MUST be absent on event receipts.** Records the outcome of per-action condition evaluation: which condition (if any) routed the decision, and the evaluated context value. The rules in force are pinned by `authorization_id` (§3.3). See §3.6. |
 | `signature` | object | yes | See §5. |
 
 ### 3.2 Extensibility
@@ -106,7 +106,7 @@ Receipts come in two kinds, distinguished by which of two mutually exclusive fie
 
 **Action receipts** record a single authorization decision at the moment of an action. They are produced by the issuer's decisioning endpoint (conventionally `POST /v1/check`).
 
-- `scope` — present, set to the scope name being checked. Conventionally dotted (`email.send`, `contact.enrich`, `payment.approve`).
+- `action` — present, set to the action name being checked. Conventionally dotted (`email.send`, `contact.enrich`, `payment.approve`).
 - `event` — **MUST be absent.**
 - `decision` — one of `"allow"`, `"deny"`, `"confirm"`, `"escalate"`.
 - `authorization_id` — the matching authorization, or `null` if no authorization matched.
@@ -115,10 +115,10 @@ Receipts come in two kinds, distinguished by which of two mutually exclusive fie
 **Event receipts** record an authorization-related event. They are produced when an authorization is created/revoked or when a third-party escalation is resolved.
 
 - `event` — present, one of:
-  - `"authorization.create"` — the customer recorded that a user approved a set of scopes for an agent.
+  - `"authorization.create"` — the customer recorded that a user approved a set of actions for an agent.
   - `"authorization.revoke"` — the authorization was revoked (by the user, by the customer, or automatically on expiry).
   - `"escalation.resolve"` — a third-party approver approved or rejected a pending escalation.
-- `scope` — **MUST be absent.**
+- `action` — **MUST be absent.**
 - `decision` — one of:
   - `"authorization_granted"` — paired with `event: "authorization.create"`.
   - `"authorization_revoked"` — paired with `event: "authorization.revoke"`.
@@ -126,9 +126,9 @@ Receipts come in two kinds, distinguished by which of two mutually exclusive fie
   - `"escalation_rejected"` — paired with `event: "escalation.resolve"` when the approver rejected.
 - `authorization_id` — the authorization being created, revoked, or escalated. **MUST NOT** be `null` on an event receipt.
 - `resource` — **MUST** be `null` for authorization create/revoke receipts. For `escalation.resolve`, this MAY carry the resource the escalation was bound to.
-- `context` — conventionally carries lifecycle metadata: the full scope set at creation, `expires_at`, `requires_confirm_for`, `requires_escalation_for`, the creation source (`csv_upload`, `onboarding_modal`), an optional `csv_hash` or similar integrity identifier, an optional `replaces` field (see below); for revocations a `revoked_by` field (`user`, `admin`, `expired`, `tombstone`, or `superseded` when the revocation is part of a rule change) and, when `revoked_by` is `superseded`, an optional `superseded_by: "<authorization_id of the successor>"` forward pointer (see below); and for escalation resolution an `escalation` object containing the escalation id, scope, approver label, resolution status, and approver identity.
+- `context` — conventionally carries lifecycle metadata: the full action set at creation, `expires_at`, `requires_confirm_for`, `requires_escalation_for`, the creation source (`csv_upload`, `onboarding_modal`), an optional `csv_hash` or similar integrity identifier, an optional `replaces` field (see below); for revocations a `revoked_by` field (`user`, `admin`, `expired`, `tombstone`, or `superseded` when the revocation is part of a rule change) and, when `revoked_by` is `superseded`, an optional `superseded_by: "<authorization_id of the successor>"` forward pointer (see below); and for escalation resolution an `escalation` object containing the escalation id, action, approver label, resolution status, and approver identity.
 
-**Authorizations are immutable.** There is no update event. Any change to an authorization — its scopes, per-scope constraints, or verb-routing rules (`requires_confirm_for`, `requires_escalation_for`, conditional routing) — is expressed as revoking the existing authorization and creating a new one, producing one signed `authorization.revoke` receipt and one signed `authorization.create` receipt. Because each `authorization_id` therefore refers to exactly one immutable rule set, the id alone pins the rules in force for every action receipt that references it; no revision counter is needed.
+**Authorizations are immutable.** There is no update event. Any change to an authorization — its actions, per-action constraints, or verb-routing rules (`requires_confirm_for`, `requires_escalation_for`, conditional routing) — is expressed as revoking the existing authorization and creating a new one, producing one signed `authorization.revoke` receipt and one signed `authorization.create` receipt. Because each `authorization_id` therefore refers to exactly one immutable rule set, the id alone pins the rules in force for every action receipt that references it; no revision counter is needed.
 
 **Lineage convention (non-normative).** When a new authorization supersedes an old one, the change surfaces as a revoke of the predecessor plus a create of the successor. To make that supersession auditable rather than guessable, the two receipts SHOULD cross-reference each other:
 
@@ -141,9 +141,9 @@ Emitting the successor id on the revoke receipt requires the successor's `author
 
 Verifiers **MUST** enforce the following:
 
-- Exactly one of `scope` and `event` is present. Receipts with both fields, or with neither, are rejected.
+- Exactly one of `action` and `event` is present. Receipts with both fields, or with neither, are rejected.
 - If `event` is present, it MUST be one of `"authorization.create"`, `"authorization.revoke"`, or `"escalation.resolve"`. The corresponding `decision` MUST be valid for that event. `authorization_id` MUST NOT be `null`. `resource` MUST be `null` for authorization create/revoke receipts. `policy_eval` MUST be absent.
-- If `scope` is present, `decision` MUST be one of `"allow"`, `"deny"`, `"confirm"`, or `"escalate"`. The reserved event-only decisions (`authorization_granted`, `authorization_revoked`, `escalation_approved`, `escalation_rejected`) MUST NOT appear on action receipts. If `policy_eval` is present, it MUST conform to §3.6.
+- If `action` is present, `decision` MUST be one of `"allow"`, `"deny"`, `"confirm"`, or `"escalate"`. The reserved event-only decisions (`authorization_granted`, `authorization_revoked`, `escalation_approved`, `escalation_rejected`) MUST NOT appear on action receipts. If `policy_eval` is present, it MUST conform to §3.6.
 
 The two-field discriminator design (rather than a single overloaded field) makes the receipt kind explicit at the schema level. A field's presence tells you what kind of receipt it is; pairing rules become trivial to enforce.
 
@@ -162,7 +162,7 @@ The two-field discriminator design (rather than a single overloaded field) makes
   "event": "authorization.create",
   "resource": null,
   "context": {
-    "scopes": [
+    "actions": [
       "contact.enrich",
       {
         "name": "hiring.reject_application",
@@ -203,13 +203,13 @@ An auditor can reconstruct the full story of an authorization by querying all re
 
 The chain is self-verifying: every receipt is independently signed, ordered by `issued_at`, and cryptographically tied to the same `authorization_id`. Producing this chain is the primary artifact customers present in disputes.
 
-Rule changes never mutate a chain. Changing scopes, constraints, or verb routing is expressed as revoking the old authorization and creating a new one (§3.3); the creation receipt SHOULD carry `replaces` and the revocation receipt SHOULD carry `revoked_by: "superseded"` with `superseded_by`, so successive chains form a walkable, bidirectionally linked lineage. Note that no-match denies (an action receipt with `authorization_id: null`, §3.1) pin no chain at all; if such a deny is issued during the gap between a revoke and its successor create, it belongs to no authorization and is reconstructable only from `issued_at` ordering. §8 recommends an ordering that minimizes this gap.
+Rule changes never mutate a chain. Changing actions, constraints, or verb routing is expressed as revoking the old authorization and creating a new one (§3.3); the creation receipt SHOULD carry `replaces` and the revocation receipt SHOULD carry `revoked_by: "superseded"` with `superseded_by`, so successive chains form a walkable, bidirectionally linked lineage. Note that no-match denies (an action receipt with `authorization_id: null`, §3.1) pin no chain at all; if such a deny is issued during the gap between a revoke and its successor create, it belongs to no authorization and is reconstructable only from `issued_at` ordering. §8 recommends an ordering that minimizes this gap.
 
 ### 3.6 Conditional policy evaluation (`policy_eval`)
 
-Issuers that route action decisions through per-scope conditions (for example: *require confirmation when a score is within 5 points of the rejection threshold*, or *when the subject has opted out of automated processing*) MAY record the evaluation outcome in an optional top-level `policy_eval` object on action receipts. The block gives an auditor a signed answer to *"why did this decision require confirmation?"* The rules that were evaluated are pinned by the receipt's top-level `authorization_id` — authorizations are immutable (§3.3), so the creation receipt for that id is the signed snapshot of the rules in force. The condition language itself remains issuer-defined and out of scope, consistent with the non-goals in §1.
+Issuers that route action decisions through per-action conditions (for example: *require confirmation when a score is within 5 points of the rejection threshold*, or *when the subject has opted out of automated processing*) MAY record the evaluation outcome in an optional top-level `policy_eval` object on action receipts. The block gives an auditor a signed answer to *"why did this decision require confirmation?"* The rules that were evaluated are pinned by the receipt's top-level `authorization_id` — authorizations are immutable (§3.3), so the creation receipt for that id is the signed snapshot of the rules in force. The condition language itself remains issuer-defined and outside this format, consistent with the non-goals in §1.
 
-**Issuer convention (non-normative).** An issuer MAY model conditional routing as per-scope constraint attributes such as `confirm_when` and `escalate_when`. A deliberately small shape is recommended: each condition names one context `field` and one operator (`eq`, `neq`, `lt`, `lte`, `gt`, `gte`, `in`, or `exists`), condition lists are ORed, and there is no nesting or expression language. For example, an issuer might store `{ "field": "score_delta", "lt": 5 }` on an authorization, then normalize the matched condition in the action receipt as `{ "field": "score_delta", "op": "lt", "value": 5 }`. The receipt format only standardizes the normalized evidence in `policy_eval`; it does not standardize the authorization API's policy authoring syntax.
+**Issuer convention (non-normative).** An issuer MAY model conditional routing as per-action constraint attributes such as `confirm_when` and `escalate_when`. A deliberately small shape is recommended: each condition names one context `field` and one operator (`eq`, `neq`, `lt`, `lte`, `gt`, `gte`, `in`, or `exists`), condition lists are ORed, and there is no nesting or expression language. For example, an issuer might store `{ "field": "score_delta", "lt": 5 }` on an authorization, then normalize the matched condition in the action receipt as `{ "field": "score_delta", "op": "lt", "value": 5 }`. The receipt format only standardizes the normalized evidence in `policy_eval`; it does not standardize the authorization API's policy authoring syntax.
 
 ```json
 {
@@ -221,7 +221,7 @@ Issuers that route action decisions through per-scope conditions (for example: *
   "reason": "confirm_condition_matched",
   "user_id": "cand_55ab2",
   "agent_id": "scout_referrals",
-  "scope": "hiring.reject_application",
+  "action": "hiring.reject_application",
   "resource": "application:req_2207:cand_55ab2",
   "context": {
     "initiated_by": "agent",
@@ -257,7 +257,7 @@ When `policy_eval` is present, both members MUST be present:
 
 - `policy_eval` **MUST NOT** appear on event receipts. Verifiers MUST reject event receipts that carry it.
 - Per §4.2 rule 6, non-integer numbers MUST NOT appear anywhere inside `policy_eval`, including inside `matched_condition.value` arrays. Fractional thresholds or values MUST be expressed as scaled integers (e.g. basis points, micros) or strings.
-- Issuers **SHOULD** emit `policy_eval` on every action receipt for scopes that carry conditions — including `allow` decisions, where `matched_condition: null` attests *evaluated, nothing fired*. An absence of flags is itself evidence.
+- Issuers **SHOULD** emit `policy_eval` on every action receipt for actions that carry conditions — including `allow` decisions, where `matched_condition: null` attests *evaluated, nothing fired*. An absence of flags is itself evidence.
 - Canonicalization note: the lexicographic key sort places `policy_eval` immediately before `policy_version` in the canonical form.
 
 #### 3.6.3 Fail-closed convention (non-normative)
@@ -272,7 +272,7 @@ Like `context` (§7.1), the evaluated values originate from the customer's syste
 
 To produce a byte sequence suitable for signing and verification, a verifier **MUST** canonicalize the receipt payload as follows.
 
-### 4.1 Payload scope
+### 4.1 Payload
 
 The *payload* is the receipt object with the `signature` field removed. All other top-level fields are included.
 
@@ -297,13 +297,13 @@ The payload for the example in §3 canonicalizes to (linebreaks for display only
 {"agent_id":"referral_outreach","authorization_id":"auth_01HXZ2A0K1L2M3N4P5Q6R7S8T9",
 "context":{"initiated_by":"user","origin":"chat","session_id":"sess_7f2"},
 "decision":"allow","issued_at":"2026-04-21T14:32:17.482Z","policy_version":
-"2026-04-17.1","reason":"authorization_granted_scope_active","receipt_id":
-"rcp_01HXZ2B3QW4N5M6P7R8S9T0V1W","resource":"edge:emp_8821:conn_9f2a","scope":
+"2026-04-17.1","reason":"authorization_granted_action_active","receipt_id":
+"rcp_01HXZ2B3QW4N5M6P7R8S9T0V1W","resource":"edge:emp_8821:conn_9f2a","action":
 "outreach.send","user_id":"emp_8821","version":"1.0","workspace_id":
 "ws_01HXA1B2C3D4E5F6G7H8J9K0L1"}
 ```
 
-Note: `scope` and `event` are mutually exclusive — the canonical form contains exactly one of them, never both. The lexicographic key sort places `event` before `scope`, which matters for canonicalization correctness when generating event receipts vs action receipts.
+Note: `action` and `event` are mutually exclusive — the canonical form contains exactly one of them, never both. The lexicographic key sort places `action` before `event`, which matters for canonicalization correctness when generating event receipts vs action receipts.
 
 ## 5. Signature
 
@@ -316,7 +316,7 @@ The receipt carries exactly one signature over the canonical payload: an Ed25519
 - Input: the canonical payload bytes from §4, passed to Ed25519's sign operation as the message.
 - Output: the 64-byte Ed25519 signature, base64url-encoded without padding per RFC 4648 §5.
 
-Verifiers **MUST** use standard RFC 8032 Ed25519 verification over the raw canonical payload bytes. The signer's implementation details — including whether the signer pre-hashes the message before calling its KMS — are outside the scope of this specification. Verifiers do not pre-hash.
+Verifiers **MUST** use standard RFC 8032 Ed25519 verification over the raw canonical payload bytes. The signer's implementation details — including whether the signer pre-hashes the message before calling its KMS — are outside this specification. Verifiers do not pre-hash.
 
 ### 5.2 Signature object
 
@@ -406,7 +406,7 @@ A verifier given a receipt `R` and the issuer's public keys **MUST** perform all
 1. **Version check.** Assert `R.version == "1.0"`.
 2. **Schema check.** Assert all fields in §3.1 are present with the correct types. Assert no unknown top-level fields are present. Assert `R.signature.value` is a non-empty string that decodes from base64url to exactly 64 bytes — this rejects placeholders, empty strings, and pending markers on shape alone. If `R.policy_eval` is present, assert it conforms to §3.6.1: an object with exactly `matched_condition` (an object with exactly the members `field`, `op`, `value` — or null; `value` may be a scalar or an array of scalars) and `field_value` (string, integer, boolean, or null), and no other members.
 3. **Receipt kind and pairing check.** Determine the receipt kind from which discriminator field is present, and enforce the corresponding constraints:
-   - Exactly one of `scope` and `event` MUST be present. Reject if both are present, or if neither is present.
+   - Exactly one of `action` and `event` MUST be present. Reject if both are present, or if neither is present.
    - **If `event` is present** (event receipt):
      - `event` MUST be one of `"authorization.create"`, `"authorization.revoke"`, or `"escalation.resolve"`.
      - If `event == "authorization.create"`: `decision` MUST equal `"authorization_granted"`.
@@ -415,7 +415,7 @@ A verifier given a receipt `R` and the issuer's public keys **MUST** perform all
      - `authorization_id` MUST NOT be `null`.
      - `resource` MUST be `null` for authorization create/revoke receipts.
      - `policy_eval` MUST be absent.
-   - **If `scope` is present** (action receipt):
+   - **If `action` is present** (action receipt):
      - `decision` MUST be one of `"allow"`, `"deny"`, `"confirm"`, or `"escalate"`.
      - The reserved event-only decisions (`authorization_granted`, `authorization_revoked`, `escalation_approved`, `escalation_rejected`) MUST NOT appear.
 4. **Algorithm check.** Assert `R.signature.alg == "Ed25519"`.
@@ -430,9 +430,9 @@ A verifier given a receipt `R` and the issuer's public keys **MUST** perform all
 
 **Workspace binding.** A `key_id` identifies a key, not a workspace, so a receipt verifies against any key document that happens to contain its `key_id`. The verifier MUST therefore obtain the correct key document — the one published for `R.workspace_id` (§6) — and SHOULD confirm `R.workspace_id` matches the workspace those keys were fetched for. The reference verifiers expose this as an optional `expected_workspace_id` / `expectedWorkspaceId` argument and the Python CLI enforces it automatically from the key document's `workspace_id`; callers that load keys by some other means are responsible for the binding themselves.
 
-A valid action receipt attests that: *at `issued_at`, the issuer identified by `workspace_id` made `decision` about `scope` by `agent_id` on behalf of `user_id`, under `authorization_id`, with policy version `policy_version`.*
+A valid action receipt attests that: *at `issued_at`, the issuer identified by `workspace_id` made `decision` about `action` by `agent_id` on behalf of `user_id`, under `authorization_id`, with policy version `policy_version`.*
 
-A valid event receipt attests that: *at `issued_at`, the issuer identified by `workspace_id` recorded an authorization-related event (`event`) for `authorization_id`, with `user_id` and `agent_id` as the parties, and context detailing the relevant scopes, metadata, or escalation resolution.*
+A valid event receipt attests that: *at `issued_at`, the issuer identified by `workspace_id` recorded an authorization-related event (`event`) for `authorization_id`, with `user_id` and `agent_id` as the parties, and context detailing the relevant actions, metadata, or escalation resolution.*
 
 ### 7.1 What verification does NOT prove
 
@@ -449,7 +449,7 @@ These limits are intentional. The receipt attests to what the issuer observed an
 
 Receipts are immutable and never revoked. A revocation of an authorization is itself a new event that produces a new `authorization.revoke` receipt. After revocation, subsequent action checks against the same `authorization_id` return `deny` with `reason: "authorization_revoked"`, each producing its own signed action receipt. The complete history — creation, actions, revocation, and any post-revocation denies — is reconstructable via the authorization chain (§3.5).
 
-Authorizations are likewise immutable (§3.3): there is no update event, and a change to scopes, constraints, or verb-routing rules is expressed as revoke + create, never as mutation of an existing authorization.
+Authorizations are likewise immutable (§3.3): there is no update event, and a change to actions, constraints, or verb-routing rules is expressed as revoke + create, never as mutation of an existing authorization.
 
 **Ordering of a supersession pair (non-normative).** When a revoke + create expresses a rule change, the two receipts are independently signed and the format does not constrain their relative `issued_at`. Issuers SHOULD nonetheless allocate the successor's `authorization_id` first, then issue the create at or before the revoke (`create.issued_at <= revoke.issued_at`), and set the cross-references described in §3.3 on both. This keeps the successor active for the whole window, so an action arriving mid-change matches the new rule set rather than falling into a gap where neither authorization is active and the resulting deny carries `authorization_id: null` (§3.5). The reverse ordering (revoke first) opens exactly that gap; the format permits it but auditors lose the ability to attribute denies issued inside the window to any rule set.
 
@@ -473,7 +473,7 @@ Vectors include:
 - A receipt whose `context` contains a key outside the Basic Multilingual Plane alongside a BMP key (tests the UTF-16 code-unit key sort of rule 3).
 
 *Event receipts that MUST verify:*
-- A `authorization.create` receipt with scopes, expiry, and a `csv_hash` source identifier.
+- A `authorization.create` receipt with actions, expiry, and a `csv_hash` source identifier.
 - A `authorization.create` receipt carrying a `replaces` lineage pointer in context (§3.3).
 - A `authorization.revoke` receipt with `revoked_by: "user"` in context.
 - A `authorization.revoke` receipt with `revoked_by: "superseded"` and a `superseded_by` forward pointer (§3.3 lineage convention).
@@ -487,8 +487,8 @@ Vectors include:
 - A receipt with an unknown top-level field.
 - A receipt with a required field missing.
 - A receipt with `decision: "maybe"` (invalid decision value).
-- A receipt with both `scope` and `event` present.
-- A receipt with neither `scope` nor `event` present.
+- A receipt with both `action` and `event` present.
+- A receipt with neither `action` nor `event` present.
 - A receipt with `event: "authorization.update"` (unknown event — removed in draft.5).
 - A receipt with `event: "authorization.create"` but `decision: "allow"` (pairing violation).
 - A receipt with `event: "authorization.revoke"` but `authorization_id: null` (pairing violation).
@@ -523,7 +523,7 @@ The receipt format does not include a replay-protection mechanism beyond `receip
 
 ### 10.4 Privacy of receipts
 
-Receipts contain `user_id`, `agent_id`, `scope` (or `event`), and `resource`. These may be sensitive. Issuers and customers **SHOULD** treat receipt exports with the same care as other logs containing user identifiers. The receipt format does not encrypt content; if confidentiality is required, transport- or storage-layer encryption **MUST** be applied separately.
+Receipts contain `user_id`, `agent_id`, `action` (or `event`), and `resource`. These may be sensitive. Issuers and customers **SHOULD** treat receipt exports with the same care as other logs containing user identifiers. The receipt format does not encrypt content; if confidentiality is required, transport- or storage-layer encryption **MUST** be applied separately.
 
 ### 10.5 Signing window and issuer SLA
 
@@ -562,7 +562,7 @@ The format cannot police the semantics of what customers evaluate; this guidance
   - Wire `version` stays `"1.0"` per the §3.2 lockstep policy; spec, both verifiers, and vectors regenerated together. The validation changes reject some inputs draft.5 verifiers accepted, but every receipt that verified under draft.5 and contains no supplementary-plane keys or control characters is byte-identical under draft.6.
 
 - **1.0.0-draft.5 (2026-06-09)** — Immutability restored; versioning policy.
-  - **Removed `authorization.update`** and the `authorization_updated` decision. Authorizations are immutable: any change to scopes, constraints, or verb-routing rules is expressed as revoke + create (§3.3, §8). The authorization chain (§3.5) is again create → actions → escalation resolutions → revoke.
+  - **Removed `authorization.update`** and the `authorization_updated` decision. Authorizations are immutable: any change to actions, constraints, or verb-routing rules is expressed as revoke + create (§3.3, §8). The authorization chain (§3.5) is again create → actions → escalation resolutions → revoke.
   - **Removed `authorization_version`** from `policy_eval`, which is now exactly `{matched_condition, field_value}`. With immutable authorizations, the top-level `authorization_id` alone pins the rule set in force; no revision counter exists.
   - Added the non-normative `replaces` lineage convention: a creation receipt's context MAY name the predecessor authorization it supersedes (§3.3, §3.5).
   - Added the versioning policy (§3.2): pre-final drafts ship spec/verifiers/vectors in lockstep under wire version `"1.0"`; after 1.0.0 final, additive optional fields require a minor wire-version bump and verifiers declare accepted version sets.
@@ -583,7 +583,7 @@ The format cannot police the semantics of what customers evaluate; this guidance
   - Clarified that authorization create/revoke events require `resource: null`, while escalation resolution may carry the resource binding.
 
 - **1.0.0-draft.2 (2026-05-09)** — Naming refinement.
-  - Replaced the overloaded `action` field with two mutually exclusive discriminator fields: `scope` (action receipts) and `event` (event receipts).
+  - Introduced the explicit action-receipt discriminator, paired with the existing `event` discriminator for event receipts.
   - Field's presence now carries the receipt kind explicitly. Pairing rules are simpler. Verifier logic shorter.
   - Reserved authorization-lifecycle event names (`authorization.create`, `authorization.revoke`) moved from `action` values to `event` values.
   - All existing pairing checks updated; test vectors regenerated.
@@ -593,7 +593,7 @@ The format cannot police the semantics of what customers evaluate; this guidance
   - Two receipt kinds share the same format: action receipts (decisioning) and event receipts (lifecycle).
   - Single Ed25519 signature over the canonical payload.
   - Asynchronous signing handled at the transport layer; pending receipts are not part of the receipt format.
-  - Internal integrity checks (e.g. HMAC) are permitted but explicitly out of scope.
+  - Internal integrity checks (e.g. HMAC) are permitted but explicitly outside the wire format.
   - Explicit guidance against PII in `user_id` and `agent_id`.
 
 ---

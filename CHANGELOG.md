@@ -61,7 +61,7 @@ Initial public draft of the Allowly Receipt Format.
 
 - Ed25519 (RFC 8032) is the only signature algorithm in v1.
 - Implementation notes for Google Cloud KMS (software vs HSM) and AWS KMS.
-- Internal integrity checks (e.g. HMAC for storage-layer consistency) are permitted but explicitly out of scope for the wire format.
+- Internal integrity checks (e.g. HMAC for storage-layer consistency) are permitted but explicitly outside the wire format.
 
 ### Verification
 
@@ -78,4 +78,4 @@ Initial public draft of the Allowly Receipt Format.
 
 - Test vector coverage for unusual Unicode edge cases (combining characters, surrogate pairs) is still thin.
 - Key rotation overlap (receipts signed across a key rotation boundary) needs a worked example.
-- Chained receipt presentation (creation + action receipts + revocation as a single bundle) may warrant a defined bundle format in a future version.
+- Chained receipt presentation (creation + action receipts + revocation as a single evidence pack) may warrant a defined package format in a future version.

@@ -48,7 +48,7 @@ REQUIRED_FIELDS = {
 }
 OPTIONAL_FIELDS = {"policy_eval"}
 # Exactly one of these must be present:
-DISCRIMINATOR_FIELDS = {"scope", "event"}
+DISCRIMINATOR_FIELDS = {"action", "event"}
 ALL_TOP_LEVEL_FIELDS = REQUIRED_FIELDS | DISCRIMINATOR_FIELDS | OPTIONAL_FIELDS
 MAX_FUTURE_SKEW = timedelta(minutes=5)
 # I-JSON / RFC 8785 safe-integer bound. Integers outside ±(2^53-1) cannot be
@@ -261,19 +261,19 @@ def verify_receipt(
     _check_schema(receipt)
 
     # Step 3: receipt kind and pairing
-    has_scope = "scope" in receipt
+    has_action = "action" in receipt
     has_event = "event" in receipt
     decision = receipt["decision"]
     authorization_id = receipt["authorization_id"]
     resource = receipt["resource"]
 
-    if has_scope and has_event:
+    if has_action and has_event:
         raise SchemaError(
-            "receipt has both 'scope' and 'event'; exactly one must be present"
+            "receipt has both 'action' and 'event'; exactly one must be present"
         )
-    if not has_scope and not has_event:
+    if not has_action and not has_event:
         raise SchemaError(
-            "receipt has neither 'scope' nor 'event'; exactly one must be present"
+            "receipt has neither 'action' nor 'event'; exactly one must be present"
         )
 
     if has_event:
@@ -302,15 +302,15 @@ def verify_receipt(
         if "policy_eval" in receipt:
             raise SchemaError("policy_eval must be absent on event receipts")
     else:
-        # Action receipt (has_scope is True)
-        scope = receipt["scope"]
-        if not isinstance(scope, str):
-            raise SchemaError("scope must be a string")
+        # Action receipt (has_action is True)
+        action = receipt["action"]
+        if not isinstance(action, str):
+            raise SchemaError("action must be a string")
         # Reject reserved event-only decisions on action receipts.
         if decision in EVENT_ONLY_DECISIONS:
             raise SchemaError(
                 f"decision={decision!r} requires an event receipt (event field), "
-                f"got an action receipt with scope={scope!r}"
+                f"got an action receipt with action={action!r}"
             )
         if decision not in ACTION_DECISIONS:
             raise SchemaError(

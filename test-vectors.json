@@ -16,17 +16,17 @@
     {
       "name": "action_minimal_allow",
       "kind": "action",
-      "description": "minimal allow action receipt with scope field",
+      "description": "minimal allow action receipt with action field",
       "receipt": {
         "version": "1.0",
         "receipt_id": "rcp_01HXZMINIMAL0000000000000",
         "workspace_id": "ws_test",
         "issued_at": "2026-04-21T14:32:17.482Z",
         "decision": "allow",
-        "reason": "authorization_granted_scope_active",
+        "reason": "authorization_granted_action_active",
         "user_id": "emp_8821",
         "agent_id": "referral_outreach",
-        "scope": "outreach.send",
+        "action": "outreach.send",
         "resource": "edge:emp_8821:conn_9f2a",
         "context": {},
         "authorization_id": "auth_01HXZ2A0K1L2M3N4P5Q6R7S8T9",
@@ -34,7 +34,7 @@
         "signature": {
           "alg": "Ed25519",
           "key_id": "test-key/v1",
-          "value": "yKsEq4jFxep1KipvabW79vxu3FghNYgvpXWEThUNKzIotvvlA6i7hzUx9wSD042Gn4htO8QUZCXunS-OExvIAQ"
+          "value": "2a_qFyGsaG5HUIRmOrAivR263egjDfUo8kjIWs-2ADPIfugdlZKL80rRwkrQRPctZfV7q7-hWhmQ2_2upMorDA"
         }
       }
     },
@@ -51,7 +51,7 @@
         "reason": "no_matching_authorization",
         "user_id": "emp_8821",
         "agent_id": "referral_outreach",
-        "scope": "files.delete",
+        "action": "files.delete",
         "resource": "gdrive:file:xyz",
         "context": {},
         "authorization_id": null,
@@ -59,7 +59,7 @@
         "signature": {
           "alg": "Ed25519",
           "key_id": "test-key/v1",
-          "value": "pl0uNusKgMLn3IOJJM-PryX0KxcZi6KJ5dhGx0cibS81fW_ssYfaJc8cbRo1KN2ZFb4Y5kgX4KnlBxxEbOChAg"
+          "value": "nZUT0lArfsGn68nSvalFnGC_R5kNVPWMvcp2bJxoUsL-G7gljDwBfjjQm1DpCKZYetbE38CJruVyG_TNnqYPBA"
         }
       }
     },
@@ -73,10 +73,10 @@
         "workspace_id": "ws_test",
         "issued_at": "2026-04-21T15:30:00.000Z",
         "decision": "allow",
-        "reason": "authorization_granted_scope_active",
+        "reason": "authorization_granted_action_active",
         "user_id": "usuário_123",
         "agent_id": "agent_日本語",
-        "scope": "email.send",
+        "action": "email.send",
         "resource": "imap:folder:受信箱",
         "context": {
           "note": "Zürich → København"
@@ -86,7 +86,7 @@
         "signature": {
           "alg": "Ed25519",
           "key_id": "test-key/v1",
-          "value": "Tp9fUBMk19MSbVR-9CagWMG2mnvPFvbN2yQOgtdb3DQSM0JQL3x-PwISwQwhqbMeabr4ygftuykqLG91lwI4Cg"
+          "value": "xKPKYzju9kPO1UKBY32I8oqiFiyb_wtLk49PM-vuD9Kaek8nCYLPlSjTy5J5UuU17v5oz5LGxNvoHDW8OGT8Aw"
         }
       }
     },
@@ -100,10 +100,10 @@
         "workspace_id": "ws_test",
         "issued_at": "2026-04-21T16:00:00.000Z",
         "decision": "confirm",
-        "reason": "scope_requires_user_confirmation",
+        "reason": "action_requires_user_confirmation",
         "user_id": "emp_8821",
         "agent_id": "referral_outreach",
-        "scope": "ats.export",
+        "action": "ats.export",
         "resource": "edge:emp_8821:conn_9f2a",
         "context": {
           "z_last": "should sort last",
@@ -127,7 +127,7 @@
         "signature": {
           "alg": "Ed25519",
           "key_id": "test-key/v1",
-          "value": "vUdrmhPa-V3go2d3jcMJy2FvZ1FyRxjyOns1NRg9yBrAKHiDRq2z13Uwu161_egpm6zJ0DG076enYuVHYg9bAw"
+          "value": "IqsEhqHRwkwb1kDUmP8v0815QgeRzPPKCKKi4ETSH_VJHa0ml6VSNqgwwqCXyPjZOoPonCEIVALFCusGgHSMBw"
         }
       }
     },
@@ -144,14 +144,14 @@
         "reason": "escalation_required",
         "user_id": "emp_8821",
         "agent_id": "referral_outreach",
-        "scope": "candidate.delete",
+        "action": "candidate.delete",
         "resource": "candidate:123",
         "context": {
           "escalation": {
             "id": "esc_01HXZESCALATION000000000",
             "event": "requested",
             "status": "pending",
-            "scope": "candidate.delete",
+            "action": "candidate.delete",
             "escalation_to": "compliance"
           }
         },
@@ -160,7 +160,7 @@
         "signature": {
           "alg": "Ed25519",
           "key_id": "test-key/v1",
-          "value": "nO4RmaN6_soJczVJMVJweXsn04zwMVWzNEPE1hG3dDgbK_KKfUHHxrnLphyla14q3YWUPCRRq1OGmZ-cAvNrDQ"
+          "value": "YmO61Pu8sSmz6EBxLjxk7tiWGKFSH0cQHpNWHYtzNBbb7VhCE8SoBNIXn_uOMZ7iVFFhUXn_qtNpatmXsq1XCA"
         }
       }
     },
@@ -177,7 +177,7 @@
         "reason": "confirm_condition_matched",
         "user_id": "cand_55ab2",
         "agent_id": "scout_referrals",
-        "scope": "hiring.reject_application",
+        "action": "hiring.reject_application",
         "resource": "application:req_2207:cand_55ab2",
         "context": {
           "initiated_by": "agent",
@@ -199,7 +199,7 @@
         "signature": {
           "alg": "Ed25519",
           "key_id": "test-key/v1",
-          "value": "zA9T1NQVqdVtf-9ll4H7EGAzc4y38jcGqlNZCLUxC2xA3BzS2mzGj-xU_yIhe8g_cje1e5sBtBoPyQUG-C6hAQ"
+          "value": "v5eQq4GscjRctbEQI6XAzfI8ncCcgoikHzRVggeyiGf56gvDJGICOYpAR6-p3KESIjJuX-m-D8ByktztWcT5Cw"
         }
       }
     },
@@ -216,7 +216,7 @@
         "reason": "condition_requires_user_confirmation",
         "user_id": "cand_55ab2",
         "agent_id": "scout_referrals",
-        "scope": "hiring.reject_application",
+        "action": "hiring.reject_application",
         "resource": "application:req_2207:cand_55ab2",
         "context": {
           "initiated_by": "agent",
@@ -238,7 +238,7 @@
         "signature": {
           "alg": "Ed25519",
           "key_id": "test-key/v1",
-          "value": "Co6ykWny2NmJ7Y4TOYq0t4Na6rjFojP_N7VhXc0dC0Unh6id6qc-MRnclvp7WANsnZA6dqJ4BhrlNs-grbf5CA"
+          "value": "69jNbhIfihZENt8_STlESQowCH5IolRp0pvW6g0XKj_1KmsXbeXuV2ZRFKc52Pg5l3ZzxAv1YJkNzcVcPzCbCQ"
         }
       }
     },
@@ -252,10 +252,10 @@
         "workspace_id": "ws_test",
         "issued_at": "2026-06-09T17:05:09.114Z",
         "decision": "allow",
-        "reason": "authorization_granted_scope_active",
+        "reason": "authorization_granted_action_active",
         "user_id": "cand_55ab2",
         "agent_id": "scout_referrals",
-        "scope": "hiring.reject_application",
+        "action": "hiring.reject_application",
         "resource": "application:req_2207:cand_55ab2",
         "context": {
           "initiated_by": "agent",
@@ -273,7 +273,7 @@
         "signature": {
           "alg": "Ed25519",
           "key_id": "test-key/v1",
-          "value": "v1H9lbuwSp3yNNQT6bf8NcgR5ghRSmZPcRMHK9GnorIVhnjnuNIzKo-kvxYJ9rVzXvzk8ZtjI8EHVIun-QLDBA"
+          "value": "XBnyZJwweObKbfU0-C2xPNRaKZnQVDluWX8lM82gxCtxqgcNinZzkw8grsu1tL2V4f0PCzBZa-8EKwXBJ-UiDQ"
         }
       }
     },
@@ -290,7 +290,7 @@
         "reason": "context_field_missing",
         "user_id": "cand_55ab2",
         "agent_id": "scout_referrals",
-        "scope": "hiring.reject_application",
+        "action": "hiring.reject_application",
         "resource": "application:req_2207:cand_55ab2",
         "context": {
           "initiated_by": "agent",
@@ -309,7 +309,7 @@
         "signature": {
           "alg": "Ed25519",
           "key_id": "test-key/v1",
-          "value": "PDC9G473HWZyhfgr1nFFXTvV5XueEWEvFO7KT-PjfPPP6Axdftkd-axIHwKXovhBam5z8WOUk6ikziqCifCqDA"
+          "value": "cIF6eV5FfS002LhUNLSjFGLvGul_vf35loyREehXieXoMZwRszNDIuvDEr9ZIHBd0_FfZeDLmKnubkTS1nGhDg"
         }
       }
     },
@@ -329,7 +329,7 @@
         "event": "authorization.create",
         "resource": null,
         "context": {
-          "scopes": [
+          "actions": [
             "contact.enrich",
             "outreach.send"
           ],
@@ -345,7 +345,7 @@
         "signature": {
           "alg": "Ed25519",
           "key_id": "test-key/v1",
-          "value": "Q4WxNSlaRooxJETY0EVwQdK_Sqr9EBnnSugt44Z02kKLTukJiq2r6eLQrlhVZTcInd2xdH26P11kia5voJ75Aw"
+          "value": "QOPTo0CINOccXqtGiAMZOrYZUnzyk8FqrzWN9qSNepUkvhJz9k8cQ7kthwl7yxKeXNIvzXeL9eXVZnJgYJnGAw"
         }
       }
     },
@@ -365,7 +365,7 @@
         "event": "authorization.create",
         "resource": null,
         "context": {
-          "scopes": [
+          "actions": [
             {
               "name": "hiring.reject_application",
               "constraints": {
@@ -397,7 +397,7 @@
         "signature": {
           "alg": "Ed25519",
           "key_id": "test-key/v1",
-          "value": "WAwscOefba5aRcWQj-0RTdBl9Ssm10K6AHqzOdRs9EtW32oiNJtdhNr75V-XvJB4rsVEaZ5sckXE_mT6gxd5Dg"
+          "value": "vFVXTn8wtTgpgMELWkTBByRDVaFMwbKkHB5OS1glKAfkGvuQvKEqJxNuOF9Qfvr7466WFg6-XBDvh1_jw4xFAA"
         }
       }
     },
@@ -476,7 +476,7 @@
             "id": "esc_01HXZESCALATION000000000",
             "event": "resolved",
             "status": "approved",
-            "scope": "candidate.delete",
+            "action": "candidate.delete",
             "escalation_to": "compliance",
             "resolved_by": "compliance:1"
           }
@@ -486,7 +486,7 @@
         "signature": {
           "alg": "Ed25519",
           "key_id": "test-key/v1",
-          "value": "O-UpBfsOL8X4hSqK_dBpJwyVpGGogttm71QB2Di5J1OofKC8YtQoJ77x6j_C9scRfyoWTgm35uFn4crqmvdOBQ"
+          "value": "1QhSAcBkrjltF-mLHirf5iaLX4GZ5_At0hutldwAvzGMfMzmKTTrBDZX5a8Ng5viOYTZKmzbwyOBzzF-Vb0xCQ"
         }
       }
     },
@@ -500,10 +500,10 @@
         "workspace_id": "ws_test",
         "issued_at": "2026-04-21T16:20:00.000Z",
         "decision": "allow",
-        "reason": "authorization_granted_scope_active",
+        "reason": "authorization_granted_action_active",
         "user_id": "emp_8821",
         "agent_id": "referral_outreach",
-        "scope": "notes.append",
+        "action": "notes.append",
         "resource": "note:42",
         "context": {
           "note": "line1\nline2\ttab\r\u0000end"
@@ -513,7 +513,7 @@
         "signature": {
           "alg": "Ed25519",
           "key_id": "test-key/v1",
-          "value": "J1M2ea5VILJ4pPP1Yk8RDxz1sg12nj8XdL3RLvpUOiK5hpJRog239Ur8qKsEbFATTq4Sk_PUDGF1NT_bsvmWAQ"
+          "value": "H-f7Jm5rbeEVX0o8gRDwDrreveyq4XyOcM37h1Uuom7tMkTXVnoqYYUeTtByZ1-IAcR9yRwqfHiqD7qD1xO_Aw"
         }
       }
     },
@@ -527,10 +527,10 @@
         "workspace_id": "ws_test",
         "issued_at": "2026-04-21T16:25:00.000Z",
         "decision": "allow",
-        "reason": "authorization_granted_scope_active",
+        "reason": "authorization_granted_action_active",
         "user_id": "emp_8821",
         "agent_id": "referral_outreach",
-        "scope": "emoji.tag",
+        "action": "emoji.tag",
         "resource": "post:7",
         "context": {
           "😀_reaction": 1,
@@ -542,7 +542,7 @@
         "signature": {
           "alg": "Ed25519",
           "key_id": "test-key/v1",
-          "value": "9auHErCv0WYM4YMWpaj971roki3HiRDcsOdyDanKAkpTIiy433t8vaCZ8EYC-jebcpV1Cbz8-lnoLux1KW66BQ"
+          "value": "MUajNlzBU9OuT9pbqwvHKOvz_p9MzEOkz_NAOqEVoonxNfdfaMfL_RArGubc0CbSm63CtOPzbKGWoOjeVZYmCA"
         }
       }
     }
@@ -558,10 +558,10 @@
         "workspace_id": "ws_test",
         "issued_at": "2026-04-21T14:32:17.482Z",
         "decision": "allow",
-        "reason": "authorization_granted_scope_active",
+        "reason": "authorization_granted_action_active",
         "user_id": "emp_ATTACKER",
         "agent_id": "referral_outreach",
-        "scope": "outreach.send",
+        "action": "outreach.send",
         "resource": "edge:emp_8821:conn_9f2a",
         "context": {},
         "authorization_id": "auth_01HXZ2A0K1L2M3N4P5Q6R7S8T9",
@@ -569,7 +569,7 @@
         "signature": {
           "alg": "Ed25519",
           "key_id": "test-key/v1",
-          "value": "yKsEq4jFxep1KipvabW79vxu3FghNYgvpXWEThUNKzIotvvlA6i7hzUx9wSD042Gn4htO8QUZCXunS-OExvIAQ"
+          "value": "2a_qFyGsaG5HUIRmOrAivR263egjDfUo8kjIWs-2ADPIfugdlZKL80rRwkrQRPctZfV7q7-hWhmQ2_2upMorDA"
         }
       }
     },
@@ -583,10 +583,10 @@
         "workspace_id": "ws_test",
         "issued_at": "2026-04-21T14:32:17.482Z",
         "decision": "allow",
-        "reason": "authorization_granted_scope_active",
+        "reason": "authorization_granted_action_active",
         "user_id": "emp_8821",
         "agent_id": "referral_outreach",
-        "scope": "outreach.send",
+        "action": "outreach.send",
         "resource": "edge:emp_8821:conn_9f2a",
         "context": {},
         "authorization_id": "auth_01HXZ2A0K1L2M3N4P5Q6R7S8T9",
@@ -608,10 +608,10 @@
         "workspace_id": "ws_test",
         "issued_at": "2026-04-21T14:32:17.482Z",
         "decision": "allow",
-        "reason": "authorization_granted_scope_active",
+        "reason": "authorization_granted_action_active",
         "user_id": "emp_8821",
         "agent_id": "referral_outreach",
-        "scope": "outreach.send",
+        "action": "outreach.send",
         "resource": "edge:emp_8821:conn_9f2a",
         "context": {},
         "authorization_id": "auth_01HXZ2A0K1L2M3N4P5Q6R7S8T9",
@@ -619,7 +619,7 @@
         "signature": {
           "alg": "Ed25519",
           "key_id": "unknown-key/v99",
-          "value": "yKsEq4jFxep1KipvabW79vxu3FghNYgvpXWEThUNKzIotvvlA6i7hzUx9wSD042Gn4htO8QUZCXunS-OExvIAQ"
+          "value": "2a_qFyGsaG5HUIRmOrAivR263egjDfUo8kjIWs-2ADPIfugdlZKL80rRwkrQRPctZfV7q7-hWhmQ2_2upMorDA"
         }
       }
     },
@@ -633,10 +633,10 @@
         "workspace_id": "ws_test",
         "issued_at": "2026-04-21T14:32:17.482Z",
         "decision": "allow",
-        "reason": "authorization_granted_scope_active",
+        "reason": "authorization_granted_action_active",
         "user_id": "emp_8821",
         "agent_id": "referral_outreach",
-        "scope": "outreach.send",
+        "action": "outreach.send",
         "resource": "edge:emp_8821:conn_9f2a",
         "context": {},
         "authorization_id": "auth_01HXZ2A0K1L2M3N4P5Q6R7S8T9",
@@ -644,7 +644,7 @@
         "signature": {
           "alg": "Ed25519",
           "key_id": "test-key/v1",
-          "value": "yKsEq4jFxep1KipvabW79vxu3FghNYgvpXWEThUNKzIotvvlA6i7hzUx9wSD042Gn4htO8QUZCXunS-OExvIAQ"
+          "value": "2a_qFyGsaG5HUIRmOrAivR263egjDfUo8kjIWs-2ADPIfugdlZKL80rRwkrQRPctZfV7q7-hWhmQ2_2upMorDA"
         }
       }
     },
@@ -658,10 +658,10 @@
         "workspace_id": "ws_test",
         "issued_at": "2026-04-21T14:32:17.482Z",
         "decision": "allow",
-        "reason": "authorization_granted_scope_active",
+        "reason": "authorization_granted_action_active",
         "user_id": "emp_8821",
         "agent_id": "referral_outreach",
-        "scope": "outreach.send",
+        "action": "outreach.send",
         "resource": "edge:emp_8821:conn_9f2a",
         "context": {},
         "authorization_id": "auth_01HXZ2A0K1L2M3N4P5Q6R7S8T9",
@@ -669,7 +669,7 @@
         "signature": {
           "alg": "Ed25519",
           "key_id": "test-key/v1",
-          "value": "yKsEq4jFxep1KipvabW79vxu3FghNYgvpXWEThUNKzIotvvlA6i7hzUx9wSD042Gn4htO8QUZCXunS-OExvIAQ"
+          "value": "2a_qFyGsaG5HUIRmOrAivR263egjDfUo8kjIWs-2ADPIfugdlZKL80rRwkrQRPctZfV7q7-hWhmQ2_2upMorDA"
         },
         "extra_field": "should_be_rejected"
       }
@@ -684,17 +684,17 @@
         "workspace_id": "ws_test",
         "issued_at": "2026-04-21T14:32:17.482Z",
         "decision": "allow",
-        "reason": "authorization_granted_scope_active",
+        "reason": "authorization_granted_action_active",
         "user_id": "emp_8821",
         "agent_id": "referral_outreach",
-        "scope": "outreach.send",
+        "action": "outreach.send",
         "resource": "edge:emp_8821:conn_9f2a",
         "context": {},
         "policy_version": "2026-04-17.1",
         "signature": {
           "alg": "Ed25519",
           "key_id": "test-key/v1",
-          "value": "yKsEq4jFxep1KipvabW79vxu3FghNYgvpXWEThUNKzIotvvlA6i7hzUx9wSD042Gn4htO8QUZCXunS-OExvIAQ"
+          "value": "2a_qFyGsaG5HUIRmOrAivR263egjDfUo8kjIWs-2ADPIfugdlZKL80rRwkrQRPctZfV7q7-hWhmQ2_2upMorDA"
         }
       }
     },
@@ -711,7 +711,7 @@
         "reason": "bogus",
         "user_id": "emp_8821",
         "agent_id": "referral_outreach",
-        "scope": "outreach.send",
+        "action": "outreach.send",
         "resource": "edge:emp_8821:conn_9f2a",
         "context": {},
         "authorization_id": "auth_bad",
@@ -719,14 +719,14 @@
         "signature": {
           "alg": "Ed25519",
           "key_id": "test-key/v1",
-          "value": "5Jvz8ivaibAp0-Q7HjC6401o-3MQzsyZJ46SxRjaTcMoTnhexO6Rz7NgUv7KQJu0pYjmYc0eyrRp5cZVSHDACA"
+          "value": "2LjxsZ7slMLc_NCwElM18hjFoMwBzVYeM6BtZts3wzaTC5L7YNBIhFwSEH8ccDO4fdDkOA2W2cBuJXfHnP08Ag"
         }
       }
     },
     {
-      "name": "both_scope_and_event",
-      "description": "both scope and event present",
-      "expected_reason": "both 'scope' and 'event'",
+      "name": "both_action_and_event",
+      "description": "both action and event present",
+      "expected_reason": "both 'action' and 'event'",
       "receipt": {
         "version": "1.0",
         "receipt_id": "rcp_01HXZBOTH0000000000000000",
@@ -736,7 +736,7 @@
         "reason": "bogus",
         "user_id": "emp_8821",
         "agent_id": "referral_outreach",
-        "scope": "outreach.send",
+        "action": "outreach.send",
         "event": "authorization.create",
         "resource": "edge:emp_8821:conn_9f2a",
         "context": {},
@@ -745,14 +745,14 @@
         "signature": {
           "alg": "Ed25519",
           "key_id": "test-key/v1",
-          "value": "P1cQ_9iAfbYNXcTff3VvD7UaueBbX6lEtGFTbadyAHQ_YeXZhOgmHzaZHoLEefrh11Ej06-i335eOAJPUvmwBQ"
+          "value": "k-KpcJAbUCzBca03_7kHAzFbfDMcjSs66OgJrovtsekh0nCFNVbF7uOOS9xPCqygh6cPE_EOgcDw58GvyKBhCg"
         }
       }
     },
     {
-      "name": "neither_scope_nor_event",
-      "description": "neither scope nor event present",
-      "expected_reason": "neither 'scope' nor 'event'",
+      "name": "neither_action_nor_event",
+      "description": "neither action nor event present",
+      "expected_reason": "neither 'action' nor 'event'",
       "receipt": {
         "version": "1.0",
         "receipt_id": "rcp_01HXZNEITHER000000000000",
@@ -915,7 +915,7 @@
         "reason": "confirm_condition_matched",
         "user_id": "cand_55ab2",
         "agent_id": "scout_referrals",
-        "scope": "hiring.reject_application",
+        "action": "hiring.reject_application",
         "resource": "application:req_2207:cand_55ab2",
         "context": {
           "score_delta": 2
@@ -934,7 +934,7 @@
         "signature": {
           "alg": "Ed25519",
           "key_id": "test-key/v1",
-          "value": "4QwfeRDIRDSJGjOzbduOtp5LfwGWYyTqk4RkvTUC6TrdjtPzdqqQmf399jTljl6PupJRW4SDwV_LPTdVlkz_BA"
+          "value": "4YP5FxCn8dRSXu_PBRQDUa3VdlXw8ZjhPT52vWtHfTOVziRnuf0eNQS70S8RUc_uZc7FQR82r2wHswPzlATUAw"
         }
       }
     },
@@ -951,7 +951,7 @@
         "reason": "confirm_condition_matched",
         "user_id": "cand_55ab2",
         "agent_id": "scout_referrals",
-        "scope": "hiring.reject_application",
+        "action": "hiring.reject_application",
         "resource": "application:req_2207:cand_55ab2",
         "context": {
           "score_delta": 2
@@ -968,7 +968,7 @@
         "signature": {
           "alg": "Ed25519",
           "key_id": "test-key/v1",
-          "value": "2QoWjJDxxpnNWYbyJ3Wpp7HKjxbfb-bFIVAVvKVenTSmRGJzDssO6DxmVsD26TH445cAgIr9vMK9X6PPO5VvAg"
+          "value": "GvH9Sb17mP0ROU9YIfbN0HxhsyBEQpHFmt3s3Omhv9QngKVZqcTqXVahotn01N-MUBDy05LAZPjft_eGOFbGAw"
         }
       }
     },
@@ -985,7 +985,7 @@
         "reason": "confirm_condition_matched",
         "user_id": "cand_55ab2",
         "agent_id": "scout_referrals",
-        "scope": "hiring.reject_application",
+        "action": "hiring.reject_application",
         "resource": "application:req_2207:cand_55ab2",
         "context": {
           "score_delta": 2
@@ -1002,7 +1002,7 @@
         "signature": {
           "alg": "Ed25519",
           "key_id": "test-key/v1",
-          "value": "DDBcDbwUOx4FpiTGXX2871ELoFRmPsSw4-JD1B_vYGbaBaIgCtkVf6TFNW43kWnlniTvR9VHJ0_YBc37ptGXDw"
+          "value": "Ogk0stTtKKX60_BsP1haDV8YO0Qq0U22i9MSzhqgKLjgUVxrvBXZVgTvkDDSukvAqQAdtmChXbgMkqJMBxarCw"
         }
       }
     },
@@ -1019,7 +1019,7 @@
         "reason": "confirm_condition_matched",
         "user_id": "cand_55ab2",
         "agent_id": "scout_referrals",
-        "scope": "hiring.reject_application",
+        "action": "hiring.reject_application",
         "resource": "application:req_2207:cand_55ab2",
         "context": {
           "score_delta": 2
@@ -1038,7 +1038,7 @@
         "signature": {
           "alg": "Ed25519",
           "key_id": "test-key/v1",
-          "value": "1XyvZ8Po7G_JJ4DK_S1mvLAL4DidNNdNZubnbnmE0ee5CKby1tHT8Mzvt8Q69wO5IZGkrSoMFlKgl8rF-oNnDA"
+          "value": "8T4XRczfSMKTrT2TvB1_guTMtoMmQP0MY8dgG1wzbvI_Zg9-60WpOm_7lnLujVaE_ufBW0rRmighDzCuOsRbAQ"
         }
       }
     },
@@ -1055,7 +1055,7 @@
         "reason": "confirm_condition_matched",
         "user_id": "cand_55ab2",
         "agent_id": "scout_referrals",
-        "scope": "hiring.reject_application",
+        "action": "hiring.reject_application",
         "resource": "application:req_2207:cand_55ab2",
         "context": {
           "score_delta": 2
@@ -1073,7 +1073,7 @@
         "signature": {
           "alg": "Ed25519",
           "key_id": "test-key/v1",
-          "value": "qcYjtufqU3EN6quxqr-ACeDtsaXKiVddH99LHJK_SV49MhADj6vdjCAWvU4YGqSh1kufAPbCuV7jrn-wGoIADA"
+          "value": "mc7V89DhbX5Wb4ZgGtCFnTOVWDsqgQf0r8-5GG909oeaVhW8Oh1uUd1yiigYfSNfXe2M-6ycku-xuO3lH9u9CQ"
         }
       }
     },
@@ -1087,10 +1087,10 @@
         "workspace_id": "ws_test",
         "issued_at": "2026-04-21T14:32:17.482Z",
         "decision": "allow",
-        "reason": "authorization_granted_scope_active",
+        "reason": "authorization_granted_action_active",
         "user_id": "emp_8821",
         "agent_id": "referral_outreach",
-        "scope": "outreach.send",
+        "action": "outreach.send",
         "resource": "edge:emp_8821:conn_9f2a",
         "context": {
           "amount": 9007199254740992
@@ -1100,7 +1100,7 @@
         "signature": {
           "alg": "Ed25519",
           "key_id": "test-key/v1",
-          "value": "wItqdaqrRu4iGHXOp63jLvf5o8c61WTfukYokjn9dj7lDaE9Y_b0vq01fu8D7RzNu4ljLkDOJ3Kkvd1BC6Z_Dg"
+          "value": "kXVyOQpN_oSbO4wZSPiS232YzJmZostAsvl8WbhmBNIWHP1JSWzV0iTNy2ir1QG3sbmUZn7q4s4hdww2NrvgBA"
         }
       }
     },
@@ -1114,10 +1114,10 @@
         "workspace_id": "ws_test",
         "issued_at": "2026-04-21T14:32:17.482",
         "decision": "allow",
-        "reason": "authorization_granted_scope_active",
+        "reason": "authorization_granted_action_active",
         "user_id": "emp_8821",
         "agent_id": "referral_outreach",
-        "scope": "outreach.send",
+        "action": "outreach.send",
         "resource": "edge:emp_8821:conn_9f2a",
         "context": {},
         "authorization_id": "auth_01HXZ2A0K1L2M3N4P5Q6R7S8T9",
@@ -1125,7 +1125,7 @@
         "signature": {
           "alg": "Ed25519",
           "key_id": "test-key/v1",
-          "value": "yKsEq4jFxep1KipvabW79vxu3FghNYgvpXWEThUNKzIotvvlA6i7hzUx9wSD042Gn4htO8QUZCXunS-OExvIAQ"
+          "value": "2a_qFyGsaG5HUIRmOrAivR263egjDfUo8kjIWs-2ADPIfugdlZKL80rRwkrQRPctZfV7q7-hWhmQ2_2upMorDA"
         }
       }
     },
@@ -1139,10 +1139,10 @@
         "workspace_id": "ws_test",
         "issued_at": "2026-04-21T14:32:17.482Z",
         "decision": "allow",
-        "reason": "authorization_granted_scope_active",
+        "reason": "authorization_granted_action_active",
         "user_id": "emp_8821",
         "agent_id": "referral_outreach",
-        "scope": "outreach.send",
+        "action": "outreach.send",
         "resource": "edge:emp_8821:conn_9f2a",
         "context": {},
         "authorization_id": "auth_01HXZ2A0K1L2M3N4P5Q6R7S8T9",
@@ -1150,12 +1150,12 @@
         "signature": {
           "alg": "Ed25519",
           "key_id": "test-key/v1",
-          "value": "yKsEq4jFxep1KipvabW79vxu3FghNYgvpXWEThUNKzIotvvlA6i7hzUx9wSD042Gn4htO8QUZCXunS-OExvIAQ=="
+          "value": "2a_qFyGsaG5HUIRmOrAivR263egjDfUo8kjIWs-2ADPIfugdlZKL80rRwkrQRPctZfV7q7-hWhmQ2_2upMorDA=="
         }
       }
     },
     {
-      "name": "pairing_scope_with_lifecycle_decision",
+      "name": "pairing_action_with_lifecycle_decision",
       "description": "action receipt with decision=authorization_granted",
       "expected_reason": "requires an event receipt",
       "receipt": {
@@ -1167,7 +1167,7 @@
         "reason": "bogus_pairing",
         "user_id": "emp_8821",
         "agent_id": "referral_outreach",
-        "scope": "outreach.send",
+        "action": "outreach.send",
         "resource": "edge:emp_8821:conn_9f2a",
         "context": {},
         "authorization_id": "auth_bad",
@@ -1175,7 +1175,7 @@
         "signature": {
           "alg": "Ed25519",
           "key_id": "test-key/v1",
-          "value": "h8lL3l1oCRHG04HWhdWLisYhsxQRPoKI6NeE2OxUcVz4AS9Vi2Cz2weXICVSqEn0L4SRF8_zm1GYqjpZ7rdwBw"
+          "value": "ZLOPRBfXDvbiaE4c-EzqcPJLd7PuqObnK7cAfXxtiX7rcO9y-euL4KJdl8bmxerqTy5TqULKeiuour1DjxlnBw"
         }
       }
     }
