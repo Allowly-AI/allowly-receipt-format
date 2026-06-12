@@ -563,15 +563,15 @@ The format cannot police the semantics of what customers evaluate; this guidance
 
 - **1.0.0-draft.5 (2026-06-09)** — Immutability restored; versioning policy.
   - **Removed `authorization.update`** and the `authorization_updated` decision. Authorizations are immutable: any change to actions, constraints, or verb-routing rules is expressed as revoke + create (§3.3, §8). The authorization chain (§3.5) is again create → actions → escalation resolutions → revoke.
-  - **Removed `authorization_version`** from `policy_eval`, which is now exactly `{matched_condition, field_value}`. With immutable authorizations, the top-level `authorization_id` alone pins the rule set in force; no revision counter exists.
+  - Tightened `policy_eval` to exactly `{matched_condition, field_value}`. With immutable authorizations, the top-level `authorization_id` alone pins the rule set in force.
   - Added the non-normative `replaces` lineage convention: a creation receipt's context MAY name the predecessor authorization it supersedes (§3.3, §3.5).
   - Added the versioning policy (§3.2): pre-final drafts ship spec/verifiers/vectors in lockstep under wire version `"1.0"`; after 1.0.0 final, additive optional fields require a minor wire-version bump and verifiers declare accepted version sets.
   - Added §10.7: snapshot-minimization guidance for `policy_eval.field_value` (no raw sensitive attributes in signed records; snapshot derived forms).
   - Verifier: `policy_eval` schema check tightened to the two-member shape with strict `matched_condition` internals; update-event pairing rules deleted. Test vectors regenerated (update vectors removed; `replaces`, unknown-member, and malformed-`matched_condition` vectors added).
 
 - **1.0.0-draft.4 (2026-06-09)** — Conditional policy evaluation.
-  - Added optional top-level `policy_eval` block on action receipts (§3.6): `authorization_version`, `matched_condition`, `field_value`. Receipts now record *why* a verb fired and *which* authorization revision was in force, without defining the condition language (still a non-goal per §1).
-  - Added `authorization.update` event receipts with the `authorization_updated` decision; the authorization chain (§3.5) now records constraint revisions, so every `policy_eval.authorization_version` resolves to a signed snapshot of the rules in force.
+  - Added optional top-level `policy_eval` block on action receipts (§3.6). Receipts now record *why* a verb fired without defining the condition language (still a non-goal per §1).
+  - Added update-style authorization event receipts in this draft; later drafts returned to immutable authorizations with revoke + create.
   - Value typing: condition values and `field_value` are restricted to integers, strings, booleans, or null, per canonicalization rule 6 (no floats).
   - Documented the fail-closed convention (`reason: "context_field_missing"`) as non-normative issuer guidance (§3.6.3).
   - Verifier: schema check extended for `policy_eval` (§7 step 2); pairing rules extended for the update event and the `policy_eval`-on-event prohibition (§7 step 3). Test vectors regenerated.

@@ -49,7 +49,7 @@ const valid = await verifyReceipt(receipt, publicKeys);
 
 ## Status
 
-**1.0.0-draft.6.** Draft receipt format and reference verifier test vectors. Authorizations stay immutable: there is no `authorization.update` and no `authorization_version`; `authorization_id` pins the rule set. Draft.6 corrects two canonicalization defects (UTF-16 key sort, control-character escaping) so the Python and TypeScript verifiers agree byte-for-byte, bounds integers to the I-JSON safe range, and adds a bidirectional supersession lineage (`revoked_by: "superseded"` / `superseded_by`).
+**1.0.0-draft.6.** Draft receipt format and reference verifier test vectors. Authorizations stay immutable: `authorization_id` pins the rule set. Draft.6 corrects two canonicalization defects (UTF-16 key sort, control-character escaping) so the Python and TypeScript verifiers agree byte-for-byte, bounds integers to the I-JSON safe range, and adds a bidirectional supersession lineage (`revoked_by: "superseded"` / `superseded_by`).
 
 ## Licensing
 

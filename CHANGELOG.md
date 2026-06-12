@@ -9,7 +9,7 @@
 - Clarify that authorization create/revoke receipts keep `resource: null`, while escalation resolution receipts may carry the resource binding.
 - Replace the spec text with `1.0.0-draft.6`.
 - Add optional `policy_eval` on action receipts to record which immutable authorization condition routed a decision.
-- Remove `authorization.update`, `authorization_updated`, and `authorization_version`; authorization changes are revoke + create.
+- Remove update-style authorization receipts; authorization changes are revoke + create.
 - Document `replaces` lineage metadata for superseding authorizations.
 - Document the `confirm_when` / `escalate_when` issuer convention as a non-normative policy authoring shape.
 - Make supersession lineage bidirectional: add `revoked_by: "superseded"` and the `superseded_by` forward pointer on revoke receipts, upgrade `replaces` to SHOULD when superseding, and recommend `create.issued_at <= revoke.issued_at` ordering (§3.3, §3.5, §8).

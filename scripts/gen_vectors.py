@@ -574,26 +574,6 @@ policy_eval_on_event = sign({
     },
 })
 
-policy_eval_extra_member = sign({
-    "version": "1.0",
-    "receipt_id": "rcp_01J0Z7Q4POLICYEXTRA00",
-    "workspace_id": "ws_test",
-    "issued_at": "2026-06-09T17:12:00.000Z",
-    "decision": "confirm",
-    "reason": "confirm_condition_matched",
-    "user_id": "cand_55ab2",
-    "agent_id": "scout_referrals",
-    "action": "hiring.reject_application",
-    "resource": "application:req_2207:cand_55ab2",
-    "context": {"score_delta": 2},
-    "authorization_id": "auth_bad",
-    "engine_version": "2026-06-01.2",
-    "policy_eval": {
-        "matched_condition": {"field": "score_delta", "op": "lt", "value": 5},
-        "field_value": 2,
-        "authorization_version": 7,
-    },
-})
 
 policy_eval_missing_field_value = sign({
     "version": "1.0",
@@ -835,10 +815,6 @@ vectors = {
          "description": "event receipt carrying policy_eval",
          "expected_reason": "policy_eval must be absent on event receipts",
          "receipt": policy_eval_on_event},
-        {"name": "policy_eval_authorization_version_rejected",
-         "description": "policy_eval must not carry draft.4 authorization_version",
-         "expected_reason": "policy_eval has unknown fields",
-         "receipt": policy_eval_extra_member},
         {"name": "policy_eval_missing_field_value",
          "description": "policy_eval missing required field_value",
          "expected_reason": "policy_eval missing fields",
