@@ -479,22 +479,161 @@ def load_keys_from_json(doc: dict[str, Any]) -> list[PublicKey]:
     return out
 
 
+def _open_maybe_gzip(path: str):
+    """Open a .jsonl or .jsonl.gz export as a text stream."""
+    import gzip
+
+    if path.endswith(".gz"):
+        return gzip.open(path, "rt", encoding="utf-8")
+    return open(path, encoding="utf-8")
+
+
+def _extract_receipt(obj: Any) -> dict[str, Any]:
+    """A line may be a bare receipt (audit-package chain.jsonl) or a receipt-export
+    wrapper ``{"receipt_id", "workspace_id", "created_at", "receipt": {...}}``."""
+    if isinstance(obj, dict) and isinstance(obj.get("receipt"), dict):
+        return obj["receipt"]
+    return obj
+
+
+def _verify_export(
+    path: str,
+    keys: list[PublicKey],
+    expected_workspace_id: str | None,
+    authorization_id: str | None,
+) -> int:
+    import sys
+
+    ok = failed = skipped = total = 0
+    chain: list[dict[str, Any]] = []
+
+    with _open_maybe_gzip(path) as f:
+        for lineno, raw in enumerate(f, 1):
+            line = raw.strip()
+            if not line:
+                continue
+            try:
+                receipt = _extract_receipt(json.loads(line))
+            except json.JSONDecodeError as e:
+                total += 1
+                failed += 1
+                print(f"INVALID  line {lineno}: not JSON ({e})", file=sys.stderr)
+                continue
+            if authorization_id is not None and receipt.get("authorization_id") != authorization_id:
+                skipped += 1
+                continue
+            total += 1
+            rid = receipt.get("receipt_id", f"line {lineno}")
+            try:
+                verify_receipt(receipt, keys, expected_workspace_id=expected_workspace_id)
+                label = receipt.get("action") or receipt.get("event") or "?"
+                print(f"OK  {rid}  {label}  {receipt.get('decision')}")
+                ok += 1
+                chain.append(receipt)
+            except VerificationError as e:
+                print(f"INVALID  {rid}  {e}", file=sys.stderr)
+                failed += 1
+
+    summary = f"\n{ok} ok, {failed} invalid"
+    if authorization_id is not None:
+        summary += f", {skipped} skipped (other authorizations)"
+    summary += f"  ({total} checked)"
+    print(summary)
+
+    if total == 0:
+        print("No matching receipts found.", file=sys.stderr)
+        return 1
+
+    chain_rc = 0
+    if authorization_id is not None:
+        chain_rc = _check_chain_invariants(chain, authorization_id)
+
+    return 0 if failed == 0 and chain_rc == 0 else 1
+
+
+def _check_chain_invariants(chain: list[dict[str, Any]], authorization_id: str) -> int:
+    """Report the chain timeline and flag structural anomalies (spec §3.5)."""
+    import sys
+
+    creates = [r for r in chain if r.get("event") == "authorization.create"]
+    revokes = [r for r in chain if r.get("event") == "authorization.revoke"]
+    problems: list[str] = []
+
+    if len(creates) == 0:
+        problems.append("no authorization.create receipt in this chain")
+    elif len(creates) > 1:
+        problems.append(f"{len(creates)} authorization.create receipts (expected exactly 1)")
+    if len(revokes) > 1:
+        problems.append(f"{len(revokes)} authorization.revoke receipts (expected at most 1)")
+
+    print("\nChain timeline:")
+    for r in chain:
+        kind = r.get("event") or f"action:{r.get('action')}"
+        issued = r.get("issued_at", "?")
+        try:
+            _parse_rfc3339(r["issued_at"])
+        except Exception:
+            problems.append(f"{r.get('receipt_id')} has a non-RFC-3339 issued_at: {issued!r}")
+        print(f"  {issued}  {kind}  {r.get('decision')}")
+
+    if problems:
+        for problem in problems:
+            print(f"CHAIN WARNING: {problem}", file=sys.stderr)
+        return 1
+
+    print(f"Chain OK: 1 create, {len(revokes)} revoke, {len(chain)} signed receipt(s).")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     import argparse
+    import sys
 
-    p = argparse.ArgumentParser(description="Verify an Allowly receipt.")
-    p.add_argument("receipt", help="path to receipt JSON file")
-    p.add_argument("keys", help="path to keys JSON file (workspace keys doc)")
+    p = argparse.ArgumentParser(description="Verify Allowly receipts.")
+    p.add_argument(
+        "paths",
+        nargs="*",
+        help="single mode: <receipt.json> <keys.json>; with --export: <keys.json>",
+    )
+    p.add_argument(
+        "--export",
+        metavar="FILE",
+        help="verify a JSONL or .jsonl.gz export in bulk (audit-package chain.jsonl or a receipt export)",
+    )
+    p.add_argument(
+        "--authorization-id",
+        metavar="ID",
+        help="with --export: verify only this authorization's chain and check chain invariants",
+    )
     args = p.parse_args(argv)
 
-    with open(args.receipt) as f:
+    # The keys document is published per workspace; bind receipts to it so a
+    # receipt cannot verify against another workspace's keys that share a key_id.
+    if args.export:
+        if len(args.paths) != 1:
+            p.error("with --export, provide exactly one positional argument: the keys JSON file")
+        with open(args.paths[0]) as f:
+            keys_doc = json.load(f)
+        keys = load_keys_from_json(keys_doc)
+        return _verify_export(
+            args.export,
+            keys,
+            keys_doc.get("workspace_id"),
+            args.authorization_id,
+        )
+
+    if args.authorization_id:
+        p.error("--authorization-id requires --export")
+    if len(args.paths) != 2:
+        p.error("provide <receipt.json> <keys.json>, or use --export <file> <keys.json>")
+
+    receipt_path, keys_path = args.paths
+    with open(receipt_path) as f:
         receipt = json.load(f)
-    with open(args.keys) as f:
+    with open(keys_path) as f:
         keys_doc = json.load(f)
 
     keys = load_keys_from_json(keys_doc)
-    # The keys document is published per workspace; bind the receipt to it so a
-    # receipt cannot verify against another workspace's keys that share a key_id.
     expected_workspace_id = keys_doc.get("workspace_id")
 
     try:
@@ -502,8 +641,6 @@ def main(argv: list[str] | None = None) -> int:
         print(f"OK  receipt_id={receipt['receipt_id']} decision={receipt['decision']}")
         return 0
     except VerificationError as e:
-        import sys
-
         print(f"INVALID  {e}", file=sys.stderr)
         return 1
 

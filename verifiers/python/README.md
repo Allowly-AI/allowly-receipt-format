@@ -12,8 +12,26 @@ Only dependency: `cryptography` for Ed25519 signature verification.
 
 ## CLI
 
+Verify a single receipt:
+
 ```bash
 allowly-receipt-verify path/to/receipt.json path/to/keys.json
+```
+
+Verify a whole export or audit-package chain in one go (`.jsonl` or `.jsonl.gz`):
+
+```bash
+# Each line is either a bare receipt (audit-package chain.jsonl) or a
+# {"receipt_id", ..., "receipt": {...}} export wrapper — both are handled.
+allowly-receipt-verify --export chain.jsonl keys.json
+```
+
+Verify only one authorization's chain and check its structure (exactly one
+`authorization.create`, at most one `authorization.revoke`, well-formed
+timestamps), printing the timeline:
+
+```bash
+allowly-receipt-verify --export export.jsonl.gz keys.json --authorization-id auth_01HXZ2...
 ```
 
 For local development without installing from PyPI:
@@ -24,8 +42,8 @@ python verifier.py path/to/receipt.json path/to/keys.json
 ```
 
 Exit codes:
-- `0` — receipt is valid
-- `1` — receipt is invalid (reason printed to stderr)
+- `0` — all receipts valid (and, with `--authorization-id`, the chain is well-formed)
+- `1` — any receipt invalid, no receipts matched, or a chain anomaly (reason on stderr)
 
 ## Library
 
