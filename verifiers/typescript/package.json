@@ -1,6 +1,6 @@
 {
   "name": "@allowly/verifier",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Reference verifier for the Allowly Receipt Format. Verifies signed receipts of AI agent authorization decisions.",
   "type": "module",
   "main": "./dist/verifier.js",
