@@ -599,4 +599,4 @@ The format cannot police the semantics of what customers evaluate; this guidance
 
 ---
 
-*This specification is maintained at https://github.com/allowly/receipt-format. Comments, issues, and pull requests welcome.*
+*This specification is maintained at https://github.com/Allowly-AI/allowly-receipt-format. Comments, issues, and pull requests welcome.*

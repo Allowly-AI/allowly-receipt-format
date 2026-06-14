@@ -15,7 +15,7 @@ Usage (library):
 Usage (CLI):
     python verifier.py path/to/receipt.json path/to/keys.json
 
-Spec: https://github.com/allowly/receipt-format
+Spec: https://github.com/Allowly-AI/allowly-receipt-format
 License: Apache 2.0
 """
 

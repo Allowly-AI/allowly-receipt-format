@@ -17,7 +17,7 @@
  *     else throw e;
  *   }
  *
- * Spec: https://github.com/allowly/receipt-format
+ * Spec: https://github.com/Allowly-AI/allowly-receipt-format
  * License: Apache 2.0
  */
 

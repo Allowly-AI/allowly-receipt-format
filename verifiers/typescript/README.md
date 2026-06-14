@@ -1,6 +1,6 @@
 # @allowly/verifier
 
-TypeScript reference verifier for the [Allowly Receipt Format](https://github.com/allowly/receipt-format) v1.0.
+TypeScript reference verifier for the [Allowly Receipt Format](https://github.com/Allowly-AI/allowly-receipt-format) v1.0.
 
 Zero runtime dependencies. Uses Node.js's built-in WebCrypto for Ed25519 verification.
 
@@ -66,4 +66,4 @@ A valid receipt attests that the issuer made the recorded decision at the record
 
 ## License
 
-Apache 2.0. Contributions welcome — see [CONTRIBUTING.md](https://github.com/allowly/receipt-format/blob/main/CONTRIBUTING.md).
+Apache 2.0. Contributions welcome — see [CONTRIBUTING.md](https://github.com/Allowly-AI/allowly-receipt-format/blob/main/CONTRIBUTING.md).
