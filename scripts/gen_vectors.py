@@ -706,7 +706,7 @@ keys_doc = {
 }
 
 vectors = {
-    "spec_version": "1.0.0-draft.6",
+    "spec_version": "1.0.0",
     "public_keys": keys_doc,
     "should_verify": [
         {"name": "action_minimal_allow", "kind": "action",
