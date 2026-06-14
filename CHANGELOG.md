@@ -1,5 +1,14 @@
 # Changelog
 
+## v1.0.4 — 2026-06-14
+
+Internal refactor, no behavior change. Simplified the test-vector generator
+(`scripts/gen_vectors.py`) and extracted a shared exact-keys validation helper in the
+Python verifier. The format, canonicalization, verifier behavior, and `test-vectors.json`
+are unchanged — the vectors are byte-identical and both reference verifiers pass. Both
+packages (`allowly-receipt-format` on PyPI, `@allowly/verifier` on npm) publish 1.0.4 from
+one tag. Wire version stays `"1.0"`; spec label stays `1.0.0`.
+
 ## v1.0.3 — 2026-06-12
 
 Unified release tag: both reference verifiers — `allowly-receipt-format` (PyPI) and
