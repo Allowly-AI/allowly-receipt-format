@@ -20,6 +20,14 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      - name: Install verifier
+        run: pip install -e verifiers/python
+      - name: Run against test vectors
+        working-directory: verifiers/python
+        run: python test_vectors.py ../../test-vectors.json
+      - name: Check typed exception taxonomy
+        working-directory: verifiers/python
+        run: python test_exception_types.py ../../test-vectors.json
       - name: Build package
         working-directory: verifiers/python
         run: |
