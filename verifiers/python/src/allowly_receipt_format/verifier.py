@@ -412,32 +412,29 @@ def _is_policy_condition_value(value: Any) -> bool:
     return isinstance(value, list) and all(_is_policy_scalar(item) for item in value)
 
 
+def _check_exact_keys(obj: dict[str, Any], expected: set[str], prefix: str) -> None:
+    extra = set(obj.keys()) - expected
+    missing = expected - set(obj.keys())
+    if extra:
+        raise SchemaError(f"{prefix} has unknown fields: {sorted(extra)}")
+    if missing:
+        raise SchemaError(f"{prefix} missing fields: {sorted(missing)}")
+
+
 def _check_policy_eval(value: Any) -> None:
     if not isinstance(value, dict):
         raise SchemaError("policy_eval must be an object")
-    expected = {"matched_condition", "field_value"}
-    extra = set(value.keys()) - expected
-    missing = expected - set(value.keys())
-    if extra:
-        raise SchemaError(f"policy_eval has unknown fields: {sorted(extra)}")
-    if missing:
-        raise SchemaError(f"policy_eval missing fields: {sorted(missing)}")
+    _check_exact_keys(value, {"matched_condition", "field_value"}, "policy_eval")
 
     matched = value["matched_condition"]
     if matched is not None:
         if not isinstance(matched, dict):
             raise SchemaError("policy_eval.matched_condition must be an object or null")
-        condition_fields = {"field", "op", "value"}
-        extra = set(matched.keys()) - condition_fields
-        missing = condition_fields - set(matched.keys())
-        if extra:
-            raise SchemaError(
-                f"policy_eval.matched_condition has unknown fields: {sorted(extra)}"
-            )
-        if missing:
-            raise SchemaError(
-                f"policy_eval.matched_condition missing fields: {sorted(missing)}"
-            )
+        _check_exact_keys(
+            matched,
+            {"field", "op", "value"},
+            "policy_eval.matched_condition",
+        )
         if not isinstance(matched["field"], str):
             raise SchemaError("policy_eval.matched_condition.field must be a string")
         if not isinstance(matched["op"], str):
