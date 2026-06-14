@@ -34,14 +34,14 @@
     "authorization"
   ],
   "license": "Apache-2.0",
-  "homepage": "https://github.com/allowly/receipt-format",
+  "homepage": "https://github.com/Allowly-AI/allowly-receipt-format",
   "repository": {
     "type": "git",
-    "url": "https://github.com/allowly/receipt-format.git",
+    "url": "https://github.com/Allowly-AI/allowly-receipt-format.git",
     "directory": "verifiers/typescript"
   },
   "bugs": {
-    "url": "https://github.com/allowly/receipt-format/issues"
+    "url": "https://github.com/Allowly-AI/allowly-receipt-format/issues"
   },
   "devDependencies": {
     "typescript": "^5.4.0",
