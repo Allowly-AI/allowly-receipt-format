@@ -1,5 +1,13 @@
 # Changelog
 
+## Python package v1.0.2 — 2026-06-12
+
+Packaging-only release of the `allowly-receipt-format` PyPI package, bringing its
+version to parity with the `@allowly/verifier` npm package (which reached 1.0.2 via
+repository-metadata fixes). No change to the format, canonicalization, verifier
+behavior, or test vectors — 1.0.2 is byte-for-byte identical to 1.0.0. The format/wire
+version remains `"1.0"` and the spec label remains `1.0.0`.
+
 ## v1.0.0 — 2026-06-12
 
 Stable v1.0.0 release of the Allowly Receipt Format. Finalizes the draft.6
