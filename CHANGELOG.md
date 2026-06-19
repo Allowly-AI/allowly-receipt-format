@@ -1,5 +1,12 @@
 # Changelog
 
+## v1.0.5 — 2026-06-18
+
+Packaging-only release to publish the current verifier packages from a fresh
+tag after the earlier 1.0.4 tag was present on GitHub but not available on
+PyPI. Format, canonicalization, verifier behavior, and test vectors are
+unchanged.
+
 ## v1.0.4 — 2026-06-14
 
 Internal refactor, no behavior change. Simplified the test-vector generator
