@@ -165,14 +165,14 @@ The two-field discriminator design (rather than a single overloaded field) makes
     "actions": [
       "contact.enrich",
       {
-        "name": "hiring.reject_application",
+        "name": "hiring.publish_feedback",
         "constraints": {
           "confirm_when": [
-            { "field": "score_delta", "lt": 5 },
-            { "field": "opt_out", "eq": true }
+            { "field": "transcript_completeness", "lt": 100 },
+            { "field": "candidate_ai_opt_out", "eq": true }
           ],
           "escalate_when": [
-            { "field": "score", "exists": false }
+            { "field": "reviewer_id", "exists": false }
           ]
         }
       }
@@ -207,9 +207,9 @@ Rule changes never mutate a chain. Changing actions, constraints, or verb routin
 
 ### 3.6 Conditional policy evaluation (`policy_eval`)
 
-Issuers that route action decisions through per-action conditions (for example: *require confirmation when a score is within 5 points of the rejection threshold*, or *when the subject has opted out of automated processing*) MAY record the evaluation outcome in an optional top-level `policy_eval` object on action receipts. The block gives an auditor a signed answer to *"why did this decision require confirmation?"* The rules that were evaluated are pinned by the receipt's top-level `authorization_id` — authorizations are immutable (§3.3), so the creation receipt for that id is the signed snapshot of the rules in force. The condition language itself remains issuer-defined and outside this format, consistent with the non-goals in §1.
+Issuers that route action decisions through per-action conditions (for example: *require confirmation when the transcript an AI draft was synthesized from is incomplete*, or *when the subject has opted out of automated processing*) MAY record the evaluation outcome in an optional top-level `policy_eval` object on action receipts. The block gives an auditor a signed answer to *"why did this decision require confirmation?"* The rules that were evaluated are pinned by the receipt's top-level `authorization_id` — authorizations are immutable (§3.3), so the creation receipt for that id is the signed snapshot of the rules in force. The condition language itself remains issuer-defined and outside this format, consistent with the non-goals in §1.
 
-**Issuer convention (non-normative).** An issuer MAY model conditional routing as per-action constraint attributes such as `confirm_when` and `escalate_when`. A deliberately small shape is recommended: each condition names one context `field` and one operator (`eq`, `neq`, `lt`, `lte`, `gt`, `gte`, `in`, or `exists`), condition lists are ORed, and there is no nesting or expression language. For example, an issuer might store `{ "field": "score_delta", "lt": 5 }` on an authorization, then normalize the matched condition in the action receipt as `{ "field": "score_delta", "op": "lt", "value": 5 }`. The receipt format only standardizes the normalized evidence in `policy_eval`; it does not standardize the authorization API's policy authoring syntax.
+**Issuer convention (non-normative).** An issuer MAY model conditional routing as per-action constraint attributes such as `confirm_when` and `escalate_when`. A deliberately small shape is recommended: each condition names one context `field` and one operator (`eq`, `neq`, `lt`, `lte`, `gt`, `gte`, `in`, or `exists`), condition lists are ORed, and there is no nesting or expression language. For example, an issuer might store `{ "field": "transcript_completeness", "lt": 100 }` on an authorization, then normalize the matched condition in the action receipt as `{ "field": "transcript_completeness", "op": "lt", "value": 100 }`. The receipt format only standardizes the normalized evidence in `policy_eval`; it does not standardize the authorization API's policy authoring syntax.
 
 ```json
 {
@@ -221,20 +221,19 @@ Issuers that route action decisions through per-action conditions (for example: 
   "reason": "confirm_condition_matched",
   "user_id": "cand_55ab2",
   "agent_id": "scout_referrals",
-  "action": "hiring.reject_application",
+  "action": "hiring.publish_feedback",
   "resource": "application:req_2207:cand_55ab2",
   "context": {
     "initiated_by": "agent",
-    "score": 68,
-    "threshold": 70,
-    "score_delta": 2,
-    "opt_out": false
+    "reviewer_id": "emp_3301",
+    "transcript_completeness": 82,
+    "candidate_ai_opt_out": false
   },
   "authorization_id": "auth_01HXZ2A0K1L2M3N4P5Q6R7S8T9",
   "engine_version": "2026-06-01.2",
   "policy_eval": {
-    "matched_condition": { "field": "score_delta", "op": "lt", "value": 5 },
-    "field_value": 2
+    "matched_condition": { "field": "transcript_completeness", "op": "lt", "value": 100 },
+    "field_value": 82
   },
   "signature": {
     "alg": "Ed25519",
@@ -545,7 +544,7 @@ Recommended: customers use their internal opaque identifier (a ULID, UUID, or eq
 
 Issuers and customers **SHOULD**:
 
-- Snapshot the minimum value the condition actually compared — the number or flag, not the record it came from. `"field_value": 2` (a score delta) is appropriate; copying a free-text note or a full profile attribute is not.
+- Snapshot the minimum value the condition actually compared — the number or flag, not the record it came from. `"field_value": 82` (a transcript-completeness percentage) is appropriate; copying a free-text note or a full profile attribute is not.
 - Never route conditions on raw sensitive personal attributes (health status, protected-class data, salary, precise location). Where a sensitive signal is genuinely needed for routing, evaluate and snapshot a derived form — a boolean, a bucket, a scaled score — so the signed record carries the decision-relevant abstraction rather than the underlying attribute.
 - Treat exports containing `policy_eval` with the same care as receipt exports generally (§10.4).
 

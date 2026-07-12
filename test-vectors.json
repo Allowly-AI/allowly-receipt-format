@@ -177,29 +177,28 @@
         "reason": "confirm_condition_matched",
         "user_id": "cand_55ab2",
         "agent_id": "scout_referrals",
-        "action": "hiring.reject_application",
+        "action": "hiring.publish_feedback",
         "resource": "application:req_2207:cand_55ab2",
         "context": {
           "initiated_by": "agent",
-          "score": 68,
-          "threshold": 70,
-          "score_delta": 2,
-          "opt_out": false
+          "reviewer_id": "emp_3301",
+          "transcript_completeness": 82,
+          "candidate_ai_opt_out": false
         },
         "authorization_id": "auth_conditional",
         "engine_version": "2026-06-01.2",
         "policy_eval": {
           "matched_condition": {
-            "field": "score_delta",
+            "field": "transcript_completeness",
             "op": "lt",
-            "value": 5
+            "value": 100
           },
-          "field_value": 2
+          "field_value": 82
         },
         "signature": {
           "alg": "Ed25519",
           "key_id": "test-key/v1",
-          "value": "h_25UBYGWxAl3lwq4OFr9N9lySbcaLhn_2BjDON0EFy_grTyInxUe8VnotQHNw5sE03RdrDdzXMnLWVdz6_pCQ"
+          "value": "7ZsfhByng56iEZMP5e8GkS7pKQ9VYSob1gjzr_wcU0H0pFmAGC3QrpVUyFzJFWu24dn8UH_D0q8yX9tisFhJDw"
         }
       }
     },
@@ -216,29 +215,29 @@
         "reason": "condition_requires_user_confirmation",
         "user_id": "cand_55ab2",
         "agent_id": "scout_referrals",
-        "action": "hiring.reject_application",
+        "action": "hiring.publish_feedback",
         "resource": "application:req_2207:cand_55ab2",
         "context": {
           "initiated_by": "agent",
-          "rule_fired": "employment_gap"
+          "checks_failed": "pii_detected"
         },
         "authorization_id": "auth_conditional",
         "engine_version": "2026-06-01.2",
         "policy_eval": {
           "matched_condition": {
-            "field": "rule_fired",
+            "field": "checks_failed",
             "op": "in",
             "value": [
-              "employment_gap",
-              "availability"
+              "pii_detected",
+              "tone_flag"
             ]
           },
-          "field_value": "employment_gap"
+          "field_value": "pii_detected"
         },
         "signature": {
           "alg": "Ed25519",
           "key_id": "test-key/v1",
-          "value": "8pto-32w7ilTbBlm_-W_FGt1cjEPr0a4gat-t9J5IbGCrvtXE1LisUHP5cLAfIkgUSJS-TrH9Zrex7Ta0b2qCA"
+          "value": "RonoRI73zuk44Sv0JjSPe7bqCKXjZNpeIgKSZphmbsgkpOfw5OYPwdd98-4B9BmDInSEn6T2ugTatwiVs54qDA"
         }
       }
     },
@@ -255,14 +254,13 @@
         "reason": "authorization_granted_action_active",
         "user_id": "cand_55ab2",
         "agent_id": "scout_referrals",
-        "action": "hiring.reject_application",
+        "action": "hiring.publish_feedback",
         "resource": "application:req_2207:cand_55ab2",
         "context": {
           "initiated_by": "agent",
-          "score": 82,
-          "threshold": 70,
-          "score_delta": 12,
-          "opt_out": false
+          "reviewer_id": "emp_3301",
+          "transcript_completeness": 100,
+          "candidate_ai_opt_out": false
         },
         "authorization_id": "auth_conditional",
         "engine_version": "2026-06-01.2",
@@ -273,7 +271,7 @@
         "signature": {
           "alg": "Ed25519",
           "key_id": "test-key/v1",
-          "value": "aHZuQwGffdLfodiHvPaDrwgf-non2jh4CpRUC0RUFZgo7nL_Ag7QJIkVZHJfg1aZ0n8c0MoZWveoj_mVvz2hAg"
+          "value": "gff3LFDRUbQYP_xm3tZ6GS6p9EZQJqHUSl0qRqJY0GOwKnr2RFZzO55eUxiI39hJ4z-kjKbZBytvJ7z4D_WyBg"
         }
       }
     },
@@ -290,26 +288,26 @@
         "reason": "context_field_missing",
         "user_id": "cand_55ab2",
         "agent_id": "scout_referrals",
-        "action": "hiring.reject_application",
+        "action": "hiring.publish_feedback",
         "resource": "application:req_2207:cand_55ab2",
         "context": {
           "initiated_by": "agent",
-          "threshold": 70
+          "reviewer_id": "emp_3301"
         },
         "authorization_id": "auth_conditional",
         "engine_version": "2026-06-01.2",
         "policy_eval": {
           "matched_condition": {
-            "field": "score_delta",
+            "field": "transcript_completeness",
             "op": "lt",
-            "value": 5
+            "value": 100
           },
           "field_value": null
         },
         "signature": {
           "alg": "Ed25519",
           "key_id": "test-key/v1",
-          "value": "w_Y7g7OUf9WxCtVz79fGBFooXgEBNkxTygbOaurkHsAdIL2Hao297XXPPBXc_jHrptX0H2IDOzVjUHA4-_hFCA"
+          "value": "kv94m1udpW5RaM3yebFEz62wpJEg1U7R7QRP7jsUotXsMV8IdBIppzqA7NBk6U92-KMD638mCpTRDxY65R8BCg"
         }
       }
     },
@@ -367,21 +365,21 @@
         "context": {
           "actions": [
             {
-              "name": "hiring.reject_application",
+              "name": "hiring.publish_feedback",
               "constraints": {
                 "confirm_when": [
                   {
-                    "field": "score_delta",
-                    "lt": 5
+                    "field": "transcript_completeness",
+                    "lt": 100
                   },
                   {
-                    "field": "opt_out",
+                    "field": "candidate_ai_opt_out",
                     "eq": true
                   }
                 ],
                 "escalate_when": [
                   {
-                    "field": "score",
+                    "field": "reviewer_id",
                     "exists": false
                   }
                 ]
@@ -397,7 +395,7 @@
         "signature": {
           "alg": "Ed25519",
           "key_id": "test-key/v1",
-          "value": "lsD5CvtidNq_IRtYAWtGwjhtRqdZ4eQOJlhvxmq1YCAgMNF8FgXFW6SHeZm5VlajIITpsjCvYy1xvzi9ct9RAA"
+          "value": "HwkTu7PLiMQR0gHDqNEhSzmNj6pSGhUhuPmniSP-eKbwY1hVYTNgnr9fb6Rf532veo13brAqTPkhBqFJSlySCQ"
         }
       }
     },
@@ -915,24 +913,24 @@
         "reason": "confirm_condition_matched",
         "user_id": "cand_55ab2",
         "agent_id": "scout_referrals",
-        "action": "hiring.reject_application",
+        "action": "hiring.publish_feedback",
         "resource": "application:req_2207:cand_55ab2",
         "context": {
-          "score_delta": 2
+          "transcript_completeness": 82
         },
         "authorization_id": "auth_bad",
         "engine_version": "2026-06-01.2",
         "policy_eval": {
           "matched_condition": {
-            "field": "score_delta",
+            "field": "transcript_completeness",
             "op": "lt",
-            "value": 5
+            "value": 100
           }
         },
         "signature": {
           "alg": "Ed25519",
           "key_id": "test-key/v1",
-          "value": "fLOqrVb4GzWgZ1svaeQbQBqsBOEuZuTsQaQB1uv91BZOlOnYpZo1LEO76tNyBskXgf4cB1DVIxkINUZEIUr9Dw"
+          "value": "FRllfx3x-9SzbEZvKxC6BjVSfrHg83ZoXP2UaY8mgXudJGJdzO75WkIfMBXxm1rCtpdUFSRhTCA51aeCKzPOCQ"
         }
       }
     },
@@ -949,24 +947,24 @@
         "reason": "confirm_condition_matched",
         "user_id": "cand_55ab2",
         "agent_id": "scout_referrals",
-        "action": "hiring.reject_application",
+        "action": "hiring.publish_feedback",
         "resource": "application:req_2207:cand_55ab2",
         "context": {
-          "score_delta": 2
+          "transcript_completeness": 82
         },
         "authorization_id": "auth_bad",
         "engine_version": "2026-06-01.2",
         "policy_eval": {
           "matched_condition": {
-            "field": "score_delta",
-            "value": 5
+            "field": "transcript_completeness",
+            "value": 100
           },
-          "field_value": 2
+          "field_value": 82
         },
         "signature": {
           "alg": "Ed25519",
           "key_id": "test-key/v1",
-          "value": "cj-jy9pvzwPYONh4piWgZjcoShSjl8iJOETH2-aE4t-AFB2QbDg25WLVjHK66qyiD1TTtqvP5Pega8YxWB7cBQ"
+          "value": "1oKlAzxH2G7Ap44_TLcMYzyTLPTSTNsLyJZ0VcJEtg4Wbq0XLp-d5uDhakR-8357ePUwbZmZHVoUrunpxh8VAg"
         }
       }
     },
@@ -983,26 +981,26 @@
         "reason": "confirm_condition_matched",
         "user_id": "cand_55ab2",
         "agent_id": "scout_referrals",
-        "action": "hiring.reject_application",
+        "action": "hiring.publish_feedback",
         "resource": "application:req_2207:cand_55ab2",
         "context": {
-          "score_delta": 2
+          "transcript_completeness": 82
         },
         "authorization_id": "auth_bad",
         "engine_version": "2026-06-01.2",
         "policy_eval": {
           "matched_condition": {
-            "field": "score_delta",
+            "field": "transcript_completeness",
             "op": "lt",
-            "value": 5,
+            "value": 100,
             "debug": true
           },
-          "field_value": 2
+          "field_value": 82
         },
         "signature": {
           "alg": "Ed25519",
           "key_id": "test-key/v1",
-          "value": "PtQIxzKanDlM2QDGkpCb4ccLHYhomvJbQXa1U4m2_-VRwjyXDOxneu-mpVqdkISv_YyA7J1--HdNWdIaBSIVCw"
+          "value": "y2-CbDNpddK2D-fbAcnKXcImeBsfJKUl_TOkWQFVgyBvOUxvp3s8EpBof4frWRd58l0ubMfllSz1yKeLSw8EAA"
         }
       }
     },
@@ -1019,25 +1017,25 @@
         "reason": "confirm_condition_matched",
         "user_id": "cand_55ab2",
         "agent_id": "scout_referrals",
-        "action": "hiring.reject_application",
+        "action": "hiring.publish_feedback",
         "resource": "application:req_2207:cand_55ab2",
         "context": {
-          "score_delta": 2
+          "transcript_completeness": 82
         },
         "authorization_id": "auth_bad",
         "engine_version": "2026-06-01.2",
         "policy_eval": {
           "matched_condition": {
-            "field": "score_delta",
+            "field": "transcript_completeness",
             "op": "lt",
-            "value": 5
+            "value": 100
           },
-          "field_value": 2.5
+          "field_value": 82.5
         },
         "signature": {
           "alg": "Ed25519",
           "key_id": "test-key/v1",
-          "value": "St9wFI8jENHGwwkFLGSL9H9OkPyW9FhHHSK6q4n_g_U5DYeMMfPedxdKtaYBpSUZDTdwADV6Jn9oPnurv4gmAw"
+          "value": "A5hRrkxpxcGR4STOvq02KZOeSA-rUVtLEAGsg-HRqPDnwsvHU40tpPul-VKhB3bAhSKeQeft71GvwlHm7kWjDg"
         }
       }
     },

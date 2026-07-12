@@ -182,20 +182,19 @@ confirm_condition_matched = signed_receipt(
     reason="confirm_condition_matched",
     user_id="cand_55ab2",
     agent_id="scout_referrals",
-    action="hiring.reject_application",
+    action="hiring.publish_feedback",
     resource="application:req_2207:cand_55ab2",
     context={
         "initiated_by": "agent",
-        "score": 68,
-        "threshold": 70,
-        "score_delta": 2,
-        "opt_out": False,
+        "reviewer_id": "emp_3301",
+        "transcript_completeness": 82,
+        "candidate_ai_opt_out": False,
     },
     authorization_id="auth_conditional",
     engine_version="2026-06-01.2",
     policy_eval={
-        "matched_condition": {"field": "score_delta", "op": "lt", "value": 5},
-        "field_value": 2,
+        "matched_condition": {"field": "transcript_completeness", "op": "lt", "value": 100},
+        "field_value": 82,
     },
 )
 
@@ -206,21 +205,21 @@ confirm_condition_in_matched = signed_receipt(
     reason="condition_requires_user_confirmation",
     user_id="cand_55ab2",
     agent_id="scout_referrals",
-    action="hiring.reject_application",
+    action="hiring.publish_feedback",
     resource="application:req_2207:cand_55ab2",
     context={
         "initiated_by": "agent",
-        "rule_fired": "employment_gap",
+        "checks_failed": "pii_detected",
     },
     authorization_id="auth_conditional",
     engine_version="2026-06-01.2",
     policy_eval={
         "matched_condition": {
-            "field": "rule_fired",
+            "field": "checks_failed",
             "op": "in",
-            "value": ["employment_gap", "availability"],
+            "value": ["pii_detected", "tone_flag"],
         },
-        "field_value": "employment_gap",
+        "field_value": "pii_detected",
     },
 )
 
@@ -229,14 +228,13 @@ allow_conditions_evaluated = signed_receipt(
     issued_at="2026-06-09T17:05:09.114Z",
     user_id="cand_55ab2",
     agent_id="scout_referrals",
-    action="hiring.reject_application",
+    action="hiring.publish_feedback",
     resource="application:req_2207:cand_55ab2",
     context={
         "initiated_by": "agent",
-        "score": 82,
-        "threshold": 70,
-        "score_delta": 12,
-        "opt_out": False,
+        "reviewer_id": "emp_3301",
+        "transcript_completeness": 100,
+        "candidate_ai_opt_out": False,
     },
     authorization_id="auth_conditional",
     engine_version="2026-06-01.2",
@@ -253,16 +251,16 @@ confirm_context_field_missing = signed_receipt(
     reason="context_field_missing",
     user_id="cand_55ab2",
     agent_id="scout_referrals",
-    action="hiring.reject_application",
+    action="hiring.publish_feedback",
     resource="application:req_2207:cand_55ab2",
     context={
         "initiated_by": "agent",
-        "threshold": 70,
+        "reviewer_id": "emp_3301",
     },
     authorization_id="auth_conditional",
     engine_version="2026-06-01.2",
     policy_eval={
-        "matched_condition": {"field": "score_delta", "op": "lt", "value": 5},
+        "matched_condition": {"field": "transcript_completeness", "op": "lt", "value": 100},
         "field_value": None,
     },
 )
@@ -299,14 +297,14 @@ authorization_create_replaces = signed_receipt(
     context={
         "actions": [
             {
-                "name": "hiring.reject_application",
+                "name": "hiring.publish_feedback",
                 "constraints": {
                     "confirm_when": [
-                        {"field": "score_delta", "lt": 5},
-                        {"field": "opt_out", "eq": True},
+                        {"field": "transcript_completeness", "lt": 100},
+                        {"field": "candidate_ai_opt_out", "eq": True},
                     ],
                     "escalate_when": [
-                        {"field": "score", "exists": False},
+                        {"field": "reviewer_id", "exists": False},
                     ],
                 },
             }
@@ -514,13 +512,13 @@ policy_eval_missing_field_value = signed_receipt(
     reason="confirm_condition_matched",
     user_id="cand_55ab2",
     agent_id="scout_referrals",
-    action="hiring.reject_application",
+    action="hiring.publish_feedback",
     resource="application:req_2207:cand_55ab2",
-    context={"score_delta": 2},
+    context={"transcript_completeness": 82},
     authorization_id="auth_bad",
     engine_version="2026-06-01.2",
     policy_eval={
-        "matched_condition": {"field": "score_delta", "op": "lt", "value": 5},
+        "matched_condition": {"field": "transcript_completeness", "op": "lt", "value": 100},
     },
 )
 
@@ -531,14 +529,14 @@ policy_eval_condition_missing_op = signed_receipt(
     reason="confirm_condition_matched",
     user_id="cand_55ab2",
     agent_id="scout_referrals",
-    action="hiring.reject_application",
+    action="hiring.publish_feedback",
     resource="application:req_2207:cand_55ab2",
-    context={"score_delta": 2},
+    context={"transcript_completeness": 82},
     authorization_id="auth_bad",
     engine_version="2026-06-01.2",
     policy_eval={
-        "matched_condition": {"field": "score_delta", "value": 5},
-        "field_value": 2,
+        "matched_condition": {"field": "transcript_completeness", "value": 100},
+        "field_value": 82,
     },
 )
 
@@ -549,19 +547,19 @@ policy_eval_condition_extra_member = signed_receipt(
     reason="confirm_condition_matched",
     user_id="cand_55ab2",
     agent_id="scout_referrals",
-    action="hiring.reject_application",
+    action="hiring.publish_feedback",
     resource="application:req_2207:cand_55ab2",
-    context={"score_delta": 2},
+    context={"transcript_completeness": 82},
     authorization_id="auth_bad",
     engine_version="2026-06-01.2",
     policy_eval={
         "matched_condition": {
-            "field": "score_delta",
+            "field": "transcript_completeness",
             "op": "lt",
-            "value": 5,
+            "value": 100,
             "debug": True,
         },
-        "field_value": 2,
+        "field_value": 82,
     },
 )
 
@@ -572,17 +570,17 @@ policy_eval_float_value = signed_receipt(
     reason="confirm_condition_matched",
     user_id="cand_55ab2",
     agent_id="scout_referrals",
-    action="hiring.reject_application",
+    action="hiring.publish_feedback",
     resource="application:req_2207:cand_55ab2",
-    context={"score_delta": 2},
+    context={"transcript_completeness": 82},
     authorization_id="auth_bad",
     engine_version="2026-06-01.2",
     policy_eval={
-        "matched_condition": {"field": "score_delta", "op": "lt", "value": 5},
-        "field_value": 2,
+        "matched_condition": {"field": "transcript_completeness", "op": "lt", "value": 100},
+        "field_value": 82,
     },
 )
-policy_eval_float_value["policy_eval"]["field_value"] = 2.5
+policy_eval_float_value["policy_eval"]["field_value"] = 82.5
 
 # Integer outside the I-JSON safe range ±(2^53-1) in context. Signed clean with a
 # placeholder, then the out-of-range value is injected: the verifier rejects it at
