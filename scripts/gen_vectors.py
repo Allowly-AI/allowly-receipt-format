@@ -175,6 +175,22 @@ escalate_action = signed_receipt(
     authorization_id="auth_escalate",
 )
 
+deny_condition_matched = signed_receipt(
+    "rcp_01J0Z7Q4DENYCONDITION00",
+    issued_at="2026-06-09T17:03:39.114Z",
+    decision="deny",
+    reason="deny_condition_matched",
+    action="record.publish",
+    resource="record:2207",
+    context={"record_status": "blocked"},
+    authorization_id="auth_conditional_deny",
+    engine_version="2026-06-01.2",
+    policy_eval={
+        "matched_condition": {"field": "record_status", "op": "eq", "value": "blocked"},
+        "field_value": "blocked",
+    },
+)
+
 confirm_condition_matched = signed_receipt(
     "rcp_01J0Z7Q4BORDERLINE0CONFIRM",
     issued_at="2026-06-09T17:04:09.114Z",
@@ -623,6 +639,7 @@ should_verify = [
     ("action_unicode", "action", "non-ASCII characters in multiple fields", unicode_resource),
     ("action_rich_context", "action", "nested context exercising canonicalization", rich_context),
     ("action_escalate", "action", "escalate action receipt with escalation context", escalate_action),
+    ("action_deny_condition_matched", "action", "deny action receipt with policy_eval matched_condition", deny_condition_matched),
     ("action_confirm_condition_matched", "action", "confirm action receipt with policy_eval matched_condition", confirm_condition_matched),
     ("action_confirm_condition_in_matched", "action", "confirm action receipt with policy_eval in-condition array value", confirm_condition_in_matched),
     ("action_allow_conditions_evaluated", "action", "allow action receipt with policy_eval attesting no condition matched", allow_conditions_evaluated),

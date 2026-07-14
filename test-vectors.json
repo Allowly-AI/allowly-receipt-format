@@ -165,6 +165,41 @@
       }
     },
     {
+      "name": "action_deny_condition_matched",
+      "kind": "action",
+      "description": "deny action receipt with policy_eval matched_condition",
+      "receipt": {
+        "version": "1.0",
+        "receipt_id": "rcp_01J0Z7Q4DENYCONDITION00",
+        "workspace_id": "ws_test",
+        "issued_at": "2026-06-09T17:03:39.114Z",
+        "decision": "deny",
+        "reason": "deny_condition_matched",
+        "user_id": "emp_8821",
+        "agent_id": "referral_outreach",
+        "action": "record.publish",
+        "resource": "record:2207",
+        "context": {
+          "record_status": "blocked"
+        },
+        "authorization_id": "auth_conditional_deny",
+        "engine_version": "2026-06-01.2",
+        "policy_eval": {
+          "matched_condition": {
+            "field": "record_status",
+            "op": "eq",
+            "value": "blocked"
+          },
+          "field_value": "blocked"
+        },
+        "signature": {
+          "alg": "Ed25519",
+          "key_id": "test-key/v1",
+          "value": "S3YKBQz6PBm4TTT4iqO0OdfCFefveYJnuRYOO9bFnWVatw7mS0DuoCzyqz1ocAEZqW9LlJfurFViYLqNzOXgAA"
+        }
+      }
+    },
+    {
       "name": "action_confirm_condition_matched",
       "kind": "action",
       "description": "confirm action receipt with policy_eval matched_condition",

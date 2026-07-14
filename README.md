@@ -4,7 +4,7 @@ An open format for **cryptographically signed, third-party-verifiable receipts**
 
 A receipt is a signed record of one decision: *at time T, issuer W decided that agent A may (or may not) perform action X on resource R for user U under authorization C.* Anyone holding the receipt and the issuer's Ed25519 public key can verify it offline, without contacting the issuer.
 
-Action receipts can include `policy_eval`, a small proof of which immutable authorization condition routed a decision to `confirm` or `escalate`. Draft.6 fixes two cross-language canonicalization defects in the reference verifiers and makes supersession lineage bidirectional (a revoked authorization can now point forward to its successor).
+Action receipts can include `policy_eval`, a small record of which immutable authorization condition routed a decision to `deny`, `confirm`, or `escalate`. Draft.6 fixes two cross-language canonicalization defects in the reference verifiers and makes supersession lineage bidirectional (a revoked authorization can now point forward to its successor).
 
 ## Why this exists
 

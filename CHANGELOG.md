@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- Document `deny_when` as a non-normative issuer convention and add a valid
+  `deny_condition_matched` compatibility vector. Wire format and verifier
+  behavior are unchanged.
+
 ## v1.0.5 — 2026-06-18
 
 Packaging-only release to publish the current verifier packages from a fresh
