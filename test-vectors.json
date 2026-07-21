@@ -1175,6 +1175,215 @@
           "value": "hvzHgXy9QYeARY58iujudwRw2HFiSW2x3nW-AJqHz49io3unS2VAuqlkP5267hktAAN9sWFyUmf9imfsggDqCQ"
         }
       }
+    },
+    {
+      "name": "context_lone_surrogate",
+      "description": "context string contains an unpaired Unicode surrogate",
+      "expected_reason": "unpaired unicode surrogate",
+      "receipt": {
+        "version": "1.0",
+        "receipt_id": "rcp_01HXZSURROGATE0000000000",
+        "workspace_id": "ws_test",
+        "issued_at": "2026-04-21T14:32:17.482Z",
+        "decision": "allow",
+        "reason": "authorization_granted_action_active",
+        "user_id": "emp_8821",
+        "agent_id": "referral_outreach",
+        "action": "outreach.send",
+        "resource": "edge:emp_8821:conn_9f2a",
+        "context": {
+          "note": "bad\ud800end"
+        },
+        "authorization_id": "auth_surrogate",
+        "engine_version": "2026-04-17.1",
+        "signature": {
+          "alg": "Ed25519",
+          "key_id": "test-key/v1",
+          "value": "iVHTqZI7igw_jNma0lrF7mPI5rPdjqDkBgbYXWLaTkiSOJc4QpM6E2epPxe8GB-EEZ7u_AG3MF_vpeJWnjiOCw"
+        }
+      }
+    },
+    {
+      "name": "context_deep_nesting",
+      "description": "context nested beyond the canonicalization depth limit",
+      "expected_reason": "max depth",
+      "receipt": {
+        "version": "1.0",
+        "receipt_id": "rcp_01HXZDEEPNEST00000000000",
+        "workspace_id": "ws_test",
+        "issued_at": "2026-04-21T14:32:17.482Z",
+        "decision": "allow",
+        "reason": "authorization_granted_action_active",
+        "user_id": "emp_8821",
+        "agent_id": "referral_outreach",
+        "action": "outreach.send",
+        "resource": "edge:emp_8821:conn_9f2a",
+        "context": {
+          "deep": {
+            "a": {
+              "a": {
+                "a": {
+                  "a": {
+                    "a": {
+                      "a": {
+                        "a": {
+                          "a": {
+                            "a": {
+                              "a": {
+                                "a": {
+                                  "a": {
+                                    "a": {
+                                      "a": {
+                                        "a": {
+                                          "a": {
+                                            "a": {
+                                              "a": {
+                                                "a": {
+                                                  "a": {
+                                                    "a": {
+                                                      "a": {
+                                                        "a": {
+                                                          "a": {
+                                                            "a": {
+                                                              "a": {
+                                                                "a": {
+                                                                  "a": {
+                                                                    "a": {
+                                                                      "a": {
+                                                                        "a": {
+                                                                          "a": {
+                                                                            "a": {
+                                                                              "a": {
+                                                                                "a": {
+                                                                                  "a": {
+                                                                                    "a": {
+                                                                                      "a": {
+                                                                                        "a": {
+                                                                                          "a": "bottom"
+                                                                                        }
+                                                                                      }
+                                                                                    }
+                                                                                  }
+                                                                                }
+                                                                              }
+                                                                            }
+                                                                          }
+                                                                        }
+                                                                      }
+                                                                    }
+                                                                  }
+                                                                }
+                                                              }
+                                                            }
+                                                          }
+                                                        }
+                                                      }
+                                                    }
+                                                  }
+                                                }
+                                              }
+                                            }
+                                          }
+                                        }
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "authorization_id": "auth_deep",
+        "engine_version": "2026-04-17.1",
+        "signature": {
+          "alg": "Ed25519",
+          "key_id": "test-key/v1",
+          "value": "D108UhcAW-V_RqqYu3xo6YABfpx-aBgkuqbcIFfh9zCTJq0r-IdgwArWUyzyUolXjz8v46W1TEp4qzdWCt1pCg"
+        }
+      }
+    },
+    {
+      "name": "issued_at_impossible_date",
+      "description": "issued_at is February 30 (shape-valid, not a real date)",
+      "expected_reason": "calendar",
+      "receipt": {
+        "version": "1.0",
+        "receipt_id": "rcp_01HXZMINIMAL0000000000000",
+        "workspace_id": "ws_test",
+        "issued_at": "2026-02-30T12:00:00.000Z",
+        "decision": "allow",
+        "reason": "authorization_granted_action_active",
+        "user_id": "emp_8821",
+        "agent_id": "referral_outreach",
+        "action": "outreach.send",
+        "resource": "edge:emp_8821:conn_9f2a",
+        "context": {},
+        "authorization_id": "auth_01HXZ2A0K1L2M3N4P5Q6R7S8T9",
+        "engine_version": "2026-04-17.1",
+        "signature": {
+          "alg": "Ed25519",
+          "key_id": "test-key/v1",
+          "value": "CK5XKYXf0Ka2OYQ6BpcjTUrBsXsbdgazZmohCTt4bovdnsq1e2JrOZOjiBfIr8VJNLzFCsn7wDRAwEAkdGZyBg"
+        }
+      }
+    },
+    {
+      "name": "issued_at_non_utc_offset",
+      "description": "issued_at uses a +02:00 offset instead of Z",
+      "expected_reason": "millisecond precision",
+      "receipt": {
+        "version": "1.0",
+        "receipt_id": "rcp_01HXZMINIMAL0000000000000",
+        "workspace_id": "ws_test",
+        "issued_at": "2026-04-21T16:32:17.482+02:00",
+        "decision": "allow",
+        "reason": "authorization_granted_action_active",
+        "user_id": "emp_8821",
+        "agent_id": "referral_outreach",
+        "action": "outreach.send",
+        "resource": "edge:emp_8821:conn_9f2a",
+        "context": {},
+        "authorization_id": "auth_01HXZ2A0K1L2M3N4P5Q6R7S8T9",
+        "engine_version": "2026-04-17.1",
+        "signature": {
+          "alg": "Ed25519",
+          "key_id": "test-key/v1",
+          "value": "CK5XKYXf0Ka2OYQ6BpcjTUrBsXsbdgazZmohCTt4bovdnsq1e2JrOZOjiBfIr8VJNLzFCsn7wDRAwEAkdGZyBg"
+        }
+      }
+    },
+    {
+      "name": "issued_at_missing_millis",
+      "description": "issued_at lacks millisecond precision",
+      "expected_reason": "millisecond precision",
+      "receipt": {
+        "version": "1.0",
+        "receipt_id": "rcp_01HXZMINIMAL0000000000000",
+        "workspace_id": "ws_test",
+        "issued_at": "2026-04-21T14:32:17Z",
+        "decision": "allow",
+        "reason": "authorization_granted_action_active",
+        "user_id": "emp_8821",
+        "agent_id": "referral_outreach",
+        "action": "outreach.send",
+        "resource": "edge:emp_8821:conn_9f2a",
+        "context": {},
+        "authorization_id": "auth_01HXZ2A0K1L2M3N4P5Q6R7S8T9",
+        "engine_version": "2026-04-17.1",
+        "signature": {
+          "alg": "Ed25519",
+          "key_id": "test-key/v1",
+          "value": "CK5XKYXf0Ka2OYQ6BpcjTUrBsXsbdgazZmohCTt4bovdnsq1e2JrOZOjiBfIr8VJNLzFCsn7wDRAwEAkdGZyBg"
+        }
+      }
     }
   ]
 }

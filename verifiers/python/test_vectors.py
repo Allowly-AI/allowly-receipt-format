@@ -8,7 +8,37 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-from allowly_receipt_format import verify_receipt, load_keys_from_json, VerificationError
+from allowly_receipt_format import canonicalize, verify_receipt, load_keys_from_json, VerificationError
+
+# Hand-written expected canonical form for the spec §4.3 reference example.
+# Deliberately NOT produced by the reference canonicalizer: if canonicalization
+# regresses, generated vectors would regress with it and tests would still pass.
+GOLDEN_PAYLOAD = {
+    "version": "1.0",
+    "receipt_id": "rcp_01HXZ2B3QW4N5M6P7R8S9T0V1W",
+    "workspace_id": "ws_01HXA1B2C3D4E5F6G7H8J9K0L1",
+    "issued_at": "2026-04-21T14:32:17.482Z",
+    "decision": "allow",
+    "reason": "authorization_granted_action_active",
+    "user_id": "emp_8821",
+    "agent_id": "referral_outreach",
+    "action": "outreach.send",
+    "resource": "edge:emp_8821:conn_9f2a",
+    "context": {"session_id": "sess_7f2", "origin": "chat", "initiated_by": "user"},
+    "authorization_id": "auth_01HXZ2A0K1L2M3N4P5Q6R7S8T9",
+    "engine_version": "2026-04-17.1",
+}
+GOLDEN_CANONICAL = (
+    '{"action":"outreach.send","agent_id":"referral_outreach",'
+    '"authorization_id":"auth_01HXZ2A0K1L2M3N4P5Q6R7S8T9",'
+    '"context":{"initiated_by":"user","origin":"chat","session_id":"sess_7f2"},'
+    '"decision":"allow","engine_version":"2026-04-17.1",'
+    '"issued_at":"2026-04-21T14:32:17.482Z",'
+    '"reason":"authorization_granted_action_active",'
+    '"receipt_id":"rcp_01HXZ2B3QW4N5M6P7R8S9T0V1W",'
+    '"resource":"edge:emp_8821:conn_9f2a","user_id":"emp_8821","version":"1.0",'
+    '"workspace_id":"ws_01HXA1B2C3D4E5F6G7H8J9K0L1"}'
+)
 
 
 def main(vectors_path: str) -> int:
@@ -21,7 +51,15 @@ def main(vectors_path: str) -> int:
 
     failures = 0
 
-    print(f"Testing {len(vectors['should_verify'])} should_verify vectors...")
+    print("Testing golden canonical bytes (spec §4.3)...")
+    got = canonicalize(GOLDEN_PAYLOAD).decode("utf-8")
+    if got == GOLDEN_CANONICAL:
+        print("  OK    golden_canonical_form")
+    else:
+        print(f"  FAIL  golden_canonical_form:\n    expected: {GOLDEN_CANONICAL}\n    got:      {got}")
+        failures += 1
+
+    print(f"\nTesting {len(vectors['should_verify'])} should_verify vectors...")
     for v in vectors["should_verify"]:
         try:
             verify_receipt(v["receipt"], keys, now=now)

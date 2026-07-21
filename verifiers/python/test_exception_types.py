@@ -68,6 +68,22 @@ def main(vectors_path: str) -> int:
     ):
         assert issubclass(exc_type, VerificationError)
 
+    # Malformed / hostile key documents must raise SchemaError, never a raw
+    # KeyError/TypeError, and duplicate ids or public keys must be rejected
+    # (the unsigned signature.key_id selects the trust anchor).
+    for bad_doc in (
+        {},                                # missing 'keys'
+        {"keys": "not-a-list"},
+        {"keys": [{}]},                    # entry missing fields
+        {"keys": keys_doc["keys"] * 2},    # duplicate key_id + public key
+    ):
+        try:
+            load_keys_from_json(bad_doc)  # type: ignore[arg-type]
+        except SchemaError:
+            pass
+        else:
+            raise AssertionError(f"expected SchemaError for keys doc {bad_doc!r}")
+
     print("Exception taxonomy passes.")
     return 0
 

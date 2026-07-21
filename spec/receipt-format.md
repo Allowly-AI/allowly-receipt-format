@@ -201,7 +201,7 @@ An auditor can reconstruct the full story of an authorization by querying all re
 3. Zero or more `escalation.resolve` receipts for third-party escalation decisions under this authorization.
 4. At most one `authorization.revoke` receipt (if and when the authorization was revoked).
 
-The chain is self-verifying: every receipt is independently signed, ordered by `issued_at`, and cryptographically tied to the same `authorization_id`. Producing this chain is the primary artifact customers present in disputes.
+Every receipt in the chain is independently signed, ordered by `issued_at`, and cryptographically tied to the same `authorization_id`. Verification proves each presented receipt is genuine and untampered; it does **not** prove the presented set is complete — a party can omit receipts (e.g. a revoke or a deny) and the remainder still verifies. Producing this chain is the primary artifact customers present in disputes; parties relying on completeness must obtain the receipt set from a source they trust, such as the issuer's export API.
 
 Rule changes never mutate a chain. Changing actions, constraints, or verb routing is expressed as revoking the old authorization and creating a new one (§3.3); the creation receipt SHOULD carry `replaces` and the revocation receipt SHOULD carry `revoked_by: "superseded"` with `superseded_by`, so successive chains form a walkable, bidirectionally linked lineage. Note that no-match denies (an action receipt with `authorization_id: null`, §3.1) pin no chain at all; if such a deny is issued during the gap between a revoke and its successor create, it belongs to no authorization and is reconstructable only from `issued_at` ordering. §8 recommends an ordering that minimizes this gap.
 
@@ -441,6 +441,8 @@ Verifiers and users of verified receipts **MUST NOT** assume the following:
 2. **That the user's approval was informed.** An `authorization.create` receipt records that the customer told the issuer the user approved. It does not prove the customer's approval UI was clear, the user read it, or the user understood what they approved. The quality of the approval UX is the customer's responsibility, not the receipt's.
 3. **That the context is true.** Fields like `initiated_by` and `origin` reflect what the customer's system reported at the time. The issuer does not independently verify them.
 4. **That `user_id` corresponds to any particular real-world person.** It is an opaque identifier the customer controls.
+5. **That a presented set of receipts is complete.** Signatures prove each receipt is genuine; nothing in the format proves no other receipt exists for the same `authorization_id` (§3.5).
+6. **That a receipt was signed at `issued_at`.** The timestamp is a signed claim, not a proof of signing time; a compromised key can produce receipts bearing any `issued_at` (§10.1).
 
 These limits are intentional. The receipt attests to what the issuer observed and recorded, not to ground truth about the world.
 
@@ -506,7 +508,7 @@ Vectors include:
 
 ### 10.1 Key compromise
 
-If an issuer's Ed25519 private key is compromised, all receipts signed under that key are untrustworthy from the moment of compromise until rotation. Issuers **SHOULD** rotate keys at least annually. Verifiers **SHOULD** consult the key document's `active_until` field when verifying old receipts; a key retired for compromise should have `active_until` set to the compromise time, invalidating all later receipts signed under it.
+If an issuer's Ed25519 private key is compromised, all receipts signed under that key are untrustworthy from the moment of compromise until rotation. Issuers **SHOULD** rotate keys at least annually. Verifiers **SHOULD** consult the key document's `active_until` field when verifying old receipts; a key retired for compromise should have `active_until` set to the compromise time. Note the limit of this mitigation: the window check compares `active_until` against the receipt's *claimed* `issued_at`, and an attacker holding the key controls that claim — a receipt backdated to before the compromise time still verifies (§7 item 6). Retiring a key bounds honest use; it does not detect backdated forgeries. Detecting those requires evidence outside this format, such as an external timestamp or the issuer's own receipt log.
 
 ### 10.2 Canonicalization fragility
 

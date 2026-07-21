@@ -59,6 +59,14 @@ _B64URL_RE = re.compile(r"^[A-Za-z0-9_-]*$")
 _RFC3339_RE = re.compile(
     r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:\d{2})$"
 )
+# Receipt issued_at is stricter than key-document timestamps: spec §3 requires
+# exactly UTC, millisecond precision, Z suffix.
+_ISSUED_AT_RE = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$")
+_SURROGATE_RE = re.compile("[\ud800-\udfff]")
+# Depth/node limits so hostile receipts fail with a VerificationError instead
+# of exhausting the recursion stack or memory during canonicalization.
+MAX_PAYLOAD_DEPTH = 32
+MAX_PAYLOAD_NODES = 50_000
 __all__ = [
     "KeyOutsideActiveWindowError",
     "PublicKey",
@@ -124,7 +132,11 @@ def _parse_rfc3339(s: str) -> datetime:
     if not isinstance(s, str) or not _RFC3339_RE.match(s):
         raise SchemaError(f"not an RFC 3339 timestamp with timezone: {s!r}")
     iso = s[:-1] + "+00:00" if s.endswith("Z") else s
-    dt = datetime.fromisoformat(iso)
+    try:
+        dt = datetime.fromisoformat(iso)
+    except ValueError:
+        # e.g. Feb 30: shape-valid but not a real calendar date.
+        raise SchemaError(f"not a real calendar date/time: {s}") from None
     if dt.tzinfo is None:
         raise SchemaError(f"timestamp missing timezone: {s}")
     return dt
@@ -151,8 +163,53 @@ def canonicalize(payload: dict[str, Any]) -> bytes:
       2. It emits short escapes like ``\\n`` for control characters, but §4.2
          rule 5 mandates the lowercase ``\\uXXXX`` form.
     """
-    _assert_no_floats(payload)
+    _validate_tree(payload)
     return _encode_value(payload).encode("utf-8")
+
+
+def _validate_tree(payload: Any) -> None:
+    """Iterative pre-walk: bound depth/size, reject lone surrogates and
+    non-integer/unsafe numbers (spec §4.2 rules 1 and 6).
+
+    Runs before the recursive encoder so hostile payloads fail with a
+    ``SchemaError`` instead of a raw ``RecursionError`` (deep nesting) or
+    ``UnicodeEncodeError`` (lone surrogates hitting ``str.encode``). In a
+    Python ``str`` any code point in U+D800–U+DFFF is by definition unpaired,
+    so tampered text could otherwise canonicalize differently across
+    implementations.
+    """
+    nodes = 0
+    stack: list[tuple[Any, int]] = [(payload, 1)]
+    while stack:
+        value, depth = stack.pop()
+        nodes += 1
+        if depth > MAX_PAYLOAD_DEPTH:
+            raise SchemaError(f"payload nesting exceeds max depth {MAX_PAYLOAD_DEPTH}")
+        if nodes > MAX_PAYLOAD_NODES:
+            raise SchemaError(f"payload exceeds max node count {MAX_PAYLOAD_NODES}")
+        if isinstance(value, bool):  # before int: bool is an int subclass.
+            continue
+        if isinstance(value, float):
+            raise SchemaError("v1 receipts must not contain non-integer numbers")
+        if isinstance(value, int):
+            if abs(value) > MAX_SAFE_INTEGER:
+                raise SchemaError(
+                    f"integer {value} exceeds the safe range ±(2^53-1); v1 receipts "
+                    f"must not carry integers that lose precision in IEEE-754 doubles"
+                )
+        elif isinstance(value, str):
+            if _SURROGATE_RE.search(value):
+                raise SchemaError("string contains an unpaired Unicode surrogate")
+        elif isinstance(value, dict):
+            for k, v in value.items():
+                if not isinstance(k, str):
+                    raise SchemaError(f"object key must be a string, got {type(k).__name__}")
+                if _SURROGATE_RE.search(k):
+                    raise SchemaError("string contains an unpaired Unicode surrogate")
+                stack.append((v, depth + 1))
+        elif isinstance(value, list):
+            for item in value:
+                stack.append((item, depth + 1))
 
 
 def _utf16_sort_key(key: str) -> bytes:
@@ -197,28 +254,6 @@ def _encode_string(s: str) -> str:
             out.append(ch)
     out.append('"')
     return "".join(out)
-
-
-def _assert_no_floats(obj: Any) -> None:
-    """v1 receipts MUST NOT contain non-integer numbers, nor integers outside
-    the I-JSON safe range (spec §4.2 rule 6)."""
-    if isinstance(obj, bool):
-        return  # bool is a subclass of int in Python; allow.
-    if isinstance(obj, float):
-        raise SchemaError("v1 receipts must not contain non-integer numbers")
-    if isinstance(obj, int):
-        if abs(obj) > MAX_SAFE_INTEGER:
-            raise SchemaError(
-                f"integer {obj} exceeds the safe range ±(2^53-1); v1 receipts "
-                f"must not carry integers that lose precision in IEEE-754 doubles"
-            )
-        return
-    if isinstance(obj, dict):
-        for v in obj.values():
-            _assert_no_floats(v)
-    elif isinstance(obj, list):
-        for v in obj:
-            _assert_no_floats(v)
 
 
 def verify_receipt(
@@ -325,6 +360,13 @@ def verify_receipt(
 
     # Step 5: timestamp sanity
     issued_at = _parse_rfc3339(receipt["issued_at"])
+    # Spec §3: issued_at is exactly UTC, millisecond precision, Z suffix.
+    # (Key-document timestamps stay on the general RFC 3339 rule.)
+    if not _ISSUED_AT_RE.match(receipt["issued_at"]):
+        raise SchemaError(
+            f"issued_at must be UTC millisecond precision "
+            f"YYYY-MM-DDTHH:MM:SS.sssZ, got {receipt['issued_at']!r}"
+        )
     if issued_at > now + MAX_FUTURE_SKEW:
         raise SchemaError(
             f"receipt issued in the future: {issued_at.isoformat()} > {now.isoformat()}"
@@ -463,13 +505,41 @@ def _find_key(
 
 
 def load_keys_from_json(doc: dict[str, Any]) -> list[PublicKey]:
-    """Parse the /v1/workspaces/{id}/keys response shape into PublicKey list."""
+    """Parse the /v1/workspaces/{id}/keys response shape into PublicKey list.
+
+    Raises SchemaError (never a raw KeyError/ValueError) on a malformed
+    document, and rejects duplicate key ids and duplicate public keys: the
+    unsigned ``signature.key_id`` selects the trust anchor, so two entries
+    sharing an id or a key with different active windows would let an attacker
+    pick the more permissive window (spec §10.1).
+    """
+    if not isinstance(doc, dict) or not isinstance(doc.get("keys"), list):
+        raise SchemaError("keys document must be an object with a 'keys' array")
     out = []
-    for k in doc["keys"]:
+    seen_ids: set[str] = set()
+    seen_pubs: set[str] = set()
+    for i, k in enumerate(doc["keys"]):
+        if not isinstance(k, dict):
+            raise SchemaError(f"keys[{i}] must be an object")
+        for field in ("key_id", "alg", "public_key", "active_from"):
+            if not isinstance(k.get(field), str):
+                raise SchemaError(f"keys[{i}].{field} must be a string")
+        if k["key_id"] in seen_ids:
+            raise SchemaError(f"duplicate key_id in keys document: {k['key_id']!r}")
+        if k["public_key"] in seen_pubs:
+            raise SchemaError(f"duplicate public key in keys document: {k['key_id']!r}")
+        seen_ids.add(k["key_id"])
+        seen_pubs.add(k["public_key"])
+        try:
+            pub = _b64url_decode(k["public_key"])
+        except ValueError:
+            raise SchemaError(f"keys[{i}].public_key is not valid base64url") from None
+        if len(pub) != 32:
+            raise SchemaError(f"keys[{i}].public_key must decode to 32 bytes, got {len(pub)}")
         out.append(PublicKey(
             key_id=k["key_id"],
             alg=k["alg"],
-            public_key_bytes=_b64url_decode(k["public_key"]),
+            public_key_bytes=pub,
             active_from=_parse_rfc3339(k["active_from"]),
             active_until=_parse_rfc3339(k["active_until"]) if k.get("active_until") else None,
         ))
@@ -515,6 +585,11 @@ def _verify_export(
                 total += 1
                 failed += 1
                 print(f"INVALID  line {lineno}: not JSON ({e})", file=sys.stderr)
+                continue
+            if not isinstance(receipt, dict):
+                total += 1
+                failed += 1
+                print(f"INVALID  line {lineno}: not a JSON object", file=sys.stderr)
                 continue
             if authorization_id is not None and receipt.get("authorization_id") != authorization_id:
                 skipped += 1
@@ -578,7 +653,12 @@ def _check_chain_invariants(chain: list[dict[str, Any]], authorization_id: str) 
             print(f"CHAIN WARNING: {problem}", file=sys.stderr)
         return 1
 
-    print(f"Chain OK: 1 create, {len(revokes)} revoke, {len(chain)} signed receipt(s).")
+    # Completeness is not provable from signatures alone (spec §3.5): this
+    # only attests that the receipts *supplied* are consistent.
+    print(
+        f"Receipt subset OK: 1 create, {len(revokes)} revoke, {len(chain)} signed "
+        f"receipt(s). (Attests supplied receipts only; cannot prove none were omitted.)"
+    )
     return 0
 
 

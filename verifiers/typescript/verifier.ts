@@ -110,32 +110,60 @@ function b64urlDecode(s: string): Uint8Array {
 // Canonicalization (spec §4)
 // ---------------------------------------------------------------------------
 
+// Depth/node limits so hostile receipts fail with a VerificationError instead
+// of blowing the call stack during canonicalization.
+const MAX_PAYLOAD_DEPTH = 32;
+const MAX_PAYLOAD_NODES = 50_000;
+
 export function canonicalize(payload: unknown): Uint8Array {
-  assertNoFloats(payload);
+  validateTree(payload);
   const s = stringify(payload);
   return new TextEncoder().encode(s);
 }
 
-function assertNoFloats(obj: unknown): void {
-  if (typeof obj === "number") {
-    if (!Number.isInteger(obj)) {
-      throw new VerificationError("v1 receipts must not contain non-integer numbers");
+function validateTree(payload: unknown): void {
+  // Iterative pre-walk: bound depth/size, reject lone surrogates and
+  // non-integer/unsafe numbers (spec §4.2 rules 1 and 6). Without the
+  // well-formedness check, TextEncoder silently replaces an unpaired
+  // surrogate with U+FFFD — so two *different* strings could canonicalize to
+  // identical bytes and a tampered receipt would still verify.
+  let nodes = 0;
+  const stack: Array<[unknown, number]> = [[payload, 1]];
+  while (stack.length > 0) {
+    const [value, depth] = stack.pop()!;
+    nodes += 1;
+    if (depth > MAX_PAYLOAD_DEPTH) {
+      throw new VerificationError(`payload nesting exceeds max depth ${MAX_PAYLOAD_DEPTH}`);
     }
-    // Integers outside the I-JSON safe range (±(2^53-1)) lose precision in
-    // doubles and would render with an exponent (e.g. "1e+21"), violating
-    // §4.2 rule 6. Number.isSafeInteger excludes them.
-    if (!Number.isSafeInteger(obj)) {
-      throw new VerificationError(
-        "integer exceeds the safe range ±(2^53-1); v1 receipts must not carry integers that lose precision in IEEE-754 doubles",
-      );
+    if (nodes > MAX_PAYLOAD_NODES) {
+      throw new VerificationError(`payload exceeds max node count ${MAX_PAYLOAD_NODES}`);
     }
-    return;
-  }
-  if (obj === null || typeof obj !== "object") return;
-  if (Array.isArray(obj)) {
-    obj.forEach(assertNoFloats);
-  } else {
-    Object.values(obj as Record<string, unknown>).forEach(assertNoFloats);
+    if (typeof value === "number") {
+      if (!Number.isInteger(value)) {
+        throw new VerificationError("v1 receipts must not contain non-integer numbers");
+      }
+      // Integers outside the I-JSON safe range (±(2^53-1)) lose precision in
+      // doubles and would render with an exponent (e.g. "1e+21"), violating
+      // §4.2 rule 6. Number.isSafeInteger excludes them.
+      if (!Number.isSafeInteger(value)) {
+        throw new VerificationError(
+          "integer exceeds the safe range ±(2^53-1); v1 receipts must not carry integers that lose precision in IEEE-754 doubles",
+        );
+      }
+    } else if (typeof value === "string") {
+      if (!value.isWellFormed()) {
+        throw new VerificationError("string contains an unpaired Unicode surrogate");
+      }
+    } else if (Array.isArray(value)) {
+      for (const item of value) stack.push([item, depth + 1]);
+    } else if (value !== null && typeof value === "object") {
+      for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+        if (!k.isWellFormed()) {
+          throw new VerificationError("string contains an unpaired Unicode surrogate");
+        }
+        stack.push([v, depth + 1]);
+      }
+    }
   }
 }
 
@@ -285,6 +313,13 @@ export async function verifyReceipt(
 
   // Step 5: timestamp sanity
   const issuedAt = parseRFC3339(r.issued_at);
+  // Spec §3: issued_at is exactly UTC, millisecond precision, Z suffix.
+  // (Key-document timestamps stay on the general RFC 3339 rule.)
+  if (!ISSUED_AT_RE.test(r.issued_at)) {
+    throw new VerificationError(
+      `issued_at must be UTC millisecond precision YYYY-MM-DDTHH:MM:SS.sssZ, got ${JSON.stringify(r.issued_at)}`,
+    );
+  }
   if (issuedAt.getTime() > now.getTime() + MAX_FUTURE_SKEW_MS) {
     throw new VerificationError(
       `receipt issued in the future: ${issuedAt.toISOString()} > ${now.toISOString()}`,
@@ -446,6 +481,9 @@ function checkPolicyEval(value: unknown): void {
 }
 
 const RFC3339_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:\d{2})$/;
+// Receipt issued_at is stricter than key-document timestamps: spec §3 requires
+// exactly UTC, millisecond precision, Z suffix.
+const ISSUED_AT_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
 
 function parseRFC3339(s: string): Date {
   // `new Date(s)` alone accepts timezone-less and date-only strings, parsing
@@ -457,6 +495,13 @@ function parseRFC3339(s: string): Date {
   const d = new Date(s);
   if (isNaN(d.getTime())) {
     throw new VerificationError(`invalid RFC 3339 timestamp: ${s}`);
+  }
+  // `new Date` silently rolls shape-valid but impossible dates (Feb 30 → Mar 2),
+  // so re-check the calendar day from the string's own components.
+  const y = Number(s.slice(0, 4)), mo = Number(s.slice(5, 7)), day = Number(s.slice(8, 10));
+  const utc = new Date(Date.UTC(y, mo - 1, day));
+  if (utc.getUTCFullYear() !== y || utc.getUTCMonth() !== mo - 1 || utc.getUTCDate() !== day) {
+    throw new VerificationError(`not a real calendar date/time: ${s}`);
   }
   return d;
 }
@@ -491,11 +536,43 @@ export interface KeyDocument {
 }
 
 export function loadKeysFromJson(doc: KeyDocument): PublicKey[] {
-  return doc.keys.map((k) => ({
-    keyId: k.key_id,
-    alg: "Ed25519" as const,
-    publicKeyBytes: b64urlDecode(k.public_key),
-    activeFrom: parseRFC3339(k.active_from),
-    activeUntil: k.active_until ? parseRFC3339(k.active_until) : null,
-  }));
+  // Throws VerificationError (never a raw TypeError) on a malformed document,
+  // and rejects duplicate key ids and duplicate public keys: the unsigned
+  // signature.key_id selects the trust anchor, so two entries sharing an id or
+  // a key with different active windows would let an attacker pick the more
+  // permissive window (spec §10.1).
+  if (typeof doc !== "object" || doc === null || !Array.isArray((doc as KeyDocument).keys)) {
+    throw new VerificationError("keys document must be an object with a 'keys' array");
+  }
+  const seenIds = new Set<string>();
+  const seenPubs = new Set<string>();
+  return doc.keys.map((k, i) => {
+    if (typeof k !== "object" || k === null) {
+      throw new VerificationError(`keys[${i}] must be an object`);
+    }
+    for (const field of ["key_id", "alg", "public_key", "active_from"] as const) {
+      if (typeof k[field] !== "string") {
+        throw new VerificationError(`keys[${i}].${field} must be a string`);
+      }
+    }
+    if (seenIds.has(k.key_id)) {
+      throw new VerificationError(`duplicate key_id in keys document: ${JSON.stringify(k.key_id)}`);
+    }
+    if (seenPubs.has(k.public_key)) {
+      throw new VerificationError(`duplicate public key in keys document: ${JSON.stringify(k.key_id)}`);
+    }
+    seenIds.add(k.key_id);
+    seenPubs.add(k.public_key);
+    const pub = b64urlDecode(k.public_key);
+    if (pub.length !== 32) {
+      throw new VerificationError(`keys[${i}].public_key must decode to 32 bytes, got ${pub.length}`);
+    }
+    return {
+      keyId: k.key_id,
+      alg: "Ed25519" as const,
+      publicKeyBytes: pub,
+      activeFrom: parseRFC3339(k.active_from),
+      activeUntil: k.active_until ? parseRFC3339(k.active_until) : null,
+    };
+  });
 }

@@ -618,6 +618,44 @@ timestamp_no_timezone["issued_at"] = "2026-04-21T14:32:17.482"
 signature_padded = copy.deepcopy(minimal_allow)
 signature_padded["signature"]["value"] = minimal_allow["signature"]["value"] + "=="
 
+# Lone (unpaired) Unicode surrogate in a context value. Signed clean, then the
+# surrogate is injected: verifiers must reject it at canonicalization instead of
+# silently substituting U+FFFD (TS TextEncoder) or crashing (Python str.encode).
+# NOTE: the vectors file stores it as the \ud800 escape (see the write step) so
+# the file itself stays valid UTF-8.
+lone_surrogate = signed_receipt(
+    "rcp_01HXZSURROGATE0000000000",
+    context={"note": "placeholder"},
+    authorization_id="auth_surrogate",
+)
+lone_surrogate["context"]["note"] = "bad\ud800end"
+
+# Payload nested beyond the depth limit. Signed clean, then a 40-level chain is
+# injected: verifiers must return a normal error, not a RecursionError/stack
+# overflow.
+deep_nesting = signed_receipt(
+    "rcp_01HXZDEEPNEST00000000000",
+    context={"deep": "placeholder"},
+    authorization_id="auth_deep",
+)
+_deep: Any = "bottom"
+for _ in range(40):
+    _deep = {"a": _deep}
+deep_nesting["context"]["deep"] = _deep
+
+# Shape-valid but impossible calendar date. JS `new Date` silently rolls
+# Feb 30 to Mar 2; Python fromisoformat raises. Both must reject cleanly.
+issued_at_feb30 = copy.deepcopy(minimal_allow)
+issued_at_feb30["issued_at"] = "2026-02-30T12:00:00.000Z"
+
+# Valid RFC 3339 instants that violate the stricter issued_at rule
+# (spec §3: exactly UTC, millisecond precision, Z suffix).
+issued_at_offset = copy.deepcopy(minimal_allow)
+issued_at_offset["issued_at"] = "2026-04-21T16:32:17.482+02:00"
+
+issued_at_no_millis = copy.deepcopy(minimal_allow)
+issued_at_no_millis["issued_at"] = "2026-04-21T14:32:17Z"
+
 # --- Assemble ---
 
 keys_doc = {
@@ -676,6 +714,11 @@ should_reject = [
     ("issued_at_no_timezone", "issued_at lacks a timezone offset (not a full RFC 3339 instant)", "RFC 3339 timestamp with timezone", timestamp_no_timezone),
     ("signature_value_padded", "signature.value carries base64 padding / non-base64url characters", "base64url", signature_padded),
     ("pairing_action_with_lifecycle_decision", "action receipt with decision=authorization_granted", "requires an event receipt", action_with_lifecycle_decision),
+    ("context_lone_surrogate", "context string contains an unpaired Unicode surrogate", "unpaired unicode surrogate", lone_surrogate),
+    ("context_deep_nesting", "context nested beyond the canonicalization depth limit", "max depth", deep_nesting),
+    ("issued_at_impossible_date", "issued_at is February 30 (shape-valid, not a real date)", "calendar", issued_at_feb30),
+    ("issued_at_non_utc_offset", "issued_at uses a +02:00 offset instead of Z", "millisecond precision", issued_at_offset),
+    ("issued_at_missing_millis", "issued_at lacks millisecond precision", "millisecond precision", issued_at_no_millis),
 ]
 
 vectors = {
@@ -686,8 +729,13 @@ vectors = {
 }
 
 out_path = Path(__file__).parent.parent / "test-vectors.json"
+out = json.dumps(vectors, indent=2, ensure_ascii=False)
+# The lone-surrogate vector cannot be written as raw UTF-8 (it is by definition
+# ill-formed); store it as its \uXXXX escape so the file stays valid UTF-8 and
+# every JSON parser reconstructs the unpaired surrogate on load.
+out = out.replace("\ud800", "\\ud800")
 with open(out_path, "w") as f:
-    json.dump(vectors, f, indent=2, ensure_ascii=False)
+    f.write(out)
 
 print(f"wrote {out_path}")
 print(f"  should_verify: {len(vectors['should_verify'])}")

@@ -33,7 +33,15 @@ allowly-receipt-verify path/to/receipt.json path/to/keys.json
 
 ```python
 from allowly_receipt_format import verify_receipt, load_keys_from_json
-verify_receipt(receipt, load_keys_from_json(keys_doc))
+
+# Always pass expected_workspace_id: key ids alone do not bind a receipt
+# to a workspace, so verifying without it accepts receipts signed for a
+# different (or attacker-supplied) key document.
+verify_receipt(
+    receipt,
+    load_keys_from_json(keys_doc),
+    expected_workspace_id=keys_doc["workspace_id"],
+)  # raises VerificationError if invalid
 ```
 
 Verify a receipt in TypeScript:
@@ -43,8 +51,21 @@ npm install @allowly/verifier
 ```
 
 ```typescript
-import { verifyReceipt } from "@allowly/verifier";
-const valid = await verifyReceipt(receipt, publicKeys);
+import { verifyReceipt, loadKeysFromJson, VerificationError } from "@allowly/verifier";
+
+// verifyReceipt resolves on success and throws VerificationError on failure —
+// it does not return a boolean. Always pass expectedWorkspaceId: key ids alone
+// do not bind a receipt to a workspace.
+try {
+  await verifyReceipt(receipt, loadKeysFromJson(keysDoc), {
+    expectedWorkspaceId: keysDoc.workspace_id,
+  });
+  // valid
+} catch (e) {
+  if (e instanceof VerificationError) {
+    // invalid: e.message says why
+  } else throw e;
+}
 ```
 
 ## Status
