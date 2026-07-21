@@ -1,6 +1,6 @@
 # Python Reference Verifier
 
-Packaged Python verifier for the Allowly Receipt Format v1.0.
+Packaged Python verifier for the Allowly Receipt Format v1.1, with legacy v1.0 verification.
 
 ## Install
 
@@ -54,18 +54,20 @@ import json
 with open("receipt.json") as f:
     receipt = json.load(f)
 with open("keys.json") as f:
-    keys = load_keys_from_json(json.load(f))
+    keys_doc = json.load(f)
+keys = load_keys_from_json(keys_doc)
 
 try:
-    verify_receipt(receipt, keys)
+    verify_receipt(receipt, keys, expected_workspace_id=keys_doc["workspace_id"])
     print("valid")
 except VerificationError as e:
     print(f"invalid: {e}")
 ```
 
-Pass `expected_workspace_id` to bind the receipt to a workspace — a `key_id`
-alone does not (spec §7, "Workspace binding"). The `allowly-receipt-verify` CLI
-enforces this automatically using the key document's `workspace_id`:
+Always pass `expected_workspace_id` to bind the receipt to a workspace — a
+`key_id` alone does not (spec §7, "Workspace binding"). The
+`allowly-receipt-verify` CLI enforces this automatically using the key
+document's `workspace_id`:
 
 ```python
 verify_receipt(receipt, keys, expected_workspace_id="ws_01HXA1B2C3D4E5F6G7H8J9K0L1")
@@ -79,6 +81,11 @@ The package exposes typed verifier exceptions:
 - `SignatureMismatchError`
 
 All inherit from `VerificationError`.
+
+`verify_receipt` accepts an already-parsed object. Python's normal JSON parser
+cannot report duplicate member names or preserve whether an integer was written
+as `1`, `1.0`, or `1e0`; reject those forms at the raw-JSON boundary when the
+original receipt text is untrusted (spec §4.2).
 
 ## Test vectors
 

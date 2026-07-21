@@ -20,6 +20,8 @@ from verifier import canonicalize  # noqa: E402
 
 SEED = bytes(32)
 KEY_ID = "test-key/v1"
+SECOND_SEED = bytes([1] * 32)
+SECOND_KEY_ID = "test-key/v2"
 WORKSPACE_ID = "ws_test"
 DEFAULT_AUTHORIZATION_ID = "auth_01HXZ2A0K1L2M3N4P5Q6R7S8T9"
 DEFAULT_ENGINE_VERSION = "2026-04-17.1"
@@ -28,6 +30,11 @@ _MISSING = object()
 priv = Ed25519PrivateKey.from_private_bytes(SEED)
 pub = priv.public_key()
 pub_bytes = pub.public_bytes(
+    encoding=serialization.Encoding.Raw,
+    format=serialization.PublicFormat.Raw,
+)
+second_priv = Ed25519PrivateKey.from_private_bytes(SECOND_SEED)
+second_pub_bytes = second_priv.public_key().public_bytes(
     encoding=serialization.Encoding.Raw,
     format=serialization.PublicFormat.Raw,
 )
@@ -54,7 +61,7 @@ def make_receipt(
     policy_eval: Any = _MISSING,
 ) -> dict[str, Any]:
     receipt: dict[str, Any] = {
-        "version": "1.0",
+        "version": "1.1",
         "receipt_id": receipt_id,
         "workspace_id": WORKSPACE_ID,
         "issued_at": issued_at,
@@ -72,6 +79,8 @@ def make_receipt(
         "context": {} if context is None else context,
         "authorization_id": authorization_id,
         "engine_version": engine_version,
+        "alg": "Ed25519",
+        "key_id": KEY_ID,
     })
     if policy_eval is not _MISSING:
         receipt["policy_eval"] = policy_eval
@@ -83,16 +92,24 @@ def sign(payload: dict[str, Any]) -> dict[str, Any]:
     sig = priv.sign(canonical)
     return {
         **payload,
-        "signature": {
-            "alg": "Ed25519",
-            "key_id": KEY_ID,
-            "value": b64url(sig),
-        },
+        "signature": b64url(sig),
     }
 
 
 def signed_receipt(receipt_id: str, **overrides: Any) -> dict[str, Any]:
     return sign(make_receipt(receipt_id, **overrides))
+
+
+def legacy_v10_receipt(receipt_id: str, **overrides: Any) -> dict[str, Any]:
+    payload = make_receipt(receipt_id, **overrides)
+    payload["version"] = "1.0"
+    payload.pop("alg")
+    payload.pop("key_id")
+    signature = b64url(priv.sign(canonicalize(payload)))
+    return {
+        **payload,
+        "signature": {"alg": "Ed25519", "key_id": KEY_ID, "value": signature},
+    }
 
 
 def ok(name: str, kind: str, description: str, receipt: dict[str, Any]) -> dict[str, Any]:
@@ -116,6 +133,7 @@ def bad(
 # --- Action receipts (should verify) ---
 
 minimal_allow = signed_receipt("rcp_01HXZMINIMAL0000000000000")
+legacy_v10 = legacy_v10_receipt("rcp_01HXZLEGACYV100000000000")
 
 deny_null_authorization = signed_receipt(
     "rcp_01HXZDENY0000000000000000",
@@ -412,10 +430,13 @@ tampered = copy.deepcopy(minimal_allow)
 tampered["user_id"] = "emp_ATTACKER"
 
 forged = copy.deepcopy(minimal_allow)
-forged["signature"]["value"] = b64url(b"\x00" * 64)
+forged["signature"] = b64url(b"\x00" * 64)
 
 unknown_key = copy.deepcopy(minimal_allow)
-unknown_key["signature"]["key_id"] = "unknown-key/v99"
+unknown_key["key_id"] = "unknown-key/v99"
+
+key_id_swapped = copy.deepcopy(minimal_allow)
+key_id_swapped["key_id"] = SECOND_KEY_ID
 
 v2_receipt = copy.deepcopy(minimal_allow)
 v2_receipt["version"] = "2.0"
@@ -613,10 +634,20 @@ integer_out_of_range["context"]["amount"] = 2**53  # one past the safe range
 timestamp_no_timezone = copy.deepcopy(minimal_allow)
 timestamp_no_timezone["issued_at"] = "2026-04-21T14:32:17.482"
 
-# signature.value carrying base64 padding (and thus a non-base64url character).
+# signature carrying base64 padding (and thus a non-base64url character).
 # Rejected on the schema-level signature shape check.
 signature_padded = copy.deepcopy(minimal_allow)
-signature_padded["signature"]["value"] = minimal_allow["signature"]["value"] + "=="
+signature_padded["signature"] = minimal_allow["signature"] + "=="
+
+# A 64-byte value ends with four unused base64url bits. Change only those bits:
+# decoding yields the same signature bytes, but the text is not canonical.
+_B64URL_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"
+signature_noncanonical_pad_bits = copy.deepcopy(minimal_allow)
+_last_index = _B64URL_ALPHABET.index(minimal_allow["signature"][-1])
+assert _last_index % 16 == 0
+signature_noncanonical_pad_bits["signature"] = (
+    minimal_allow["signature"][:-1] + _B64URL_ALPHABET[_last_index + 1]
+)
 
 # Lone (unpaired) Unicode surrogate in a context value. Signed clean, then the
 # surrogate is injected: verifiers must reject it at canonicalization instead of
@@ -667,11 +698,19 @@ keys_doc = {
             "public_key": b64url(pub_bytes),
             "active_from": "2026-01-01T00:00:00Z",
             "active_until": None,
+        },
+        {
+            "key_id": SECOND_KEY_ID,
+            "alg": "Ed25519",
+            "public_key": b64url(second_pub_bytes),
+            "active_from": "2026-01-01T00:00:00Z",
+            "active_until": None,
         }
     ],
 }
 
 should_verify = [
+    ("action_legacy_v10", "action", "historical v1.0 receipt remains verifiable", legacy_v10),
     ("action_minimal_allow", "action", "minimal allow action receipt with action field", minimal_allow),
     ("action_deny_null_authorization", "action", "deny decision with null authorization_id", deny_null_authorization),
     ("action_unicode", "action", "non-ASCII characters in multiple fields", unicode_resource),
@@ -695,6 +734,7 @@ should_reject = [
     ("tampered_payload", "user_id modified after signing", "signature verification failed", tampered),
     ("forged_signature", "signature bytes replaced with zeros", "signature verification failed", forged),
     ("unknown_key_id", "key_id not in published keys", "no public key found", unknown_key),
+    ("key_id_swapped", "signed key_id changed to another published key", "signature verification failed", key_id_swapped),
     ("future_version", "version 2.0 receipt (v1 verifier rejects)", "unsupported version", v2_receipt),
     ("unknown_top_level_field", "extra field not in spec", "unknown top-level fields", unknown_field),
     ("missing_required_field", "authorization_id field missing", "missing top-level fields", missing_field),
@@ -712,7 +752,8 @@ should_reject = [
     ("policy_eval_field_value_float", "policy_eval field_value uses a non-integer number", "policy_eval.field_value must be", policy_eval_float_value),
     ("integer_out_of_safe_range", "context integer exceeds the I-JSON safe range ±(2^53-1)", "safe range", integer_out_of_range),
     ("issued_at_no_timezone", "issued_at lacks a timezone offset (not a full RFC 3339 instant)", "RFC 3339 timestamp with timezone", timestamp_no_timezone),
-    ("signature_value_padded", "signature.value carries base64 padding / non-base64url characters", "base64url", signature_padded),
+    ("signature_value_padded", "signature carries base64 padding / non-base64url characters", "base64url", signature_padded),
+    ("signature_noncanonical_pad_bits", "signature text changes only unused base64url pad bits", "base64url", signature_noncanonical_pad_bits),
     ("pairing_action_with_lifecycle_decision", "action receipt with decision=authorization_granted", "requires an event receipt", action_with_lifecycle_decision),
     ("context_lone_surrogate", "context string contains an unpaired Unicode surrogate", "unpaired unicode surrogate", lone_surrogate),
     ("context_deep_nesting", "context nested beyond the canonicalization depth limit", "max depth", deep_nesting),
@@ -722,7 +763,7 @@ should_reject = [
 ]
 
 vectors = {
-    "spec_version": "1.0.0",
+    "spec_version": "1.1.0",
     "public_keys": keys_doc,
     "should_verify": [ok(*row) for row in should_verify],
     "should_reject": [bad(*row) for row in should_reject],

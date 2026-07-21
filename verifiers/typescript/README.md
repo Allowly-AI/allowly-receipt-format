@@ -1,6 +1,6 @@
 # @allowly/verifier
 
-TypeScript reference verifier for the [Allowly Receipt Format](https://github.com/Allowly-AI/allowly-receipt-format) v1.0.
+TypeScript reference verifier for the [Allowly Receipt Format](https://github.com/Allowly-AI/allowly-receipt-format) v1.1, with legacy v1.0 verification.
 
 Zero runtime dependencies. Uses Node.js's built-in WebCrypto for Ed25519 verification.
 
@@ -18,10 +18,11 @@ Requires Node.js 20+.
 import { verifyReceipt, VerificationError, loadKeysFromJson } from "@allowly/verifier";
 
 const receipt = JSON.parse(receiptJson);
-const keys = loadKeysFromJson(JSON.parse(keysJson));
+const keysDoc = JSON.parse(keysJson);
+const keys = loadKeysFromJson(keysDoc);
 
 try {
-  await verifyReceipt(receipt, keys);
+  await verifyReceipt(receipt, keys, { expectedWorkspaceId: keysDoc.workspace_id });
   console.log("valid");
 } catch (e) {
   if (e instanceof VerificationError) {
@@ -36,7 +37,8 @@ try {
 
 ```typescript
 const res = await fetch(`https://api.allowly.ai/v1/workspaces/${workspaceId}/keys`);
-const keys = loadKeysFromJson(await res.json());
+const keysDoc = await res.json();
+const keys = loadKeysFromJson(keysDoc);
 ```
 
 Key documents are cacheable (issuers set `Cache-Control`); cache them in production.
@@ -59,6 +61,11 @@ Produces the canonical JSON byte sequence per spec §4. Exposed for implementers
 ### `loadKeysFromJson(doc)`
 
 Parses the `/v1/workspaces/{id}/keys` response into a `PublicKey[]`.
+
+`verifyReceipt` accepts an already-parsed object. `JSON.parse` cannot report
+duplicate member names or preserve whether an integer was written as `1`,
+`1.0`, or `1e0`; reject those forms at the raw-JSON boundary when the original
+receipt text is untrusted (spec §4.2).
 
 ## What verification proves
 

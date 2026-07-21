@@ -1,10 +1,16 @@
 # Changelog
 
-## Unreleased
+## v2.0.0 — unreleased
 
 - Document `deny_when` as a non-normative issuer convention and add a valid
-  `deny_condition_matched` compatibility vector. Wire format and verifier
-  behavior are unchanged.
+  `deny_condition_matched` compatibility vector.
+- Add wire version `"1.1"`: top-level `alg` and `key_id` are now signed, and
+  `signature` contains the canonical base64url Ed25519 signature string.
+- Keep v1.0 verification-only support for historical receipts; new issuers
+  must emit v1.1.
+- Reject unpaired surrogates, non-canonical base64url pad bits, and payloads
+  over the normative depth/node limits; specify unique raw JSON names and
+  integer-only token spelling at the interchange boundary.
 
 ## v1.0.5 — 2026-06-18
 

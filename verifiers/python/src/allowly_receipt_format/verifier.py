@@ -1,7 +1,7 @@
 """
 Allowly Receipt Verifier (Python reference implementation).
 
-Verifies Allowly receipts per receipt-format.md v1.0.
+Verifies Allowly receipts per receipt-format.md v1.1, including legacy v1.0.
 
 Usage (library):
     from allowly_receipt_format import verify_receipt, VerificationError, load_keys_from_json
@@ -32,7 +32,8 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 from cryptography.exceptions import InvalidSignature
 
 
-SPEC_VERSION = "1.0"
+CURRENT_SPEC_VERSION = "1.1"
+SUPPORTED_SPEC_VERSIONS = {"1.0", CURRENT_SPEC_VERSION}
 ACTION_DECISIONS = {"allow", "deny", "confirm", "escalate"}
 EVENT_DECISIONS = {
     "authorization.create": {"authorization_granted"},
@@ -41,15 +42,18 @@ EVENT_DECISIONS = {
 }
 AUTHORIZATION_LIFECYCLE_EVENTS = {"authorization.create", "authorization.revoke"}
 EVENT_ONLY_DECISIONS = {decision for decisions in EVENT_DECISIONS.values() for decision in decisions}
-REQUIRED_FIELDS = {
+COMMON_REQUIRED_FIELDS = {
     "version", "receipt_id", "workspace_id", "issued_at", "decision", "reason",
     "user_id", "agent_id", "resource", "context",
     "authorization_id", "engine_version", "signature",
 }
+V10_REQUIRED_FIELDS = COMMON_REQUIRED_FIELDS
+V11_REQUIRED_FIELDS = COMMON_REQUIRED_FIELDS | {"alg", "key_id"}
 OPTIONAL_FIELDS = {"policy_eval"}
 # Exactly one of these must be present:
 DISCRIMINATOR_FIELDS = {"action", "event"}
-ALL_TOP_LEVEL_FIELDS = REQUIRED_FIELDS | DISCRIMINATOR_FIELDS | OPTIONAL_FIELDS
+V10_TOP_LEVEL_FIELDS = V10_REQUIRED_FIELDS | DISCRIMINATOR_FIELDS | OPTIONAL_FIELDS
+V11_TOP_LEVEL_FIELDS = V11_REQUIRED_FIELDS | DISCRIMINATOR_FIELDS | OPTIONAL_FIELDS
 MAX_FUTURE_SKEW = timedelta(minutes=5)
 # I-JSON / RFC 8785 safe-integer bound. Integers outside ±(2^53-1) cannot be
 # represented exactly by IEEE-754 double consumers (e.g. JavaScript verifiers),
@@ -120,7 +124,11 @@ def _b64url_decode(s: str) -> bytes:
     if not _B64URL_RE.match(s):
         raise ValueError(f"not unpadded base64url: {s!r}")
     padding = "=" * (-len(s) % 4)
-    return base64.urlsafe_b64decode(s + padding)
+    decoded = base64.urlsafe_b64decode(s + padding)
+    canonical = base64.urlsafe_b64encode(decoded).decode().rstrip("=")
+    if canonical != s:
+        raise ValueError(f"non-canonical base64url: {s!r}")
+    return decoded
 
 
 def _parse_rfc3339(s: str) -> datetime:
@@ -278,9 +286,11 @@ def verify_receipt(
     now = now or datetime.now(timezone.utc)
 
     # Step 1: version check
-    if receipt.get("version") != SPEC_VERSION:
+    version = receipt.get("version")
+    if version not in SUPPORTED_SPEC_VERSIONS:
         raise SchemaError(
-            f"unsupported version: {receipt.get('version')!r} (want {SPEC_VERSION!r})"
+            f"unsupported version: {version!r} "
+            f"(want one of {sorted(SUPPORTED_SPEC_VERSIONS)!r})"
         )
 
     if (
@@ -292,8 +302,18 @@ def verify_receipt(
             f"expected {expected_workspace_id!r}"
         )
 
-    # Step 2: schema check (includes signature.value shape — rejects placeholders)
-    _check_schema(receipt)
+    # Step 2: schema check (includes signature shape — rejects placeholders)
+    _check_schema(receipt, version)
+
+    if version == CURRENT_SPEC_VERSION:
+        alg = receipt["alg"]
+        key_id = receipt["key_id"]
+        signature_value = receipt["signature"]
+    else:
+        legacy_signature = receipt["signature"]
+        alg = legacy_signature["alg"]
+        key_id = legacy_signature["key_id"]
+        signature_value = legacy_signature["value"]
 
     # Step 3: receipt kind and pairing
     has_action = "action" in receipt
@@ -354,9 +374,8 @@ def verify_receipt(
             )
 
     # Step 4: algorithm check
-    sig = receipt["signature"]
-    if sig.get("alg") != "Ed25519":
-        raise SchemaError(f"unsupported signature alg: {sig.get('alg')!r}")
+    if alg != "Ed25519":
+        raise SchemaError(f"unsupported signature alg: {alg!r}")
 
     # Step 5: timestamp sanity
     issued_at = _parse_rfc3339(receipt["issued_at"])
@@ -377,8 +396,8 @@ def verify_receipt(
     canonical = canonicalize(payload)
 
     # Step 7: signature verification
-    key = _find_key(public_keys, sig["key_id"], issued_at)
-    sig_bytes = _b64url_decode(sig["value"])  # length already validated in schema check
+    key = _find_key(public_keys, key_id, issued_at)
+    sig_bytes = _b64url_decode(signature_value)  # length already validated in schema check
 
     try:
         Ed25519PublicKey.from_public_bytes(key.public_key_bytes).verify(
@@ -390,11 +409,13 @@ def verify_receipt(
     # Step 8: accept (implicit — no exception raised)
 
 
-def _check_schema(receipt: dict[str, Any]) -> None:
-    extra = set(receipt.keys()) - ALL_TOP_LEVEL_FIELDS
+def _check_schema(receipt: dict[str, Any], version: str) -> None:
+    required_fields = V11_REQUIRED_FIELDS if version == CURRENT_SPEC_VERSION else V10_REQUIRED_FIELDS
+    allowed_fields = V11_TOP_LEVEL_FIELDS if version == CURRENT_SPEC_VERSION else V10_TOP_LEVEL_FIELDS
+    extra = set(receipt.keys()) - allowed_fields
     if extra:
         raise SchemaError(f"unknown top-level fields: {sorted(extra)}")
-    missing = REQUIRED_FIELDS - set(receipt.keys())
+    missing = required_fields - set(receipt.keys())
     if missing:
         raise SchemaError(f"missing top-level fields: {sorted(missing)}")
 
@@ -413,29 +434,36 @@ def _check_schema(receipt: dict[str, Any]) -> None:
     # Object fields
     if not isinstance(receipt["context"], dict):
         raise SchemaError("context must be an object")
-    if not isinstance(receipt["signature"], dict):
-        raise SchemaError("signature must be an object")
 
-    # Signature sub-fields
-    sig = receipt["signature"]
-    for field in ("alg", "key_id", "value"):
-        if field not in sig:
-            raise SchemaError(f"signature.{field} is required")
-        if not isinstance(sig[field], str):
-            raise SchemaError(f"signature.{field} must be a string")
+    if version == CURRENT_SPEC_VERSION:
+        for field in ("alg", "key_id", "signature"):
+            if not isinstance(receipt[field], str):
+                raise SchemaError(f"{field} must be a string")
+        signature_value = receipt["signature"]
+        signature_label = "signature"
+    else:
+        if not isinstance(receipt["signature"], dict):
+            raise SchemaError("signature must be an object for version 1.0")
+        sig = receipt["signature"]
+        _check_exact_keys(sig, {"alg", "key_id", "value"}, "signature")
+        for field in ("alg", "key_id", "value"):
+            if not isinstance(sig[field], str):
+                raise SchemaError(f"signature.{field} must be a string")
+        signature_value = sig["value"]
+        signature_label = "signature.value"
 
-    # signature.value must decode from base64url to exactly 64 bytes.
+    # Signature text must be canonical base64url and decode to exactly 64 bytes.
     # This rejects placeholder strings ("pending", empty, anything malformed)
     # before the verification path even starts.
     try:
-        sig_bytes = _b64url_decode(sig["value"])
+        sig_bytes = _b64url_decode(signature_value)
     except Exception:
         raise SchemaError(
-            f"signature.value is not valid base64url: {sig['value']!r}"
+            f"{signature_label} is not valid canonical base64url: {signature_value!r}"
         )
     if len(sig_bytes) != 64:
         raise SchemaError(
-            f"signature.value must decode to 64 bytes (Ed25519), got {len(sig_bytes)}"
+            f"{signature_label} must decode to 64 bytes (Ed25519), got {len(sig_bytes)}"
         )
 
     if "policy_eval" in receipt:

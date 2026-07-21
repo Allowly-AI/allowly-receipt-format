@@ -4,7 +4,7 @@ An open format for **cryptographically signed, third-party-verifiable receipts**
 
 A receipt is a signed record of one decision: *at time T, issuer W decided that agent A may (or may not) perform action X on resource R for user U under authorization C.* Anyone holding the receipt and the issuer's Ed25519 public key can verify it offline, without contacting the issuer.
 
-Action receipts can include `policy_eval`, a small record of which immutable authorization condition routed a decision to `deny`, `confirm`, or `escalate`. Draft.6 fixes two cross-language canonicalization defects in the reference verifiers and makes supersession lineage bidirectional (a revoked authorization can now point forward to its successor).
+Action receipts can include `policy_eval`, a small record of which immutable authorization condition routed a decision to `deny`, `confirm`, or `escalate`. Wire version 1.1 signs the algorithm and key identifier so the trust-anchor selector cannot be swapped after issue.
 
 ## Why this exists
 
@@ -70,7 +70,7 @@ try {
 
 ## Status
 
-**1.0.0 — stable.** Finalizes the format and reference verifier test vectors unchanged from the draft.6 review. Authorizations stay immutable: `authorization_id` pins the rule set. Canonicalization is fixed byte-for-byte across the Python and TypeScript verifiers (UTF-16 key sort, control-character escaping), integers are bounded to the I-JSON safe range, and supersession lineage is bidirectional (`revoked_by: "superseded"` / `superseded_by`).
+**1.1.0 — implementation ready; verifier packages 2.0.0 pending owner publish.** New receipts sign top-level `alg` and `key_id`; `signature` is the base64url signature string. Reference verifiers also accept historical v1.0 receipts, enforce byte-identical canonicalization across Python and TypeScript, and reject malformed Unicode, unsafe integers, and non-canonical signature encodings.
 
 ## Licensing
 

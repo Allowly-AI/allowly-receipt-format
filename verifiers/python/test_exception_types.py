@@ -37,7 +37,11 @@ def main(vectors_path: str) -> int:
     with open(vectors_path) as f:
         vectors = json.load(f)
 
-    receipt = copy.deepcopy(vectors["should_verify"][0]["receipt"])
+    receipt = copy.deepcopy(next(
+        vector["receipt"]
+        for vector in vectors["should_verify"]
+        if vector["name"] == "action_minimal_allow"
+    ))
     keys_doc = copy.deepcopy(vectors["public_keys"])
     keys = load_keys_from_json(keys_doc)
     now = datetime(2026, 12, 31, tzinfo=timezone.utc)
@@ -45,7 +49,7 @@ def main(vectors_path: str) -> int:
     _expect(UnknownKeyError, receipt, [], now=now)
 
     retired_keys_doc = copy.deepcopy(keys_doc)
-    key_id = receipt["signature"]["key_id"]
+    key_id = receipt["key_id"]
     for key in retired_keys_doc["keys"]:
         if key["key_id"] == key_id:
             key["active_until"] = receipt["issued_at"]
@@ -70,7 +74,7 @@ def main(vectors_path: str) -> int:
 
     # Malformed / hostile key documents must raise SchemaError, never a raw
     # KeyError/TypeError, and duplicate ids or public keys must be rejected
-    # (the unsigned signature.key_id selects the trust anchor).
+    # (legacy v1.0 receipts still carry an unsigned key selector).
     for bad_doc in (
         {},                                # missing 'keys'
         {"keys": "not-a-list"},
