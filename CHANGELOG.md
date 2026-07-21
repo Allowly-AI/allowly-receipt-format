@@ -1,6 +1,6 @@
 # Changelog
 
-## v2.0.0 — unreleased
+## v2.0.0 — 2026-07-20
 
 - Document `deny_when` as a non-normative issuer convention and add a valid
   `deny_condition_matched` compatibility vector.
