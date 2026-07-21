@@ -82,6 +82,30 @@ The package exposes typed verifier exceptions:
 
 All inherit from `VerificationError`.
 
+### Match a keyed pseudonym reference
+
+`matches_ref` implements the optional `hmac-v1` convention in specification
+Appendix A. Decode the show-once integration key, then match locally:
+
+```python
+import base64
+from allowly_receipt_format import matches_ref
+
+encoded_key = "<pseudonym_key_b64url>"
+key = base64.urlsafe_b64decode(encoded_key + "=" * (-len(encoded_key) % 4))
+
+assert matches_ref(
+    key,
+    "record",
+    "MRN-48291",
+    receipt["context"]["record_ref"],
+)
+```
+
+Use the `context.ref_key_version` recorded in the receipt to select the retained
+key version. Matching occurs entirely offline; it does not ask Allowly to
+resolve an identifier.
+
 `verify_receipt` accepts an already-parsed object. Python's normal JSON parser
 cannot report duplicate member names or preserve whether an integer was written
 as `1`, `1.0`, or `1e0`; reject those forms at the raw-JSON boundary when the

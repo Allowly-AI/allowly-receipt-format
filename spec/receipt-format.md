@@ -542,8 +542,85 @@ Issuers and customers **SHOULD**:
 
 The format cannot police the semantics of what customers evaluate; this guidance marks the boundary between an audit artifact and a data-retention liability.
 
+## Appendix A. `hmac-v1` keyed pseudonym references
+
+This appendix defines an optional application convention for pseudonymous
+strings carried inside an existing receipt `context`. It adds no receipt field,
+does not change canonicalization or signing, and does not change wire version
+`2.0.0`. Verifiers that do not use this convention continue to verify the same
+receipt bytes.
+
+### A.1 Key and field separation
+
+An issuer using this convention **MUST** generate a separate random key of at
+least 128 bits for each integration. The pseudonym key **MUST NOT** be the URL,
+API, signing, or capability-lookup key. A customer that needs to recompute
+references receives the pseudonym key through a secure show-once flow and
+retains old versions when the key rotates.
+
+The only field names defined by `hmac-v1` are the ASCII strings `project`,
+`record`, `actor`, and `full_tuple`. Field-name separation prevents the same raw
+value from receiving the same reference in two semantic fields.
+
+### A.2 Reference computation
+
+For a byte string `key`, an allowed ASCII `field_name`, and a Unicode string
+`value`:
+
+```text
+message = ASCII(field_name) || 0x00 || UTF8(value)
+ref = "hmac-v1:" || lowercase_hex(HMAC-SHA256(key, message))
+```
+
+The digest **MUST NOT** be truncated. `value` is encoded exactly as supplied:
+no whitespace trimming, case folding, or Unicode normalization occurs.
+
+The `full_tuple` value is the following five strings joined by the single byte
+`0x1F`, with an absent component represented by an empty string:
+
+```text
+record || 0x1F || event || 0x1F || instrument || 0x1F ||
+repeat_instrument || 0x1F || repeat_instance
+```
+
+Components **MUST NOT** contain U+001F. An application using versioned keys
+**SHOULD** carry the integer key version alongside the refs in context (for
+example, `context.ref_key_version`) so an auditor selects the right retained
+key.
+
+### A.3 Test vectors
+
+For the 32-byte key whose hexadecimal form is
+`000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f`:
+
+```text
+field_name = "record"
+value      = "MRN-48291"
+ref        = "hmac-v1:ecfc67ffb7bac447c05df24d1a25d75ebe7e765320d0fb1b4d22be332341599e"
+```
+
+For the same key and tuple components `MRN-48291`, `baseline_arm_1`,
+`demographics`, `demographics`, and `2`:
+
+```text
+field_name = "full_tuple"
+ref        = "hmac-v1:c5fa890e042ea330013bd07bcc47c3312136373493fe87a490907b0e93c5727a"
+```
+
+### A.4 Security and privacy
+
+This is a pseudonymization convention, not encryption or de-identification.
+Anyone holding the key can test guesses and correlate equal values within that
+integration. Issuers and customers **MUST** protect both the key and retained
+references as sensitive data and apply the relevant retention obligations. A
+remote reference-resolution endpoint is unnecessary and creates a guessing
+oracle; customers can use the key and the reference verifier locally.
+
 ## 11. Changelog
 
+- **Unreleased** — Added Appendix A's optional `hmac-v1` application convention
+  and the Python `matches_ref` helper. Receipt schema, signing, canonicalization,
+  and wire version are unchanged.
 - **2.0.0 (2026-07-20)** — Protected signature header and verifier hardening.
   - Moved `alg` and `key_id` into the signed top-level payload and changed
     `signature` to the base64url signature string. The only accepted wire

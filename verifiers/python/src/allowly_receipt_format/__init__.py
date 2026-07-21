@@ -8,6 +8,7 @@ from .verifier import (
     canonicalize,
     load_keys_from_json,
     main,
+    matches_ref,
     verify_receipt,
 )
 
@@ -21,5 +22,6 @@ __all__ = [
     "canonicalize",
     "load_keys_from_json",
     "main",
+    "matches_ref",
     "verify_receipt",
 ]

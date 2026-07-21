@@ -6,6 +6,10 @@ A receipt is a signed record of one decision: *at time T, issuer W decided that 
 
 Action receipts can include `policy_eval`, a small record of which immutable authorization condition routed a decision to `deny`, `confirm`, or `escalate`. Receipt format 2.0.0 signs the algorithm and key identifier so the trust-anchor selector cannot be swapped after issue.
 
+Specification Appendix A also defines an optional `hmac-v1` convention for
+customer-recomputable pseudonymous values inside `context`; it does not change
+the receipt wire format or verification algorithm.
+
 ## Why this exists
 
 AI agents are being given broad access to user data, and the audit story is currently *"trust the vendor's dashboard."* That's not enough for SOC 2, the EU AI Act, or any serious procurement review. The receipt format is the artifact that moves audit from "the vendor says so" to "here's a signature anyone can verify."

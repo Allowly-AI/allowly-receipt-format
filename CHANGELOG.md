@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- Add the optional `hmac-v1` keyed-pseudonym convention in specification
+  Appendix A and the Python `matches_ref` offline helper. Receipt schema,
+  signature verification, canonicalization, test vectors, and wire version are
+  unchanged.
+
 ## v2.0.0 — 2026-07-20
 
 - Document `deny_when` as a non-normative issuer convention and add a valid
