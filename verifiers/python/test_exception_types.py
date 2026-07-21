@@ -61,7 +61,7 @@ def main(vectors_path: str) -> int:
     _expect(SignatureMismatchError, tampered, keys, now=now)
 
     malformed = copy.deepcopy(receipt)
-    malformed["extra"] = "not in v1 schema"
+    malformed["extra"] = "not in receipt schema"
     _expect(SchemaError, malformed, keys, now=now)
 
     for exc_type in (

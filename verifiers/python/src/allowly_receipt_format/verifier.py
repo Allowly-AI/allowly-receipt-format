@@ -1,7 +1,7 @@
 """
 Allowly Receipt Verifier (Python reference implementation).
 
-Verifies Allowly receipts per receipt-format.md v1.1, including legacy v1.0.
+Verifies Allowly receipts per receipt-format.md v2.0.0.
 
 Usage (library):
     from allowly_receipt_format import verify_receipt, VerificationError, load_keys_from_json
@@ -32,8 +32,7 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 from cryptography.exceptions import InvalidSignature
 
 
-CURRENT_SPEC_VERSION = "1.1"
-SUPPORTED_SPEC_VERSIONS = {"1.0", CURRENT_SPEC_VERSION}
+SPEC_VERSION = "2.0.0"
 ACTION_DECISIONS = {"allow", "deny", "confirm", "escalate"}
 EVENT_DECISIONS = {
     "authorization.create": {"authorization_granted"},
@@ -42,22 +41,19 @@ EVENT_DECISIONS = {
 }
 AUTHORIZATION_LIFECYCLE_EVENTS = {"authorization.create", "authorization.revoke"}
 EVENT_ONLY_DECISIONS = {decision for decisions in EVENT_DECISIONS.values() for decision in decisions}
-COMMON_REQUIRED_FIELDS = {
+REQUIRED_FIELDS = {
     "version", "receipt_id", "workspace_id", "issued_at", "decision", "reason",
     "user_id", "agent_id", "resource", "context",
-    "authorization_id", "engine_version", "signature",
+    "authorization_id", "engine_version", "alg", "key_id", "signature",
 }
-V10_REQUIRED_FIELDS = COMMON_REQUIRED_FIELDS
-V11_REQUIRED_FIELDS = COMMON_REQUIRED_FIELDS | {"alg", "key_id"}
 OPTIONAL_FIELDS = {"policy_eval"}
 # Exactly one of these must be present:
 DISCRIMINATOR_FIELDS = {"action", "event"}
-V10_TOP_LEVEL_FIELDS = V10_REQUIRED_FIELDS | DISCRIMINATOR_FIELDS | OPTIONAL_FIELDS
-V11_TOP_LEVEL_FIELDS = V11_REQUIRED_FIELDS | DISCRIMINATOR_FIELDS | OPTIONAL_FIELDS
+ALL_TOP_LEVEL_FIELDS = REQUIRED_FIELDS | DISCRIMINATOR_FIELDS | OPTIONAL_FIELDS
 MAX_FUTURE_SKEW = timedelta(minutes=5)
 # I-JSON / RFC 8785 safe-integer bound. Integers outside ±(2^53-1) cannot be
 # represented exactly by IEEE-754 double consumers (e.g. JavaScript verifiers),
-# so v1 receipts MUST NOT carry them (spec §4.2 rule 6).
+# so receipts MUST NOT carry them (spec §4.2 rule 6).
 MAX_SAFE_INTEGER = 2**53 - 1
 _B64URL_RE = re.compile(r"^[A-Za-z0-9_-]*$")
 _RFC3339_RE = re.compile(
@@ -198,11 +194,11 @@ def _validate_tree(payload: Any) -> None:
         if isinstance(value, bool):  # before int: bool is an int subclass.
             continue
         if isinstance(value, float):
-            raise SchemaError("v1 receipts must not contain non-integer numbers")
+            raise SchemaError("receipts must not contain non-integer numbers")
         if isinstance(value, int):
             if abs(value) > MAX_SAFE_INTEGER:
                 raise SchemaError(
-                    f"integer {value} exceeds the safe range ±(2^53-1); v1 receipts "
+                    f"integer {value} exceeds the safe range ±(2^53-1); receipts "
                     f"must not carry integers that lose precision in IEEE-754 doubles"
                 )
         elif isinstance(value, str):
@@ -286,11 +282,9 @@ def verify_receipt(
     now = now or datetime.now(timezone.utc)
 
     # Step 1: version check
-    version = receipt.get("version")
-    if version not in SUPPORTED_SPEC_VERSIONS:
+    if receipt.get("version") != SPEC_VERSION:
         raise SchemaError(
-            f"unsupported version: {version!r} "
-            f"(want one of {sorted(SUPPORTED_SPEC_VERSIONS)!r})"
+            f"unsupported version: {receipt.get('version')!r} (want {SPEC_VERSION!r})"
         )
 
     if (
@@ -303,17 +297,7 @@ def verify_receipt(
         )
 
     # Step 2: schema check (includes signature shape — rejects placeholders)
-    _check_schema(receipt, version)
-
-    if version == CURRENT_SPEC_VERSION:
-        alg = receipt["alg"]
-        key_id = receipt["key_id"]
-        signature_value = receipt["signature"]
-    else:
-        legacy_signature = receipt["signature"]
-        alg = legacy_signature["alg"]
-        key_id = legacy_signature["key_id"]
-        signature_value = legacy_signature["value"]
+    _check_schema(receipt)
 
     # Step 3: receipt kind and pairing
     has_action = "action" in receipt
@@ -374,8 +358,8 @@ def verify_receipt(
             )
 
     # Step 4: algorithm check
-    if alg != "Ed25519":
-        raise SchemaError(f"unsupported signature alg: {alg!r}")
+    if receipt["alg"] != "Ed25519":
+        raise SchemaError(f"unsupported signature alg: {receipt['alg']!r}")
 
     # Step 5: timestamp sanity
     issued_at = _parse_rfc3339(receipt["issued_at"])
@@ -396,8 +380,8 @@ def verify_receipt(
     canonical = canonicalize(payload)
 
     # Step 7: signature verification
-    key = _find_key(public_keys, key_id, issued_at)
-    sig_bytes = _b64url_decode(signature_value)  # length already validated in schema check
+    key = _find_key(public_keys, receipt["key_id"], issued_at)
+    sig_bytes = _b64url_decode(receipt["signature"])  # length already validated in schema check
 
     try:
         Ed25519PublicKey.from_public_bytes(key.public_key_bytes).verify(
@@ -409,13 +393,11 @@ def verify_receipt(
     # Step 8: accept (implicit — no exception raised)
 
 
-def _check_schema(receipt: dict[str, Any], version: str) -> None:
-    required_fields = V11_REQUIRED_FIELDS if version == CURRENT_SPEC_VERSION else V10_REQUIRED_FIELDS
-    allowed_fields = V11_TOP_LEVEL_FIELDS if version == CURRENT_SPEC_VERSION else V10_TOP_LEVEL_FIELDS
-    extra = set(receipt.keys()) - allowed_fields
+def _check_schema(receipt: dict[str, Any]) -> None:
+    extra = set(receipt.keys()) - ALL_TOP_LEVEL_FIELDS
     if extra:
         raise SchemaError(f"unknown top-level fields: {sorted(extra)}")
-    missing = required_fields - set(receipt.keys())
+    missing = REQUIRED_FIELDS - set(receipt.keys())
     if missing:
         raise SchemaError(f"missing top-level fields: {sorted(missing)}")
 
@@ -435,35 +417,22 @@ def _check_schema(receipt: dict[str, Any], version: str) -> None:
     if not isinstance(receipt["context"], dict):
         raise SchemaError("context must be an object")
 
-    if version == CURRENT_SPEC_VERSION:
-        for field in ("alg", "key_id", "signature"):
-            if not isinstance(receipt[field], str):
-                raise SchemaError(f"{field} must be a string")
-        signature_value = receipt["signature"]
-        signature_label = "signature"
-    else:
-        if not isinstance(receipt["signature"], dict):
-            raise SchemaError("signature must be an object for version 1.0")
-        sig = receipt["signature"]
-        _check_exact_keys(sig, {"alg", "key_id", "value"}, "signature")
-        for field in ("alg", "key_id", "value"):
-            if not isinstance(sig[field], str):
-                raise SchemaError(f"signature.{field} must be a string")
-        signature_value = sig["value"]
-        signature_label = "signature.value"
+    for field in ("alg", "key_id", "signature"):
+        if not isinstance(receipt[field], str):
+            raise SchemaError(f"{field} must be a string")
 
     # Signature text must be canonical base64url and decode to exactly 64 bytes.
     # This rejects placeholder strings ("pending", empty, anything malformed)
     # before the verification path even starts.
     try:
-        sig_bytes = _b64url_decode(signature_value)
+        sig_bytes = _b64url_decode(receipt["signature"])
     except Exception:
         raise SchemaError(
-            f"{signature_label} is not valid canonical base64url: {signature_value!r}"
+            f"signature is not valid canonical base64url: {receipt['signature']!r}"
         )
     if len(sig_bytes) != 64:
         raise SchemaError(
-            f"{signature_label} must decode to 64 bytes (Ed25519), got {len(sig_bytes)}"
+            f"signature must decode to 64 bytes (Ed25519), got {len(sig_bytes)}"
         )
 
     if "policy_eval" in receipt:
@@ -536,10 +505,9 @@ def load_keys_from_json(doc: dict[str, Any]) -> list[PublicKey]:
     """Parse the /v1/workspaces/{id}/keys response shape into PublicKey list.
 
     Raises SchemaError (never a raw KeyError/ValueError) on a malformed
-    document, and rejects duplicate key ids and duplicate public keys: the
-    unsigned ``signature.key_id`` selects the trust anchor, so two entries
-    sharing an id or a key with different active windows would let an attacker
-    pick the more permissive window (spec §10.1).
+    document, and rejects duplicate key ids and duplicate public keys so key
+    lookup is unambiguous and one public key cannot carry conflicting active
+    windows (spec §10.1).
     """
     if not isinstance(doc, dict) or not isinstance(doc.get("keys"), list):
         raise SchemaError("keys document must be an object with a 'keys' array")

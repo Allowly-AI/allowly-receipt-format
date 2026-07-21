@@ -1,6 +1,6 @@
 # @allowly/verifier
 
-TypeScript reference verifier for the [Allowly Receipt Format](https://github.com/Allowly-AI/allowly-receipt-format) v1.1, with legacy v1.0 verification.
+TypeScript reference verifier for [Allowly Receipt Format 2.0.0](https://github.com/Allowly-AI/allowly-receipt-format).
 
 Zero runtime dependencies. Uses Node.js's built-in WebCrypto for Ed25519 verification.
 

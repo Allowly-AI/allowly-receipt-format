@@ -1,5 +1,5 @@
 {
-  "spec_version": "1.1.0",
+  "spec_version": "2.0.0",
   "public_keys": {
     "workspace_id": "ws_test",
     "keys": [
@@ -21,36 +21,11 @@
   },
   "should_verify": [
     {
-      "name": "action_legacy_v10",
-      "kind": "action",
-      "description": "historical v1.0 receipt remains verifiable",
-      "receipt": {
-        "version": "1.0",
-        "receipt_id": "rcp_01HXZLEGACYV100000000000",
-        "workspace_id": "ws_test",
-        "issued_at": "2026-04-21T14:32:17.482Z",
-        "decision": "allow",
-        "reason": "authorization_granted_action_active",
-        "user_id": "emp_8821",
-        "agent_id": "referral_outreach",
-        "action": "outreach.send",
-        "resource": "edge:emp_8821:conn_9f2a",
-        "context": {},
-        "authorization_id": "auth_01HXZ2A0K1L2M3N4P5Q6R7S8T9",
-        "engine_version": "2026-04-17.1",
-        "signature": {
-          "alg": "Ed25519",
-          "key_id": "test-key/v1",
-          "value": "sRdS6roQq47EZZT2aGlIoT2FU6wgZpAvdDj_IdXrq0r3KaE03LJwreX7bVQdFYnTOi3FBrhFcEBMtdoefmRBCg"
-        }
-      }
-    },
-    {
       "name": "action_minimal_allow",
       "kind": "action",
       "description": "minimal allow action receipt with action field",
       "receipt": {
-        "version": "1.1",
+        "version": "2.0.0",
         "receipt_id": "rcp_01HXZMINIMAL0000000000000",
         "workspace_id": "ws_test",
         "issued_at": "2026-04-21T14:32:17.482Z",
@@ -65,7 +40,7 @@
         "engine_version": "2026-04-17.1",
         "alg": "Ed25519",
         "key_id": "test-key/v1",
-        "signature": "3cjztCuJ8p3bSRLCGHOajS4j34X_JfXHLzTZHBmmiUYFy1dGp4WXysaTOswAsI3op-HFvSpj7P9WFn4UwfcxCA"
+        "signature": "XmJMEi2uqIOqrurKiiJYM7w3Box-nVoQizi_PpDwGhJvVGwSE-r0XJ0bnKLKhqXdHOvWlnR6Yev2Xi5ixM3KDg"
       }
     },
     {
@@ -73,7 +48,7 @@
       "kind": "action",
       "description": "deny decision with null authorization_id",
       "receipt": {
-        "version": "1.1",
+        "version": "2.0.0",
         "receipt_id": "rcp_01HXZDENY0000000000000000",
         "workspace_id": "ws_test",
         "issued_at": "2026-04-21T15:00:00.000Z",
@@ -88,7 +63,7 @@
         "engine_version": "2026-04-17.1",
         "alg": "Ed25519",
         "key_id": "test-key/v1",
-        "signature": "oc8fk6tj6Ju16Kt1ntBk0FNtH3W-weBbXu2BSJHZ6dyFAssV9CqPDB5P2bR6znKHuH_6Dy93ES5Vz1yeexAzCg"
+        "signature": "_bdukAGcrRLBBxi5Z4etiAbGPWUv0hmdMybLK5RdmgY0kZ4adKtboN-3drhUBG6OYDh0GVe26rDgtzkO499EBA"
       }
     },
     {
@@ -96,7 +71,7 @@
       "kind": "action",
       "description": "non-ASCII characters in multiple fields",
       "receipt": {
-        "version": "1.1",
+        "version": "2.0.0",
         "receipt_id": "rcp_01HXZUNICODE00000000000000",
         "workspace_id": "ws_test",
         "issued_at": "2026-04-21T15:30:00.000Z",
@@ -113,7 +88,7 @@
         "engine_version": "2026-04-17.1",
         "alg": "Ed25519",
         "key_id": "test-key/v1",
-        "signature": "Q4s6t1oKIDTHFuq9jE13hVXyK0XtytlvFAH_7dPVTvfxbQumw--I51IvIlC_bE3LKgRK26TkNbSAf7CT8niEDA"
+        "signature": "ad-n6R9Qtefshe6Vn6-C0zlP1my3YbKcZLykb3Iv81eW9CaYSPoxJBPHoNbWk2kTaGYCJjQs63eZoglA5TFkBg"
       }
     },
     {
@@ -121,7 +96,7 @@
       "kind": "action",
       "description": "nested context exercising canonicalization",
       "receipt": {
-        "version": "1.1",
+        "version": "2.0.0",
         "receipt_id": "rcp_01HXZRICH00000000000000000",
         "workspace_id": "ws_test",
         "issued_at": "2026-04-21T16:00:00.000Z",
@@ -152,7 +127,7 @@
         "engine_version": "2026-04-17.1",
         "alg": "Ed25519",
         "key_id": "test-key/v1",
-        "signature": "KnUpJ3qcac8WbnuPSOGAIrOsdJxBNURdwlnUJkr5hxQ76xuKg9U1Vk_SFDbxh1K6rPXbjFGOeKO2AKIgBXsbBw"
+        "signature": "PT2EtZXysSyYr26tulBwzGBefdhdjkLUTFWX2mcegIPPlJOU6_PxDphoycoPPWES7vJYZ55L9Uh5jfGXawglDA"
       }
     },
     {
@@ -160,7 +135,7 @@
       "kind": "action",
       "description": "escalate action receipt with escalation context",
       "receipt": {
-        "version": "1.1",
+        "version": "2.0.0",
         "receipt_id": "rcp_01HXZESCALATE000000000000",
         "workspace_id": "ws_test",
         "issued_at": "2026-04-21T16:10:00.000Z",
@@ -183,7 +158,7 @@
         "engine_version": "2026-04-17.1",
         "alg": "Ed25519",
         "key_id": "test-key/v1",
-        "signature": "caKiyQgXvTT_Gdn5OLaSakuehTe0WV_k4oyt4cBIBQI_9wYVOKA8lpEMEeEXcNipOV4MM2YlB4bHfNX80GSBAA"
+        "signature": "Sx0UOVPAffOBUrRPcfBKzPN5mLDINLzdtrFhdZTg-ADjNTdirTcnQ-83jqLLPPBmxYRGgddHQGCkVVbrn6nXAQ"
       }
     },
     {
@@ -191,7 +166,7 @@
       "kind": "action",
       "description": "deny action receipt with policy_eval matched_condition",
       "receipt": {
-        "version": "1.1",
+        "version": "2.0.0",
         "receipt_id": "rcp_01J0Z7Q4DENYCONDITION00",
         "workspace_id": "ws_test",
         "issued_at": "2026-06-09T17:03:39.114Z",
@@ -216,7 +191,7 @@
           },
           "field_value": "blocked"
         },
-        "signature": "7ATY229hWivdAlEtJQ69cFU52U01EU-97XQ3ZqxrBK1zgXHj70uBD0jfrf5e6uYPX5gvx5k8YtLtW4VDViAEAA"
+        "signature": "XI70ZsIKGFav6Ltkrw82YSd3QgYrU2vZ9VxcccGLGFkYCIaggP1CgEyN7zyzE6IrwMrphRry98a9RtPq5muRAg"
       }
     },
     {
@@ -224,7 +199,7 @@
       "kind": "action",
       "description": "confirm action receipt with policy_eval matched_condition",
       "receipt": {
-        "version": "1.1",
+        "version": "2.0.0",
         "receipt_id": "rcp_01J0Z7Q4BORDERLINE0CONFIRM",
         "workspace_id": "ws_test",
         "issued_at": "2026-06-09T17:04:09.114Z",
@@ -252,7 +227,7 @@
           },
           "field_value": 82
         },
-        "signature": "fMaJMPB5sRfoiVb8v3E_VJ7-H6_zfCh77b_cGGnET6NUzy8qhexKfHNJx478tJZcYHUF5DoLPwXwNQ57AElWAg"
+        "signature": "Jrjmxag0Omv2YVFWJI2gHSka5jU4tqlcLN4JnhbRT4M32BKhcyb3T6B2YL2SeD7p87LEZoPL0WCX3VbHzFfZCQ"
       }
     },
     {
@@ -260,7 +235,7 @@
       "kind": "action",
       "description": "confirm action receipt with policy_eval in-condition array value",
       "receipt": {
-        "version": "1.1",
+        "version": "2.0.0",
         "receipt_id": "rcp_01J0Z7Q4INRULE00CONFIRM",
         "workspace_id": "ws_test",
         "issued_at": "2026-06-09T17:04:39.114Z",
@@ -289,7 +264,7 @@
           },
           "field_value": "pii_detected"
         },
-        "signature": "eGpe5r_Ip9QtJTodsMgdYz07HFhViyxv3NV3zHnnpnbORiSVPhOdEyBAy3-6MxuE2HPYy40wDOp9kEPlrKlzCQ"
+        "signature": "oZ89tw6iEH5fNOfprMBG28b1PTIjTJrVToU4Pr2lB0AJSsqfJEYOkr_pAmDiPj-qJLKf_mHJd_HqgXNiNrkkBg"
       }
     },
     {
@@ -297,7 +272,7 @@
       "kind": "action",
       "description": "allow action receipt with policy_eval attesting no condition matched",
       "receipt": {
-        "version": "1.1",
+        "version": "2.0.0",
         "receipt_id": "rcp_01J0Z7Q4CONDITIONOKALLOW",
         "workspace_id": "ws_test",
         "issued_at": "2026-06-09T17:05:09.114Z",
@@ -321,7 +296,7 @@
           "matched_condition": null,
           "field_value": null
         },
-        "signature": "ll56EBwT7-nkeYPF0TCC5tQNUoTvtBHgfaGErRti9D4qKVfV-ntsuEABQaKCceZuqvciFi4oQ6xPx3HLdbr7BA"
+        "signature": "8ex8avCsT9-GuDpchMTWBNeZ5sFo6RmDyJEBfufoE6SIJxlt7y3Fg7fJbe6_TLnfdkPSYJcUxRkNGWdp48pmDQ"
       }
     },
     {
@@ -329,7 +304,7 @@
       "kind": "action",
       "description": "confirm action receipt with fail-closed missing context field",
       "receipt": {
-        "version": "1.1",
+        "version": "2.0.0",
         "receipt_id": "rcp_01J0Z7Q4MISSING0CONFIRM",
         "workspace_id": "ws_test",
         "issued_at": "2026-06-09T17:06:09.114Z",
@@ -355,7 +330,7 @@
           },
           "field_value": null
         },
-        "signature": "ij4P97aYwfwxWQN2kLTdup2sPoh3Bc4UkLa1I-ivHXn59I5EPSZ4bT7RWzun2tXp9hqF8ztWLCA5ij4F7-iSAQ"
+        "signature": "ofaHh5wN-MfuFGcoE-aN6eQIqVR56F1IcTU1k6QQKx8I15RB7ZQSb__Mkg4vBI_GYTtTnTx9oc1rAF8q5nsMCQ"
       }
     },
     {
@@ -363,7 +338,7 @@
       "kind": "authorization",
       "description": "authorization.create receipt with event field",
       "receipt": {
-        "version": "1.1",
+        "version": "2.0.0",
         "receipt_id": "rcp_01HXZAUTHORIZATIONCREATE00000000",
         "workspace_id": "ws_test",
         "issued_at": "2026-04-21T14:30:00.000Z",
@@ -389,7 +364,7 @@
         "engine_version": "2026-04-17.1",
         "alg": "Ed25519",
         "key_id": "test-key/v1",
-        "signature": "PJYvIf_XcUtuz6JOPp3buFQK0gxZj8sNsKld4WsuEg-r4bMC011vL1TszusAB8c7IJk4JXg35MRkzSCRQjTYCg"
+        "signature": "MlWBiYzj8G6rVKUeAGuyaTb5KmApwnfeu-oErFhOO8GVhhvNpOXHsmSbpdVPkEauxKHZh0VIGGBYjtg_FSzDAw"
       }
     },
     {
@@ -397,7 +372,7 @@
       "kind": "authorization",
       "description": "authorization.create receipt with replaces lineage and conditional constraints",
       "receipt": {
-        "version": "1.1",
+        "version": "2.0.0",
         "receipt_id": "rcp_01J0Z7Q4AUTHREPLACES0000",
         "workspace_id": "ws_test",
         "issued_at": "2026-06-09T17:00:00.000Z",
@@ -439,7 +414,7 @@
         "engine_version": "2026-06-01.2",
         "alg": "Ed25519",
         "key_id": "test-key/v1",
-        "signature": "KFVs7-LmgXyIsB4vfnyaGgi6ZWZlqsPn1j86SmKmkVP9kyRNJaRdoYnBQSLdAfALHvSAn__UUaDdfwx3MJnbAw"
+        "signature": "JU1okUpIXuH-pLgMtruvcHhtXkw4WWG1RL7bEMYuCs_dmgndmdKdFAlP6tc2mwesNMMhfv3u69k04q-fOSKfDg"
       }
     },
     {
@@ -447,7 +422,7 @@
       "kind": "authorization",
       "description": "authorization.revoke receipt with event field",
       "receipt": {
-        "version": "1.1",
+        "version": "2.0.0",
         "receipt_id": "rcp_01HXZAUTHORIZATIONREVOKE00000000",
         "workspace_id": "ws_test",
         "issued_at": "2026-05-15T09:12:00.000Z",
@@ -464,7 +439,7 @@
         "engine_version": "2026-04-17.1",
         "alg": "Ed25519",
         "key_id": "test-key/v1",
-        "signature": "yIyRRpdjoSQ1jMut7MPBdjD5KaZYATw9joYJMpVoq4jHjdzjKLHzb37FeJy5FQn3DNabmnBftZdDm7FcIkV7Aw"
+        "signature": "EdA0xRDMiuXrV6UrSuDvLDSDSD4zoJYvYBKIciSt_GkUFDg6Tx8FPZS3ufXs-NSClQ1N9F8fV_hK6qh9DkBHBA"
       }
     },
     {
@@ -472,7 +447,7 @@
       "kind": "authorization",
       "description": "authorization.revoke with revoked_by=superseded and superseded_by forward pointer",
       "receipt": {
-        "version": "1.1",
+        "version": "2.0.0",
         "receipt_id": "rcp_01HXZREVOKESUPERSEDED0000",
         "workspace_id": "ws_test",
         "issued_at": "2026-05-15T09:12:00.000Z",
@@ -490,7 +465,7 @@
         "engine_version": "2026-04-17.1",
         "alg": "Ed25519",
         "key_id": "test-key/v1",
-        "signature": "BtNd-v6G5_RPfVtw-kQDjSUnuoa6ZhDvM_wwBGZedBT0JzZmw99snSU5E06UxxL603cNhAIIsES406a4Mc_CDg"
+        "signature": "hE_E4sdRZNblyXo-eFRNj_Alhcz1uUrg-GnXmEWAww3ldQiXcrnA5auKIX8hLaZQADs0fUfQUKVduiddXzPNAA"
       }
     },
     {
@@ -498,7 +473,7 @@
       "kind": "event",
       "description": "escalation.resolve receipt with approved decision and resource",
       "receipt": {
-        "version": "1.1",
+        "version": "2.0.0",
         "receipt_id": "rcp_01HXZESCRESOLVE0000000000",
         "workspace_id": "ws_test",
         "issued_at": "2026-04-21T16:15:00.000Z",
@@ -522,7 +497,7 @@
         "engine_version": "2026-04-17.1",
         "alg": "Ed25519",
         "key_id": "test-key/v1",
-        "signature": "N0McFzgjeOHjoFf2uVzXtZjjOGQgW1MlyQVjwP22F2O2QyqKU4N3mTyDPOhfoc8ELjBVI5hrD-VTKM0ZMAPBAQ"
+        "signature": "Tcqu1vNsFBVD8-JBWXEd3xhA4zS-WGsUsb35M-1VOkH8Fd-CxnrM0wKe5izOnkcMcYFLBCI4KHJYyGsIbs-CCA"
       }
     },
     {
@@ -530,7 +505,7 @@
       "kind": "action",
       "description": "context string with control characters (tests \\uXXXX escaping, rule 5)",
       "receipt": {
-        "version": "1.1",
+        "version": "2.0.0",
         "receipt_id": "rcp_01HXZCONTROLCHARS00000000",
         "workspace_id": "ws_test",
         "issued_at": "2026-04-21T16:20:00.000Z",
@@ -547,7 +522,7 @@
         "engine_version": "2026-04-17.1",
         "alg": "Ed25519",
         "key_id": "test-key/v1",
-        "signature": "ydVW-xizyGSFClg5Stc4KmuftX9SydBzFrECaLRrkly_DyB3yNZ8xb3njThS6XivSbb7a7Ipv6CDTeqn0Wa8CQ"
+        "signature": "sC160aj_XUgnICNd4t50DCx3r0ohgpko5J-Owh3cfXIVm-MVHLktYXjtQRx9A-Qo0r2cSAItbJsPRxHxk6BUBQ"
       }
     },
     {
@@ -555,7 +530,7 @@
       "kind": "action",
       "description": "context with a supplementary-plane key (tests UTF-16 key sort, rule 3)",
       "receipt": {
-        "version": "1.1",
+        "version": "2.0.0",
         "receipt_id": "rcp_01HXZNONBMPKEY0000000000",
         "workspace_id": "ws_test",
         "issued_at": "2026-04-21T16:25:00.000Z",
@@ -574,7 +549,7 @@
         "engine_version": "2026-04-17.1",
         "alg": "Ed25519",
         "key_id": "test-key/v1",
-        "signature": "OARWMISpNFfqZQy52wr2FTjkRCnFEYAyaCFaLGMcTHWMJwZjWmvo0h8ZQU0oHou3mBg06wHy9g5Hn5BziNMMCA"
+        "signature": "7Ap4RTbZYqwekeaVkM5Legs-JUDuh5glLeJ8BGW_XzZwQPo15kc9WE_xZiClt3NfQgItfOFo-8FSoxbX1s4BDw"
       }
     }
   ],
@@ -584,7 +559,7 @@
       "description": "user_id modified after signing",
       "expected_reason": "signature verification failed",
       "receipt": {
-        "version": "1.1",
+        "version": "2.0.0",
         "receipt_id": "rcp_01HXZMINIMAL0000000000000",
         "workspace_id": "ws_test",
         "issued_at": "2026-04-21T14:32:17.482Z",
@@ -599,7 +574,7 @@
         "engine_version": "2026-04-17.1",
         "alg": "Ed25519",
         "key_id": "test-key/v1",
-        "signature": "3cjztCuJ8p3bSRLCGHOajS4j34X_JfXHLzTZHBmmiUYFy1dGp4WXysaTOswAsI3op-HFvSpj7P9WFn4UwfcxCA"
+        "signature": "XmJMEi2uqIOqrurKiiJYM7w3Box-nVoQizi_PpDwGhJvVGwSE-r0XJ0bnKLKhqXdHOvWlnR6Yev2Xi5ixM3KDg"
       }
     },
     {
@@ -607,7 +582,7 @@
       "description": "signature bytes replaced with zeros",
       "expected_reason": "signature verification failed",
       "receipt": {
-        "version": "1.1",
+        "version": "2.0.0",
         "receipt_id": "rcp_01HXZMINIMAL0000000000000",
         "workspace_id": "ws_test",
         "issued_at": "2026-04-21T14:32:17.482Z",
@@ -630,7 +605,7 @@
       "description": "key_id not in published keys",
       "expected_reason": "no public key found",
       "receipt": {
-        "version": "1.1",
+        "version": "2.0.0",
         "receipt_id": "rcp_01HXZMINIMAL0000000000000",
         "workspace_id": "ws_test",
         "issued_at": "2026-04-21T14:32:17.482Z",
@@ -645,7 +620,7 @@
         "engine_version": "2026-04-17.1",
         "alg": "Ed25519",
         "key_id": "unknown-key/v99",
-        "signature": "3cjztCuJ8p3bSRLCGHOajS4j34X_JfXHLzTZHBmmiUYFy1dGp4WXysaTOswAsI3op-HFvSpj7P9WFn4UwfcxCA"
+        "signature": "XmJMEi2uqIOqrurKiiJYM7w3Box-nVoQizi_PpDwGhJvVGwSE-r0XJ0bnKLKhqXdHOvWlnR6Yev2Xi5ixM3KDg"
       }
     },
     {
@@ -653,7 +628,7 @@
       "description": "signed key_id changed to another published key",
       "expected_reason": "signature verification failed",
       "receipt": {
-        "version": "1.1",
+        "version": "2.0.0",
         "receipt_id": "rcp_01HXZMINIMAL0000000000000",
         "workspace_id": "ws_test",
         "issued_at": "2026-04-21T14:32:17.482Z",
@@ -668,15 +643,15 @@
         "engine_version": "2026-04-17.1",
         "alg": "Ed25519",
         "key_id": "test-key/v2",
-        "signature": "3cjztCuJ8p3bSRLCGHOajS4j34X_JfXHLzTZHBmmiUYFy1dGp4WXysaTOswAsI3op-HFvSpj7P9WFn4UwfcxCA"
+        "signature": "XmJMEi2uqIOqrurKiiJYM7w3Box-nVoQizi_PpDwGhJvVGwSE-r0XJ0bnKLKhqXdHOvWlnR6Yev2Xi5ixM3KDg"
       }
     },
     {
       "name": "future_version",
-      "description": "version 2.0 receipt (v1 verifier rejects)",
+      "description": "version 3.0.0 receipt",
       "expected_reason": "unsupported version",
       "receipt": {
-        "version": "2.0",
+        "version": "3.0.0",
         "receipt_id": "rcp_01HXZMINIMAL0000000000000",
         "workspace_id": "ws_test",
         "issued_at": "2026-04-21T14:32:17.482Z",
@@ -691,7 +666,7 @@
         "engine_version": "2026-04-17.1",
         "alg": "Ed25519",
         "key_id": "test-key/v1",
-        "signature": "3cjztCuJ8p3bSRLCGHOajS4j34X_JfXHLzTZHBmmiUYFy1dGp4WXysaTOswAsI3op-HFvSpj7P9WFn4UwfcxCA"
+        "signature": "XmJMEi2uqIOqrurKiiJYM7w3Box-nVoQizi_PpDwGhJvVGwSE-r0XJ0bnKLKhqXdHOvWlnR6Yev2Xi5ixM3KDg"
       }
     },
     {
@@ -699,7 +674,7 @@
       "description": "extra field not in spec",
       "expected_reason": "unknown top-level fields",
       "receipt": {
-        "version": "1.1",
+        "version": "2.0.0",
         "receipt_id": "rcp_01HXZMINIMAL0000000000000",
         "workspace_id": "ws_test",
         "issued_at": "2026-04-21T14:32:17.482Z",
@@ -714,7 +689,7 @@
         "engine_version": "2026-04-17.1",
         "alg": "Ed25519",
         "key_id": "test-key/v1",
-        "signature": "3cjztCuJ8p3bSRLCGHOajS4j34X_JfXHLzTZHBmmiUYFy1dGp4WXysaTOswAsI3op-HFvSpj7P9WFn4UwfcxCA",
+        "signature": "XmJMEi2uqIOqrurKiiJYM7w3Box-nVoQizi_PpDwGhJvVGwSE-r0XJ0bnKLKhqXdHOvWlnR6Yev2Xi5ixM3KDg",
         "extra_field": "should_be_rejected"
       }
     },
@@ -723,7 +698,7 @@
       "description": "authorization_id field missing",
       "expected_reason": "missing top-level fields",
       "receipt": {
-        "version": "1.1",
+        "version": "2.0.0",
         "receipt_id": "rcp_01HXZMINIMAL0000000000000",
         "workspace_id": "ws_test",
         "issued_at": "2026-04-21T14:32:17.482Z",
@@ -737,7 +712,7 @@
         "engine_version": "2026-04-17.1",
         "alg": "Ed25519",
         "key_id": "test-key/v1",
-        "signature": "3cjztCuJ8p3bSRLCGHOajS4j34X_JfXHLzTZHBmmiUYFy1dGp4WXysaTOswAsI3op-HFvSpj7P9WFn4UwfcxCA"
+        "signature": "XmJMEi2uqIOqrurKiiJYM7w3Box-nVoQizi_PpDwGhJvVGwSE-r0XJ0bnKLKhqXdHOvWlnR6Yev2Xi5ixM3KDg"
       }
     },
     {
@@ -745,7 +720,7 @@
       "description": "decision is not allow/deny/confirm/escalate",
       "expected_reason": "action receipt must have decision in",
       "receipt": {
-        "version": "1.1",
+        "version": "2.0.0",
         "receipt_id": "rcp_01HXZBADDEC0000000000000",
         "workspace_id": "ws_test",
         "issued_at": "2026-04-21T14:32:17.482Z",
@@ -760,7 +735,7 @@
         "engine_version": "2026-04-17.1",
         "alg": "Ed25519",
         "key_id": "test-key/v1",
-        "signature": "aTUt1lVh2gMqos5RPgcV_XNZq9b9lRNDNvkptL6lmPdePBjnjtNZI8vfxBkhQHHGq19u47hkFbfNAZQzCsY4AQ"
+        "signature": "soxxxU8xs0bAXlBOrrHXqHKHLNz2Tfgmk2tlRH4Zq58bEEaZ56GVKk4wXjFQej5ZB8pNJFjhRWQmV2-ogGNpAg"
       }
     },
     {
@@ -768,7 +743,7 @@
       "description": "both action and event present",
       "expected_reason": "both 'action' and 'event'",
       "receipt": {
-        "version": "1.1",
+        "version": "2.0.0",
         "receipt_id": "rcp_01HXZBOTH0000000000000000",
         "workspace_id": "ws_test",
         "issued_at": "2026-04-21T14:32:17.482Z",
@@ -784,7 +759,7 @@
         "engine_version": "2026-04-17.1",
         "alg": "Ed25519",
         "key_id": "test-key/v1",
-        "signature": "VCDiTef-cwmxPPzAyvmuUqK50nJiit5OclooMgOA3IkUSsUX6QPu_G_G1_rWidjYCIzWTUyC2ZnJuK6ZfuQ-BA"
+        "signature": "DD1jR8eHEhKVuVVPdssvlM2dq23dbNphpmBWNI-LElQIWMh25dXAXEew_JLhtf-XCeSQEwqnLaMIG6BInfQNBA"
       }
     },
     {
@@ -792,7 +767,7 @@
       "description": "neither action nor event present",
       "expected_reason": "neither 'action' nor 'event'",
       "receipt": {
-        "version": "1.1",
+        "version": "2.0.0",
         "receipt_id": "rcp_01HXZNEITHER000000000000",
         "workspace_id": "ws_test",
         "issued_at": "2026-04-21T14:32:17.482Z",
@@ -806,7 +781,7 @@
         "engine_version": "2026-04-17.1",
         "alg": "Ed25519",
         "key_id": "test-key/v1",
-        "signature": "dpwAHF0C83waA7MRdNbAtlT7C72SdHO7CPuOV9JLdnpf-EyB5vbIcIJzy0VLdLWfthcAHNzIJ6NLE651d3vIAw"
+        "signature": "dUnTskOWuokKQwGv6yR26CMy09f1g9mV7i2Woeld4p6KeovGVrvo_5IVF1TvA095ZC0fGyqGDISATMeaqZT2Ag"
       }
     },
     {
@@ -814,7 +789,7 @@
       "description": "authorization.update event was removed in draft.5",
       "expected_reason": "event must be one of",
       "receipt": {
-        "version": "1.1",
+        "version": "2.0.0",
         "receipt_id": "rcp_01J0Z7Q4AUTHUPDATE00000",
         "workspace_id": "ws_test",
         "issued_at": "2026-06-09T17:10:00.000Z",
@@ -829,7 +804,7 @@
         "engine_version": "2026-06-01.2",
         "alg": "Ed25519",
         "key_id": "test-key/v1",
-        "signature": "DpI5zXvMM-YE7WJNdXSBElNlwh-SIBXCVeFAW1LI-W3-jukaYGLBPUsuevslaMC7aZWLq5ZgMI8237vAaP19Dg"
+        "signature": "BizU3EbBhub4nC-Tp0EL5hFYVAB4_veJgkyj1Gvqx9joDpSaZ1SYO1RWDnpIZIEipzyibVDWaE-tvcL6l-xRDw"
       }
     },
     {
@@ -837,7 +812,7 @@
       "description": "event=authorization.create but decision=allow",
       "expected_reason": "must have decision",
       "receipt": {
-        "version": "1.1",
+        "version": "2.0.0",
         "receipt_id": "rcp_01HXZPAIR1000000000000000",
         "workspace_id": "ws_test",
         "issued_at": "2026-04-21T14:30:00.000Z",
@@ -852,7 +827,7 @@
         "engine_version": "2026-04-17.1",
         "alg": "Ed25519",
         "key_id": "test-key/v1",
-        "signature": "qHEQfJqgOf_P8JIW0eEPgyM-44QzLtDGYr27AxbjbUUneOxdhttbaw5mVZfy2TZAUdfvVQwMVzpsMcW5zrZbBg"
+        "signature": "pCM9hclbI8NHltd3yxPN7Knutnh2hvfuOGl8bajVYivVOmI8zBwDNbAg63VJEbHHCPI0liUF7M2u7vnBVB0rAg"
       }
     },
     {
@@ -860,7 +835,7 @@
       "description": "event=authorization.revoke but authorization_id=null",
       "expected_reason": "must have non-null authorization_id",
       "receipt": {
-        "version": "1.1",
+        "version": "2.0.0",
         "receipt_id": "rcp_01HXZPAIR2000000000000000",
         "workspace_id": "ws_test",
         "issued_at": "2026-04-21T14:30:00.000Z",
@@ -875,7 +850,7 @@
         "engine_version": "2026-04-17.1",
         "alg": "Ed25519",
         "key_id": "test-key/v1",
-        "signature": "GSqAmG3rQTP1QfDdvcaTt__XSQ1l1gaxk2-qg9Zz43Ta3chpF3r0CtYO4gZOgEq4AiGxOqUrsEpVg3KN-e46Aw"
+        "signature": "8YYW3Vz5hd_Ml6gPfY1a855v9mve5s3Fd9asR0KJjijjKwempnd4VbSxjnWYBmz3QmszsXnOz_c9hLy0_BePCQ"
       }
     },
     {
@@ -883,7 +858,7 @@
       "description": "event=authorization.create but resource is non-null",
       "expected_reason": "must have null resource",
       "receipt": {
-        "version": "1.1",
+        "version": "2.0.0",
         "receipt_id": "rcp_01HXZPAIR3000000000000000",
         "workspace_id": "ws_test",
         "issued_at": "2026-04-21T14:30:00.000Z",
@@ -898,7 +873,7 @@
         "engine_version": "2026-04-17.1",
         "alg": "Ed25519",
         "key_id": "test-key/v1",
-        "signature": "mppzqpgqbjG7mKAjKG8GoaqRJNafDEks9bboMlkoe1X8CSpqp66W8AVYa_Hnb0S_4u2qFQtTXQx1PWYrzjBYCA"
+        "signature": "9FSGhxlHkuX63rXUcLLa2oeaAFqo4Xc2qN5ky0WVfp-CokfQXaeacx4ASIWAs2vLt71lX7eVbI84RhqBnhMwCQ"
       }
     },
     {
@@ -906,7 +881,7 @@
       "description": "event receipt carrying policy_eval",
       "expected_reason": "policy_eval must be absent on event receipts",
       "receipt": {
-        "version": "1.1",
+        "version": "2.0.0",
         "receipt_id": "rcp_01J0Z7Q4POLICYEVENT000",
         "workspace_id": "ws_test",
         "issued_at": "2026-06-09T17:11:00.000Z",
@@ -925,7 +900,7 @@
           "matched_condition": null,
           "field_value": null
         },
-        "signature": "LwUx151BA5xYDqkMkDGXkOOkH3i90KuDM29blvB0si_TUbfetcAV4oib7LCbMVFhtu1-ht-CSGT8NG68SHboAA"
+        "signature": "3uOSt_q5tJXDaLaevHd9U19bvKn343G-cokgZvZp3RWSd33_bxqG3j-OWamE0jasiacfd_pvAIo_AXu5Spr2Bw"
       }
     },
     {
@@ -933,7 +908,7 @@
       "description": "policy_eval missing required field_value",
       "expected_reason": "policy_eval missing fields",
       "receipt": {
-        "version": "1.1",
+        "version": "2.0.0",
         "receipt_id": "rcp_01J0Z7Q4POLICYMISS000",
         "workspace_id": "ws_test",
         "issued_at": "2026-06-09T17:13:00.000Z",
@@ -957,7 +932,7 @@
             "value": 100
           }
         },
-        "signature": "FLNNxMct64nTe7AsL3W4cfX1vIaGbEGNnCuRJheSXtb5f1M-lzdY5or5woLXf9KZx8mH8oFnQUqYuUH0G4EICg"
+        "signature": "T81zX1Gz5MU6a0seTBjbbKXf7tNU9ZZG3D4yyIwfLQqQjGRiVwBtlu-q93eEwq5MEYgisBjkXwa4g2VnS7SKBg"
       }
     },
     {
@@ -965,7 +940,7 @@
       "description": "matched_condition missing required op",
       "expected_reason": "policy_eval.matched_condition missing fields",
       "receipt": {
-        "version": "1.1",
+        "version": "2.0.0",
         "receipt_id": "rcp_01J0Z7Q4POLICYNOOP000",
         "workspace_id": "ws_test",
         "issued_at": "2026-06-09T17:14:00.000Z",
@@ -989,7 +964,7 @@
           },
           "field_value": 82
         },
-        "signature": "Y9ajgWRjxo8M60Ew5urG0nEi_aPoTV623QLnXb38hSjt7QH0IZA5oxeIA_9ieFTa_30AptiTPwyDaS7c2BYQBQ"
+        "signature": "bhwwfpNNdtovITPWgIJ8zbbQiRECmSNd6OdVoCJ4rFbUWyqUK4Hze82bdDIfNpuZ93hwugPYHQ_7vzbVb2oIAg"
       }
     },
     {
@@ -997,7 +972,7 @@
       "description": "matched_condition carrying an unknown member",
       "expected_reason": "policy_eval.matched_condition has unknown fields",
       "receipt": {
-        "version": "1.1",
+        "version": "2.0.0",
         "receipt_id": "rcp_01J0Z7Q4POLICYCONDEX",
         "workspace_id": "ws_test",
         "issued_at": "2026-06-09T17:15:00.000Z",
@@ -1023,7 +998,7 @@
           },
           "field_value": 82
         },
-        "signature": "oKsk6lnN5g4G3SHljs6jIvumvrSAgmZIYJOSCSpgJtjVrDAok7PPuFDsnQTXzoNVGZ0KOvqj0P5SZD1gF8k3DQ"
+        "signature": "vw2UbS3Rm6rS1T_EJed4LBSWU9CH_LANtJML46jGODj_UKYn6FC9-98x6wR1bruzstnwfpwoPchBF5HZ4YQbDw"
       }
     },
     {
@@ -1031,7 +1006,7 @@
       "description": "policy_eval field_value uses a non-integer number",
       "expected_reason": "policy_eval.field_value must be",
       "receipt": {
-        "version": "1.1",
+        "version": "2.0.0",
         "receipt_id": "rcp_01J0Z7Q4POLICYFLOAT0",
         "workspace_id": "ws_test",
         "issued_at": "2026-06-09T17:16:00.000Z",
@@ -1056,7 +1031,7 @@
           },
           "field_value": 82.5
         },
-        "signature": "Ifoik9hEXwaTpaxPla5xMXhIQyvg-7NCWSBTpRlSbC-Nhq57reYdxYY1lXxFk_pljwTelX6JL6Wu89MksCidBw"
+        "signature": "nGP9kdtAjTuunKT-z2ip1eoRZR1ov-g4jkn5flzRl8vB1VRoKPKHs9oTWiPeVJClgBgbEVFg4nfC3GGZ71fdCg"
       }
     },
     {
@@ -1064,7 +1039,7 @@
       "description": "context integer exceeds the I-JSON safe range ±(2^53-1)",
       "expected_reason": "safe range",
       "receipt": {
-        "version": "1.1",
+        "version": "2.0.0",
         "receipt_id": "rcp_01HXZBIGINT00000000000000",
         "workspace_id": "ws_test",
         "issued_at": "2026-04-21T14:32:17.482Z",
@@ -1081,7 +1056,7 @@
         "engine_version": "2026-04-17.1",
         "alg": "Ed25519",
         "key_id": "test-key/v1",
-        "signature": "4vKIy1HKpqnJYACoHxH24ZwEkiUMQcOnI-7LXFWLyATgAGCiEa4eTR4Speo6nnjsQ5f2CVNspZJtBbcWaATMBA"
+        "signature": "171P6WYQbgDlQZ8nALW5exVFz4yBh8iT4V6doPj68jLj1kVBnKyDGnx7CRkoeb_bI1aBDXNvcGcO2WgPvn9iDQ"
       }
     },
     {
@@ -1089,7 +1064,7 @@
       "description": "issued_at lacks a timezone offset (not a full RFC 3339 instant)",
       "expected_reason": "RFC 3339 timestamp with timezone",
       "receipt": {
-        "version": "1.1",
+        "version": "2.0.0",
         "receipt_id": "rcp_01HXZMINIMAL0000000000000",
         "workspace_id": "ws_test",
         "issued_at": "2026-04-21T14:32:17.482",
@@ -1104,7 +1079,7 @@
         "engine_version": "2026-04-17.1",
         "alg": "Ed25519",
         "key_id": "test-key/v1",
-        "signature": "3cjztCuJ8p3bSRLCGHOajS4j34X_JfXHLzTZHBmmiUYFy1dGp4WXysaTOswAsI3op-HFvSpj7P9WFn4UwfcxCA"
+        "signature": "XmJMEi2uqIOqrurKiiJYM7w3Box-nVoQizi_PpDwGhJvVGwSE-r0XJ0bnKLKhqXdHOvWlnR6Yev2Xi5ixM3KDg"
       }
     },
     {
@@ -1112,7 +1087,7 @@
       "description": "signature carries base64 padding / non-base64url characters",
       "expected_reason": "base64url",
       "receipt": {
-        "version": "1.1",
+        "version": "2.0.0",
         "receipt_id": "rcp_01HXZMINIMAL0000000000000",
         "workspace_id": "ws_test",
         "issued_at": "2026-04-21T14:32:17.482Z",
@@ -1127,7 +1102,7 @@
         "engine_version": "2026-04-17.1",
         "alg": "Ed25519",
         "key_id": "test-key/v1",
-        "signature": "3cjztCuJ8p3bSRLCGHOajS4j34X_JfXHLzTZHBmmiUYFy1dGp4WXysaTOswAsI3op-HFvSpj7P9WFn4UwfcxCA=="
+        "signature": "XmJMEi2uqIOqrurKiiJYM7w3Box-nVoQizi_PpDwGhJvVGwSE-r0XJ0bnKLKhqXdHOvWlnR6Yev2Xi5ixM3KDg=="
       }
     },
     {
@@ -1135,7 +1110,7 @@
       "description": "signature text changes only unused base64url pad bits",
       "expected_reason": "base64url",
       "receipt": {
-        "version": "1.1",
+        "version": "2.0.0",
         "receipt_id": "rcp_01HXZMINIMAL0000000000000",
         "workspace_id": "ws_test",
         "issued_at": "2026-04-21T14:32:17.482Z",
@@ -1150,7 +1125,7 @@
         "engine_version": "2026-04-17.1",
         "alg": "Ed25519",
         "key_id": "test-key/v1",
-        "signature": "3cjztCuJ8p3bSRLCGHOajS4j34X_JfXHLzTZHBmmiUYFy1dGp4WXysaTOswAsI3op-HFvSpj7P9WFn4UwfcxCB"
+        "signature": "XmJMEi2uqIOqrurKiiJYM7w3Box-nVoQizi_PpDwGhJvVGwSE-r0XJ0bnKLKhqXdHOvWlnR6Yev2Xi5ixM3KDh"
       }
     },
     {
@@ -1158,7 +1133,7 @@
       "description": "action receipt with decision=authorization_granted",
       "expected_reason": "requires an event receipt",
       "receipt": {
-        "version": "1.1",
+        "version": "2.0.0",
         "receipt_id": "rcp_01HXZPAIR4000000000000000",
         "workspace_id": "ws_test",
         "issued_at": "2026-04-21T14:30:00.000Z",
@@ -1173,7 +1148,7 @@
         "engine_version": "2026-04-17.1",
         "alg": "Ed25519",
         "key_id": "test-key/v1",
-        "signature": "KeOuUTKsruqNXF15z3tHQV_mnGQcI96MQJ0GNnqT1LmnsTx6RmqBZWGQfw-fheHSHMTbTZF_Unn9s7J3FVSNDQ"
+        "signature": "-tTL_SX5Twfgty0B0qbWYjsNLmAJ9eec9bAiM7fCQU9h_eq1b8VrVavYJGZWJhaVsF-S2irt5Lw9r5SeJcnTAw"
       }
     },
     {
@@ -1181,7 +1156,7 @@
       "description": "context string contains an unpaired Unicode surrogate",
       "expected_reason": "unpaired unicode surrogate",
       "receipt": {
-        "version": "1.1",
+        "version": "2.0.0",
         "receipt_id": "rcp_01HXZSURROGATE0000000000",
         "workspace_id": "ws_test",
         "issued_at": "2026-04-21T14:32:17.482Z",
@@ -1198,7 +1173,7 @@
         "engine_version": "2026-04-17.1",
         "alg": "Ed25519",
         "key_id": "test-key/v1",
-        "signature": "VOJX8UGvSSxFwp9Lx-nOzbIRnhsOKcMA-bDP-2VScZrWA3TlXDsbndWWtlA3QAOB9PjIbuVRTsNOYDG7EiCVAA"
+        "signature": "GE8T3z2XKAQJlxJf8F8tuTVikvJ-3rAVtQSCVj66k1A-iXv1ZUVDm1FYP0wV9h2w2z43RtmmCgIzs4fWl2-rCw"
       }
     },
     {
@@ -1206,7 +1181,7 @@
       "description": "context nested beyond the canonicalization depth limit",
       "expected_reason": "max depth",
       "receipt": {
-        "version": "1.1",
+        "version": "2.0.0",
         "receipt_id": "rcp_01HXZDEEPNEST00000000000",
         "workspace_id": "ws_test",
         "issued_at": "2026-04-21T14:32:17.482Z",
@@ -1303,7 +1278,7 @@
         "engine_version": "2026-04-17.1",
         "alg": "Ed25519",
         "key_id": "test-key/v1",
-        "signature": "0I6wH606UlLy701bWsHvUOVTj-dgRWTm6QG0LBskdcC4e9fgmWvR_dC10k7Ho2f67TCZRbUN_7hcmjxLv0SKBQ"
+        "signature": "ecS_r-AqE2f_FyjhkbnyQVH1eaZMiCa9zoKJyccP-dKw-CyPZBGWPJQKcImAwpyox-n9ZTFJpqGmx9X9hk-WDQ"
       }
     },
     {
@@ -1311,7 +1286,7 @@
       "description": "issued_at is February 30 (shape-valid, not a real date)",
       "expected_reason": "calendar",
       "receipt": {
-        "version": "1.1",
+        "version": "2.0.0",
         "receipt_id": "rcp_01HXZMINIMAL0000000000000",
         "workspace_id": "ws_test",
         "issued_at": "2026-02-30T12:00:00.000Z",
@@ -1326,7 +1301,7 @@
         "engine_version": "2026-04-17.1",
         "alg": "Ed25519",
         "key_id": "test-key/v1",
-        "signature": "3cjztCuJ8p3bSRLCGHOajS4j34X_JfXHLzTZHBmmiUYFy1dGp4WXysaTOswAsI3op-HFvSpj7P9WFn4UwfcxCA"
+        "signature": "XmJMEi2uqIOqrurKiiJYM7w3Box-nVoQizi_PpDwGhJvVGwSE-r0XJ0bnKLKhqXdHOvWlnR6Yev2Xi5ixM3KDg"
       }
     },
     {
@@ -1334,7 +1309,7 @@
       "description": "issued_at uses a +02:00 offset instead of Z",
       "expected_reason": "millisecond precision",
       "receipt": {
-        "version": "1.1",
+        "version": "2.0.0",
         "receipt_id": "rcp_01HXZMINIMAL0000000000000",
         "workspace_id": "ws_test",
         "issued_at": "2026-04-21T16:32:17.482+02:00",
@@ -1349,7 +1324,7 @@
         "engine_version": "2026-04-17.1",
         "alg": "Ed25519",
         "key_id": "test-key/v1",
-        "signature": "3cjztCuJ8p3bSRLCGHOajS4j34X_JfXHLzTZHBmmiUYFy1dGp4WXysaTOswAsI3op-HFvSpj7P9WFn4UwfcxCA"
+        "signature": "XmJMEi2uqIOqrurKiiJYM7w3Box-nVoQizi_PpDwGhJvVGwSE-r0XJ0bnKLKhqXdHOvWlnR6Yev2Xi5ixM3KDg"
       }
     },
     {
@@ -1357,7 +1332,7 @@
       "description": "issued_at lacks millisecond precision",
       "expected_reason": "millisecond precision",
       "receipt": {
-        "version": "1.1",
+        "version": "2.0.0",
         "receipt_id": "rcp_01HXZMINIMAL0000000000000",
         "workspace_id": "ws_test",
         "issued_at": "2026-04-21T14:32:17Z",
@@ -1372,7 +1347,7 @@
         "engine_version": "2026-04-17.1",
         "alg": "Ed25519",
         "key_id": "test-key/v1",
-        "signature": "3cjztCuJ8p3bSRLCGHOajS4j34X_JfXHLzTZHBmmiUYFy1dGp4WXysaTOswAsI3op-HFvSpj7P9WFn4UwfcxCA"
+        "signature": "XmJMEi2uqIOqrurKiiJYM7w3Box-nVoQizi_PpDwGhJvVGwSE-r0XJ0bnKLKhqXdHOvWlnR6Yev2Xi5ixM3KDg"
       }
     }
   ]

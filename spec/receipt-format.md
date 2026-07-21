@@ -1,6 +1,6 @@
 # Allowly Receipt Format Specification
 
-**Version:** 1.1.0
+**Version:** 2.0.0
 **Status:** Stable
 **License:** This specification is published under CC-BY 4.0. Reference implementations are Apache 2.0.
 
@@ -40,11 +40,11 @@ The key words **MUST**, **MUST NOT**, **SHOULD**, **SHOULD NOT**, and **MAY** in
 
 ## 3. Receipt structure
 
-A receipt is a JSON object with the following top-level fields. All fields are required except where marked conditional (`action`/`event`, by receipt kind) or optional (`policy_eval`, §3.6). Unknown fields **MUST NOT** be present in v1 receipts; verifiers **MUST** reject receipts containing unknown top-level fields.
+A receipt is a JSON object with the following top-level fields. All fields are required except where marked conditional (`action`/`event`, by receipt kind) or optional (`policy_eval`, §3.6). Unknown fields **MUST NOT** be present; verifiers **MUST** reject receipts containing unknown top-level fields.
 
 ```json
 {
-  "version": "1.1",
+  "version": "2.0.0",
   "receipt_id": "rcp_01HXZ2B3QW4N5M6P7R8S9T0V1W",
   "workspace_id": "ws_01HXA1B2C3D4E5F6G7H8J9K0L1",
   "issued_at": "2026-04-21T14:32:17.482Z",
@@ -71,7 +71,7 @@ A receipt is a JSON object with the following top-level fields. All fields are r
 
 | Field | Type | Required | Notes |
 |---|---|---|---|
-| `version` | string | yes | MUST be `"1.1"` for newly issued receipts conforming to this spec. Version `"1.0"` is verification-only legacy (§3.2). |
+| `version` | string | yes | MUST be exactly `"2.0.0"`. |
 | `receipt_id` | string | yes | ULID. Monotonic within a workspace. |
 | `workspace_id` | string | yes | Issuer identifier. Used to look up the verification key. |
 | `issued_at` | string | yes | RFC 3339 timestamp, UTC, millisecond precision, Z suffix. |
@@ -92,13 +92,7 @@ A receipt is a JSON object with the following top-level fields. All fields are r
 
 ### 3.2 Extensibility
 
-Future versions MAY add fields. Verifiers implementing this specification accept `"1.0"` and `"1.1"` and **MUST** apply the schema and signature layout belonging to the declared version. They **MUST** reject any other version and **MUST NOT** verify one version using another version's rules. Version `"1.0"` is retained only so historical evidence remains verifiable; issuers **MUST NOT** emit new v1.0 receipts.
-
-**Versioning policy.** The unknown-field rule (§3.1) makes any additive field a breaking change for deployed verifiers. To keep tamper-rejection strict without uncoordinated breakage:
-
-- **While this spec is in draft** (pre-1.0.0 final), the wire `version` stays `"1.0"` and the spec, both reference verifiers, and the test vectors ship in lockstep — every draft regenerates all three together. Draft verifiers are not long-lived deployment artifacts.
-- **After 1.0.0 final**, any additive optional field requires a minor wire-version bump (e.g. `"1.1"`). Verifiers declare the set of versions they accept (e.g. `{"1.0", "1.1"}`) and apply the unknown-field rule per accepted version: a `"1.0"` receipt carrying a field defined only in `"1.1"` is rejected.
-- Issuers **MUST NOT** emit a field under a `version` value that does not define it.
+Verifiers implementing this specification accept only `"2.0.0"` and **MUST** reject every other value. Future incompatible receipt shapes require a new wire version and matching verifier release. Issuers **MUST NOT** emit fields under a version that does not define them.
 
 ### 3.3 Receipt kinds
 
@@ -151,7 +145,7 @@ The two-field discriminator design (rather than a single overloaded field) makes
 
 ```json
 {
-  "version": "1.1",
+  "version": "2.0.0",
   "receipt_id": "rcp_01HXZAUTHORIZATIONCREATE0000000",
   "workspace_id": "ws_01HXA1B2C3D4E5F6G7H8J9K0L1",
   "issued_at": "2026-04-21T14:30:00.000Z",
@@ -211,7 +205,7 @@ Issuers that route action decisions through per-action conditions MAY record the
 
 ```json
 {
-  "version": "1.1",
+  "version": "2.0.0",
   "receipt_id": "rcp_01J0Z7Q4BORDERLINE0CONFIRM",
   "workspace_id": "ws_01HXA1B2C3D4E5F6G7H8J9K0L1",
   "issued_at": "2026-06-09T17:04:09.114Z",
@@ -280,7 +274,7 @@ The canonical form is the payload serialized as JSON with the following normativ
 3. **Object keys.** Sorted in lexicographic order by UTF-16 code unit (the default `Array.prototype.sort` order in JavaScript). Applied recursively to every object, including nested objects (such as `context`). **Caution:** this is *not* Unicode code-point order, and the two diverge for keys containing characters outside the Basic Multilingual Plane (e.g. an emoji key sorts *before* `U+FF61` under UTF-16 but *after* it by code point). Languages whose default string sort is by code point — including Python's `sorted()` — **MUST** sort keys by their UTF-16 big-endian encoding (in Python, `key=lambda k: k.encode("utf-16-be")`) to match this rule.
 4. **Array order.** Preserved as-is. Arrays are ordered data; verifiers **MUST NOT** sort them.
 5. **Strings.** Serialized with double quotes. The following characters **MUST** be escaped: `"` as `\"`, `\` as `\\`, and control characters `U+0000` through `U+001F` using `\uXXXX` lowercase-hex form (e.g. `\u000a` for newline). Non-ASCII characters **MUST NOT** be escaped; they appear as their UTF-8 byte sequence.
-6. **Numbers.** Raw JSON integer tokens **MUST** be written without a decimal point or exponent (`1` is valid; `1.0` and `1e0` are invalid). Non-integer numbers **MUST NOT** appear in v1 receipts; if present, verifiers **MUST** reject the receipt. Integers are further bounded to the I-JSON safe range, ±(2⁵³−1) inclusive (as in RFC 8785); a magnitude outside this range cannot be represented exactly by an IEEE-754 double consumer and **MUST** be rejected. Values that need a larger range MUST be expressed as strings.
+6. **Numbers.** Raw JSON integer tokens **MUST** be written without a decimal point or exponent (`1` is valid; `1.0` and `1e0` are invalid). Non-integer numbers **MUST NOT** appear in receipts; if present, verifiers **MUST** reject the receipt. Integers are further bounded to the I-JSON safe range, ±(2⁵³−1) inclusive (as in RFC 8785); a magnitude outside this range cannot be represented exactly by an IEEE-754 double consumer and **MUST** be rejected. Values that need a larger range MUST be expressed as strings.
 7. **Booleans and null.** Serialized as `true`, `false`, `null`.
 8. **Separators.** `,` between array/object elements, `:` between object keys and values. No surrounding whitespace.
 9. **Resource limits.** The payload root has depth 1 and counts as one node. Each array item and each object value adds one node; object member names do not add separate nodes. Payload depth **MUST NOT** exceed 32 and node count **MUST NOT** exceed 50,000. Verifiers **MUST** reject larger payloads before recursive serialization.
@@ -295,7 +289,7 @@ The payload for the example in §3 canonicalizes to (linebreaks for display only
 "decision":"allow","engine_version":"2026-04-17.1","issued_at":
 "2026-04-21T14:32:17.482Z","key_id":"projects/allowly-prod/locations/global/keyRings/allowly-signing/cryptoKeys/ws_01HXA1/cryptoKeyVersions/3","reason":"authorization_granted_action_active",
 "receipt_id":"rcp_01HXZ2B3QW4N5M6P7R8S9T0V1W","resource":
-"edge:emp_8821:conn_9f2a","user_id":"emp_8821","version":"1.1",
+"edge:emp_8821:conn_9f2a","user_id":"emp_8821","version":"2.0.0",
 "workspace_id":"ws_01HXA1B2C3D4E5F6G7H8J9K0L1"}
 ```
 
@@ -316,16 +310,11 @@ Verifiers **MUST** use standard RFC 8032 Ed25519 verification over the raw canon
 
 ### 5.2 Protected algorithm and key identifier
 
-Version 1.1 places `alg` and `key_id` at the top level. Removing only the
+Format 2.0.0 places `alg` and `key_id` at the top level. Removing only the
 `signature` field for canonicalization leaves both fields in the signed bytes,
 so neither the algorithm nor trust-anchor selector can be changed after issue.
 The `signature` field contains only the canonical unpadded base64url signature
 string. It is never empty or a placeholder; see §5.3.
-
-Version 1.0 used `signature: {alg, key_id, value}` and excluded that entire
-object from the signed bytes. Verifiers retain this layout only for historical
-receipts and SHOULD label it legacy. The duplicate-key protections in §6 remain
-required, but v1.0 cannot cryptographically bind its key selector.
 
 ### 5.3 Pending state is not part of the receipt format
 
@@ -337,7 +326,7 @@ This separation is deliberate. Pending is a transport-layer concern, not a recei
 - Customers cannot accidentally serialize a pending response as audit evidence. The pending response and the signed receipt have different shapes; passing the wrong one to a verifier or a long-term store fails immediately, not silently.
 - The receipt format spec stays focused on a single artifact: the signed receipt.
 
-Issuers **MUST NOT** emit any object claiming to be a v1.1 receipt with `signature` set to a non-signature value (e.g. a placeholder string). Verifiers **MUST** reject any such object on the schema check.
+Issuers **MUST NOT** emit any object claiming to be a 2.0.0 receipt with `signature` set to a non-signature value (e.g. a placeholder string). Verifiers **MUST** reject any such object on the schema check.
 
 ### 5.4 Implementation notes on signing (non-normative)
 
@@ -398,8 +387,8 @@ Verifiers **SHOULD** cache this document; issuers **SHOULD** set `Cache-Control:
 
 A verifier given a receipt `R` and the issuer's public keys **MUST** perform all of the following steps in order, and **MUST** reject the receipt if any step fails.
 
-1. **Version check.** Assert `R.version` is `"1.0"` or `"1.1"`; select that version's schema. Version `"1.0"` is verification-only legacy.
-2. **Schema check.** Assert all fields for the selected version are present with the correct types and no unknown top-level fields are present. For v1.1, assert top-level `alg` and `key_id` are strings and `signature` is a non-empty string. For v1.0, assert the legacy `signature` object contains exactly string members `alg`, `key_id`, and `value`. In either version the signature text MUST be canonical unpadded base64url and decode to exactly 64 bytes; verifiers MUST reject non-zero unused pad bits by decoding and re-encoding before comparison. If `R.policy_eval` is present, assert it conforms to §3.6.1: an object with exactly `matched_condition` (an object with exactly the members `field`, `op`, `value` — or null; `value` may be a scalar or an array of scalars) and `field_value` (string, integer, boolean, or null), and no other members.
+1. **Version check.** Assert `R.version` is exactly `"2.0.0"`.
+2. **Schema check.** Assert all required fields are present with the correct types and no unknown top-level fields are present. Assert top-level `alg` and `key_id` are strings and `signature` is a non-empty string. The signature text MUST be canonical unpadded base64url and decode to exactly 64 bytes; verifiers MUST reject non-zero unused pad bits by decoding and re-encoding before comparison. If `R.policy_eval` is present, assert it conforms to §3.6.1: an object with exactly `matched_condition` (an object with exactly the members `field`, `op`, `value` — or null; `value` may be a scalar or an array of scalars) and `field_value` (string, integer, boolean, or null), and no other members.
 3. **Receipt kind and pairing check.** Determine the receipt kind from which discriminator field is present, and enforce the corresponding constraints:
    - Exactly one of `action` and `event` MUST be present. Reject if both are present, or if neither is present.
    - **If `event` is present** (event receipt):
@@ -413,11 +402,11 @@ A verifier given a receipt `R` and the issuer's public keys **MUST** perform all
    - **If `action` is present** (action receipt):
      - `decision` MUST be one of `"allow"`, `"deny"`, `"confirm"`, or `"escalate"`.
      - The reserved event-only decisions (`authorization_granted`, `authorization_revoked`, `escalation_approved`, `escalation_rejected`) MUST NOT appear.
-4. **Algorithm check.** Assert the selected version's algorithm field equals `"Ed25519"` (`R.alg` for v1.1; `R.signature.alg` for v1.0).
+4. **Algorithm check.** Assert `R.alg` equals `"Ed25519"`.
 5. **Timestamp sanity.** Parse `R.issued_at` as RFC 3339. Assert it is not in the future (allowing a small skew, e.g. 5 minutes) and not absurdly far in the past (spec does not mandate a cutoff; verifier policy).
 6. **Canonicalize.** Produce the canonical payload bytes per §4.
 7. **Signature verification.**
-   - Look up the public key matching the selected version's key identifier (`R.key_id` for v1.1; `R.signature.key_id` for v1.0) from the published key document.
+   - Look up the public key matching `R.key_id` from the published key document.
    - If the key is not found, reject.
    - If the key's active window does not include `R.issued_at`, reject.
    - Verify the Ed25519 signature against the canonical payload bytes per RFC 8032. If verification fails, reject.
@@ -457,7 +446,6 @@ Reference test vectors are provided in `test-vectors.json`. Implementations **MU
 Vectors include:
 
 *Action receipts that MUST verify:*
-- One historical v1.0 receipt using the legacy signature object.
 - A minimal `allow` action receipt with an empty context.
 - A `deny` receipt with `authorization_id: null`.
 - A receipt with non-ASCII characters in multiple fields (tests UTF-8 handling).
@@ -482,8 +470,8 @@ Vectors include:
 - A receipt with a tampered payload (signature fails).
 - A receipt with a forged signature (zero bytes).
 - A receipt with an unknown `key_id`.
-- A v1.1 receipt whose signed `key_id` was changed to another published key.
-- A receipt with `version: "2.0"` (v1 verifier rejects).
+- A receipt whose signed `key_id` was changed to another published key.
+- A receipt with `version: "3.0.0"`.
 - A receipt with an unknown top-level field.
 - A receipt with a required field missing.
 - A receipt with `decision: "maybe"` (invalid decision value).
@@ -508,8 +496,8 @@ Vectors include:
 
 If an issuer's Ed25519 private key is compromised, all receipts signed under that key are untrustworthy from the moment of compromise until rotation. Issuers **SHOULD** rotate keys at least annually. Verifiers **SHOULD** consult the key document's `active_until` field when verifying old receipts; a key retired for compromise should have `active_until` set to the compromise time. Note the limit of this mitigation: the window check compares `active_until` against the receipt's *claimed* `issued_at`, and an attacker holding the key controls that claim — a receipt backdated to before the compromise time still verifies (§7 item 6). Retiring a key bounds honest use; it does not detect backdated forgeries. Detecting those requires evidence outside this format, such as an external timestamp or the issuer's own receipt log.
 
-Version 1.1 removes v1.0's unsigned-key-selector weakness: `alg` and `key_id`
-are signed payload fields, so changing either one invalidates the signature.
+Format 2.0.0 signs `alg` and `key_id`, so changing either one invalidates the
+signature.
 
 ### 10.2 Canonicalization fragility
 
@@ -556,10 +544,10 @@ The format cannot police the semantics of what customers evaluate; this guidance
 
 ## 11. Changelog
 
-- **1.1.0 (2026-07-20)** — Protected signature header and verifier hardening.
+- **2.0.0 (2026-07-20)** — Protected signature header and verifier hardening.
   - Moved `alg` and `key_id` into the signed top-level payload and changed
-    `signature` to the base64url signature string. New issuers emit wire version
-    `"1.1"`; verifiers retain v1.0 as verification-only legacy evidence.
+    `signature` to the base64url signature string. The only accepted wire
+    version is `"2.0.0"`.
   - Required well-formed Unicode scalar strings, unique raw JSON member names,
     integer token spelling without decimal/exponent forms, and canonical
     base64url trailing pad bits.

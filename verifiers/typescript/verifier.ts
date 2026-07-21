@@ -1,7 +1,7 @@
 /**
  * Allowly Receipt Verifier (TypeScript reference implementation).
  *
- * Verifies Allowly receipts per receipt-format.md v1.1, including legacy v1.0.
+ * Verifies Allowly receipts per receipt-format.md v2.0.0.
  *
  * Dependencies: Node.js 20+ (uses built-in node:crypto and the WebCrypto API).
  * No external runtime dependencies.
@@ -23,7 +23,7 @@
 
 import { webcrypto } from "node:crypto";
 
-const CURRENT_SPEC_VERSION = "1.1";
+const SPEC_VERSION = "2.0.0";
 const ACTION_DECISIONS = new Set(["allow", "deny", "confirm", "escalate"]);
 const EVENT_DECISIONS: Record<string, Set<string>> = {
   "authorization.create": new Set(["authorization_granted"]),
@@ -32,22 +32,15 @@ const EVENT_DECISIONS: Record<string, Set<string>> = {
 };
 const AUTHORIZATION_LIFECYCLE_EVENTS = new Set(["authorization.create", "authorization.revoke"]);
 const EVENT_ONLY_DECISIONS = new Set(Object.values(EVENT_DECISIONS).flatMap((decisions) => [...decisions]));
-const COMMON_REQUIRED_FIELDS = new Set([
+const REQUIRED_FIELDS = new Set([
   "version", "receipt_id", "workspace_id", "issued_at", "decision", "reason",
   "user_id", "agent_id", "resource", "context",
-  "authorization_id", "engine_version", "signature",
+  "authorization_id", "engine_version", "alg", "key_id", "signature",
 ]);
-const V10_REQUIRED_FIELDS = COMMON_REQUIRED_FIELDS;
-const V11_REQUIRED_FIELDS = new Set([...COMMON_REQUIRED_FIELDS, "alg", "key_id"]);
 const OPTIONAL_FIELDS = new Set(["policy_eval"]);
 const DISCRIMINATOR_FIELDS = new Set(["action", "event"]);
-const V10_TOP_LEVEL_FIELDS = new Set([
-  ...V10_REQUIRED_FIELDS,
-  ...DISCRIMINATOR_FIELDS,
-  ...OPTIONAL_FIELDS,
-]);
-const V11_TOP_LEVEL_FIELDS = new Set([
-  ...V11_REQUIRED_FIELDS,
+const ALL_TOP_LEVEL_FIELDS = new Set([
+  ...REQUIRED_FIELDS,
   ...DISCRIMINATOR_FIELDS,
   ...OPTIONAL_FIELDS,
 ]);
@@ -92,19 +85,12 @@ interface ReceiptBase {
   };
 }
 
-export interface ReceiptV10 extends ReceiptBase {
-  version: "1.0";
-  signature: { alg: string; key_id: string; value: string };
-}
-
-export interface ReceiptV11 extends ReceiptBase {
-  version: "1.1";
+export interface Receipt extends ReceiptBase {
+  version: "2.0.0";
   alg: string;
   key_id: string;
   signature: string;
 }
-
-export type Receipt = ReceiptV10 | ReceiptV11;
 
 // ---------------------------------------------------------------------------
 // Base64url
@@ -162,14 +148,14 @@ function validateTree(payload: unknown): void {
     }
     if (typeof value === "number") {
       if (!Number.isInteger(value)) {
-        throw new VerificationError("v1 receipts must not contain non-integer numbers");
+        throw new VerificationError("receipts must not contain non-integer numbers");
       }
       // Integers outside the I-JSON safe range (±(2^53-1)) lose precision in
       // doubles and would render with an exponent (e.g. "1e+21"), violating
       // §4.2 rule 6. Number.isSafeInteger excludes them.
       if (!Number.isSafeInteger(value)) {
         throw new VerificationError(
-          "integer exceeds the safe range ±(2^53-1); v1 receipts must not carry integers that lose precision in IEEE-754 doubles",
+          "integer exceeds the safe range ±(2^53-1); receipts must not carry integers that lose precision in IEEE-754 doubles",
         );
       }
     } else if (typeof value === "string") {
@@ -242,10 +228,9 @@ export async function verifyReceipt(
   const now = opts.now ?? new Date();
 
   // Step 1: version check
-  const version = receipt.version;
-  if (version !== "1.0" && version !== CURRENT_SPEC_VERSION) {
+  if (receipt.version !== SPEC_VERSION) {
     throw new VerificationError(
-      `unsupported version: ${JSON.stringify(version)} (want one of ["1.0","${CURRENT_SPEC_VERSION}"])`,
+      `unsupported version: ${JSON.stringify(receipt.version)} (want "${SPEC_VERSION}")`,
     );
   }
 
@@ -262,11 +247,8 @@ export async function verifyReceipt(
   }
 
   // Step 2: schema check (includes signature shape — rejects placeholders)
-  checkSchema(receipt, version);
+  checkSchema(receipt);
   const r = receipt as unknown as Receipt;
-  const alg = r.version === CURRENT_SPEC_VERSION ? r.alg : r.signature.alg;
-  const keyId = r.version === CURRENT_SPEC_VERSION ? r.key_id : r.signature.key_id;
-  const signatureValue = r.version === CURRENT_SPEC_VERSION ? r.signature : r.signature.value;
 
   // Step 3: receipt kind and pairing
   const hasAction = "action" in receipt;
@@ -333,8 +315,8 @@ export async function verifyReceipt(
   }
 
   // Step 4: algorithm check
-  if (alg !== "Ed25519") {
-    throw new VerificationError(`unsupported signature alg: ${JSON.stringify(alg)}`);
+  if (r.alg !== "Ed25519") {
+    throw new VerificationError(`unsupported signature alg: ${JSON.stringify(r.alg)}`);
   }
 
   // Step 5: timestamp sanity
@@ -357,8 +339,8 @@ export async function verifyReceipt(
   const canonical = canonicalize(payload);
 
   // Step 7: signature verification
-  const key = findKey(publicKeys, keyId, issuedAt);
-  const sigBytes = b64urlDecode(signatureValue);  // length already validated in schema check
+  const key = findKey(publicKeys, r.key_id, issuedAt);
+  const sigBytes = b64urlDecode(r.signature);  // length already validated in schema check
 
   const cryptoKey = await webcrypto.subtle.importKey(
     "raw",
@@ -376,14 +358,12 @@ export async function verifyReceipt(
   // Step 8: accept (implicit — no throw)
 }
 
-function checkSchema(receipt: Record<string, unknown>, version: "1.0" | "1.1"): void {
-  const requiredFields = version === CURRENT_SPEC_VERSION ? V11_REQUIRED_FIELDS : V10_REQUIRED_FIELDS;
-  const allowedFields = version === CURRENT_SPEC_VERSION ? V11_TOP_LEVEL_FIELDS : V10_TOP_LEVEL_FIELDS;
-  const extra = Object.keys(receipt).filter((k) => !allowedFields.has(k));
+function checkSchema(receipt: Record<string, unknown>): void {
+  const extra = Object.keys(receipt).filter((k) => !ALL_TOP_LEVEL_FIELDS.has(k));
   if (extra.length) {
     throw new VerificationError(`unknown top-level fields: ${JSON.stringify(extra.sort())}`);
   }
-  const missing = [...requiredFields].filter((k) => !(k in receipt));
+  const missing = [...REQUIRED_FIELDS].filter((k) => !(k in receipt));
   if (missing.length) {
     throw new VerificationError(`missing top-level fields: ${JSON.stringify(missing.sort())}`);
   }
@@ -412,40 +392,12 @@ function checkSchema(receipt: Record<string, unknown>, version: "1.0" | "1.1"): 
     throw new VerificationError("context must be an object");
   }
 
-  let sigValue: string;
-  let signatureLabel: string;
-  if (version === CURRENT_SPEC_VERSION) {
-    for (const f of ["alg", "key_id", "signature"]) {
-      if (typeof receipt[f] !== "string") {
-        throw new VerificationError(`${f} must be a string`);
-      }
+  for (const f of ["alg", "key_id", "signature"]) {
+    if (typeof receipt[f] !== "string") {
+      throw new VerificationError(`${f} must be a string`);
     }
-    sigValue = receipt.signature as string;
-    signatureLabel = "signature";
-  } else {
-    const sig = receipt.signature;
-    if (typeof sig !== "object" || sig === null || Array.isArray(sig)) {
-      throw new VerificationError("signature must be an object for version 1.0");
-    }
-    const signatureFields = new Set(["alg", "key_id", "value"]);
-    const sigKeys = Object.keys(sig);
-    const sigExtra = sigKeys.filter((k) => !signatureFields.has(k));
-    const sigMissing = [...signatureFields].filter((k) => !(k in sig));
-    if (sigExtra.length) {
-      throw new VerificationError(`signature has unknown fields: ${JSON.stringify(sigExtra.sort())}`);
-    }
-    if (sigMissing.length) {
-      throw new VerificationError(`signature missing fields: ${JSON.stringify(sigMissing.sort())}`);
-    }
-    for (const f of signatureFields) {
-      const v = (sig as Record<string, unknown>)[f];
-      if (typeof v !== "string") {
-        throw new VerificationError(`signature.${f} must be a string`);
-      }
-    }
-    sigValue = (sig as Record<string, string>).value;
-    signatureLabel = "signature.value";
   }
+  const sigValue = receipt.signature as string;
 
   // Signature text must be canonical base64url and decode to exactly 64 bytes.
   // This rejects placeholder strings ("pending", empty, anything malformed)
@@ -454,11 +406,11 @@ function checkSchema(receipt: Record<string, unknown>, version: "1.0" | "1.1"): 
   try {
     sigBytes = b64urlDecode(sigValue);
   } catch {
-    throw new VerificationError(`${signatureLabel} is not valid canonical base64url: ${JSON.stringify(sigValue)}`);
+    throw new VerificationError(`signature is not valid canonical base64url: ${JSON.stringify(sigValue)}`);
   }
   if (sigBytes.length !== 64) {
     throw new VerificationError(
-      `${signatureLabel} must decode to 64 bytes (Ed25519), got ${sigBytes.length}`,
+      `signature must decode to 64 bytes (Ed25519), got ${sigBytes.length}`,
     );
   }
 
@@ -588,10 +540,9 @@ export interface KeyDocument {
 
 export function loadKeysFromJson(doc: KeyDocument): PublicKey[] {
   // Throws VerificationError (never a raw TypeError) on a malformed document,
-  // and rejects duplicate key ids and duplicate public keys: the unsigned
-  // signature.key_id selects the trust anchor, so two entries sharing an id or
-  // a key with different active windows would let an attacker pick the more
-  // permissive window (spec §10.1).
+  // and rejects duplicate key ids and duplicate public keys so key lookup is
+  // unambiguous and one public key cannot carry conflicting active windows
+  // (spec §10.1).
   if (typeof doc !== "object" || doc === null || !Array.isArray((doc as KeyDocument).keys)) {
     throw new VerificationError("keys document must be an object with a 'keys' array");
   }

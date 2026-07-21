@@ -61,7 +61,7 @@ def make_receipt(
     policy_eval: Any = _MISSING,
 ) -> dict[str, Any]:
     receipt: dict[str, Any] = {
-        "version": "1.1",
+        "version": "2.0.0",
         "receipt_id": receipt_id,
         "workspace_id": WORKSPACE_ID,
         "issued_at": issued_at,
@@ -100,18 +100,6 @@ def signed_receipt(receipt_id: str, **overrides: Any) -> dict[str, Any]:
     return sign(make_receipt(receipt_id, **overrides))
 
 
-def legacy_v10_receipt(receipt_id: str, **overrides: Any) -> dict[str, Any]:
-    payload = make_receipt(receipt_id, **overrides)
-    payload["version"] = "1.0"
-    payload.pop("alg")
-    payload.pop("key_id")
-    signature = b64url(priv.sign(canonicalize(payload)))
-    return {
-        **payload,
-        "signature": {"alg": "Ed25519", "key_id": KEY_ID, "value": signature},
-    }
-
-
 def ok(name: str, kind: str, description: str, receipt: dict[str, Any]) -> dict[str, Any]:
     return {"name": name, "kind": kind, "description": description, "receipt": receipt}
 
@@ -133,7 +121,6 @@ def bad(
 # --- Action receipts (should verify) ---
 
 minimal_allow = signed_receipt("rcp_01HXZMINIMAL0000000000000")
-legacy_v10 = legacy_v10_receipt("rcp_01HXZLEGACYV100000000000")
 
 deny_null_authorization = signed_receipt(
     "rcp_01HXZDENY0000000000000000",
@@ -438,8 +425,8 @@ unknown_key["key_id"] = "unknown-key/v99"
 key_id_swapped = copy.deepcopy(minimal_allow)
 key_id_swapped["key_id"] = SECOND_KEY_ID
 
-v2_receipt = copy.deepcopy(minimal_allow)
-v2_receipt["version"] = "2.0"
+future_receipt = copy.deepcopy(minimal_allow)
+future_receipt["version"] = "3.0.0"
 
 unknown_field = copy.deepcopy(minimal_allow)
 unknown_field["extra_field"] = "should_be_rejected"
@@ -710,7 +697,6 @@ keys_doc = {
 }
 
 should_verify = [
-    ("action_legacy_v10", "action", "historical v1.0 receipt remains verifiable", legacy_v10),
     ("action_minimal_allow", "action", "minimal allow action receipt with action field", minimal_allow),
     ("action_deny_null_authorization", "action", "deny decision with null authorization_id", deny_null_authorization),
     ("action_unicode", "action", "non-ASCII characters in multiple fields", unicode_resource),
@@ -735,7 +721,7 @@ should_reject = [
     ("forged_signature", "signature bytes replaced with zeros", "signature verification failed", forged),
     ("unknown_key_id", "key_id not in published keys", "no public key found", unknown_key),
     ("key_id_swapped", "signed key_id changed to another published key", "signature verification failed", key_id_swapped),
-    ("future_version", "version 2.0 receipt (v1 verifier rejects)", "unsupported version", v2_receipt),
+    ("future_version", "version 3.0.0 receipt", "unsupported version", future_receipt),
     ("unknown_top_level_field", "extra field not in spec", "unknown top-level fields", unknown_field),
     ("missing_required_field", "authorization_id field missing", "missing top-level fields", missing_field),
     ("bad_decision_value", "decision is not allow/deny/confirm/escalate", "action receipt must have decision in", bad_decision),
@@ -763,7 +749,7 @@ should_reject = [
 ]
 
 vectors = {
-    "spec_version": "1.1.0",
+    "spec_version": "2.0.0",
     "public_keys": keys_doc,
     "should_verify": [ok(*row) for row in should_verify],
     "should_reject": [bad(*row) for row in should_reject],

@@ -4,7 +4,7 @@ An open format for **cryptographically signed, third-party-verifiable receipts**
 
 A receipt is a signed record of one decision: *at time T, issuer W decided that agent A may (or may not) perform action X on resource R for user U under authorization C.* Anyone holding the receipt and the issuer's Ed25519 public key can verify it offline, without contacting the issuer.
 
-Action receipts can include `policy_eval`, a small record of which immutable authorization condition routed a decision to `deny`, `confirm`, or `escalate`. Wire version 1.1 signs the algorithm and key identifier so the trust-anchor selector cannot be swapped after issue.
+Action receipts can include `policy_eval`, a small record of which immutable authorization condition routed a decision to `deny`, `confirm`, or `escalate`. Receipt format 2.0.0 signs the algorithm and key identifier so the trust-anchor selector cannot be swapped after issue.
 
 ## Why this exists
 
@@ -70,7 +70,7 @@ try {
 
 ## Status
 
-**1.1.0 — implementation ready; verifier packages 2.0.0 pending owner publish.** New receipts sign top-level `alg` and `key_id`; `signature` is the base64url signature string. Reference verifiers also accept historical v1.0 receipts, enforce byte-identical canonicalization across Python and TypeScript, and reject malformed Unicode, unsafe integers, and non-canonical signature encodings.
+**2.0.0 — implementation ready; verifier packages pending owner publish.** Receipts sign top-level `alg` and `key_id`; `signature` is the base64url signature string. Reference verifiers accept only receipt format 2.0.0, enforce byte-identical canonicalization across Python and TypeScript, and reject malformed Unicode, unsafe integers, and non-canonical signature encodings.
 
 ## Licensing
 
