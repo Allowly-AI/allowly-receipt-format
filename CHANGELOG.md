@@ -13,7 +13,7 @@
 - Add the optional `hmac-v1` keyed-pseudonym convention in specification
   Appendix A and the offline `matches_ref` (Python) / `matchesRef` (TypeScript)
   helpers in both reference verifiers. Receipt schema, signature verification,
-  canonicalization, test vectors, and wire version are unchanged.
+  canonicalization, and wire version are unchanged.
 
 ## v2.0.0 — 2026-07-20
 
