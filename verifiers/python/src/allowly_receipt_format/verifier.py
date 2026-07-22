@@ -37,6 +37,7 @@ ACTION_DECISIONS = {"allow", "deny", "confirm", "escalate"}
 EVENT_DECISIONS = {
     "authorization.create": {"authorization_granted"},
     "authorization.revoke": {"authorization_revoked"},
+    "budget.settle": {"budget_settled"},
     "escalation.resolve": {"escalation_approved", "escalation_rejected"},
 }
 AUTHORIZATION_LIFECYCLE_EVENTS = {"authorization.create", "authorization.revoke"}

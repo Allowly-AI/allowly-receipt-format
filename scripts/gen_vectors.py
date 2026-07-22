@@ -370,6 +370,27 @@ escalation_resolve_approved = signed_receipt(
     authorization_id="auth_escalate",
 )
 
+budget_settle = signed_receipt(
+    "rcp_01HXZBUDGETSETTLE0000000",
+    issued_at="2026-04-21T16:16:00.000Z",
+    decision="budget_settled",
+    reason="budget_settled_by_api",
+    action=None,
+    event="budget.settle",
+    resource="llm:run:42",
+    context={
+        "check_receipt_id": "rcp_01HXZCHECK000000000000000",
+        "budget": {
+            "estimated_cost_micros": 100,
+            "actual_cost_micros": 72,
+            "delta_micros": -28,
+            "spent_before_micros": 500,
+            "spent_after_micros": 472,
+        },
+    },
+    authorization_id="auth_budget",
+)
+
 # Control characters in a context string value: canonicalization rule 5 requires
 # the lowercase backslash-uXXXX form for U+0000..U+001F, not short escapes. A
 # verifier that emits short escapes produces different canonical bytes and fails.
@@ -711,6 +732,7 @@ should_verify = [
     ("authorization_create_replaces", "authorization", "authorization.create receipt with replaces lineage and conditional constraints", authorization_create_replaces),
     ("authorization_revoke", "authorization", "authorization.revoke receipt with event field", authorization_revoke),
     ("authorization_revoke_superseded", "authorization", "authorization.revoke with revoked_by=superseded and superseded_by forward pointer", authorization_revoke_superseded),
+    ("budget_settle", "event", "budget.settle receipt with exact post-execution cost", budget_settle),
     ("escalation_resolve_approved", "event", "escalation.resolve receipt with approved decision and resource", escalation_resolve_approved),
     ("action_control_chars_context", "action", "context string with control characters (tests \\uXXXX escaping, rule 5)", control_chars_context),
     ("action_non_bmp_context_key", "action", "context with a supplementary-plane key (tests UTF-16 key sort, rule 3)", non_bmp_key_context),

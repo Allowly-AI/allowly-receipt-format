@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- Add `budget.settle` event receipts with the paired `budget_settled` decision
+  for exact post-execution cost reconciliation.
+
 ## v2.0.0 — 2026-07-20
 
 - Document `deny_when` as a non-normative issuer convention and add a valid

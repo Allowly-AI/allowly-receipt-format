@@ -28,6 +28,7 @@ const ACTION_DECISIONS = new Set(["allow", "deny", "confirm", "escalate"]);
 const EVENT_DECISIONS: Record<string, Set<string>> = {
   "authorization.create": new Set(["authorization_granted"]),
   "authorization.revoke": new Set(["authorization_revoked"]),
+  "budget.settle": new Set(["budget_settled"]),
   "escalation.resolve": new Set(["escalation_approved", "escalation_rejected"]),
 };
 const AUTHORIZATION_LIFECYCLE_EVENTS = new Set(["authorization.create", "authorization.revoke"]);
@@ -272,7 +273,7 @@ export async function verifyReceipt(
     }
     if (!(event in EVENT_DECISIONS)) {
       throw new VerificationError(
-        `event must be one of ["authorization.create","authorization.revoke","escalation.resolve"], got ${JSON.stringify(event)}`,
+        `event must be one of ["authorization.create","authorization.revoke","budget.settle","escalation.resolve"], got ${JSON.stringify(event)}`,
       );
     }
     const expectedDecisions = EVENT_DECISIONS[event];

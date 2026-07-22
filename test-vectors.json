@@ -469,6 +469,38 @@
       }
     },
     {
+      "name": "budget_settle",
+      "kind": "event",
+      "description": "budget.settle receipt with exact post-execution cost",
+      "receipt": {
+        "version": "2.0.0",
+        "receipt_id": "rcp_01HXZBUDGETSETTLE0000000",
+        "workspace_id": "ws_test",
+        "issued_at": "2026-04-21T16:16:00.000Z",
+        "decision": "budget_settled",
+        "reason": "budget_settled_by_api",
+        "user_id": "emp_8821",
+        "agent_id": "referral_outreach",
+        "event": "budget.settle",
+        "resource": "llm:run:42",
+        "context": {
+          "check_receipt_id": "rcp_01HXZCHECK000000000000000",
+          "budget": {
+            "estimated_cost_micros": 100,
+            "actual_cost_micros": 72,
+            "delta_micros": -28,
+            "spent_before_micros": 500,
+            "spent_after_micros": 472
+          }
+        },
+        "authorization_id": "auth_budget",
+        "engine_version": "2026-04-17.1",
+        "alg": "Ed25519",
+        "key_id": "test-key/v1",
+        "signature": "XIfec87i-MFOkjbrpyfiio-BPXgPamGLSXnABeWlMaKCaXWTu3OjoMRwelS_hAJ8ThJlYecm9eTSxCKybecGDw"
+      }
+    },
+    {
       "name": "escalation_resolve_approved",
       "kind": "event",
       "description": "escalation.resolve receipt with approved decision and resource",
