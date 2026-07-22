@@ -8,6 +8,10 @@
   with strict `active_until` typing and half-open boundary vectors.
 - Make malformed receipts and export lines fail cleanly, reject hostile event
   names, and strengthen canonicalization and event-pairing regression coverage.
+- Add the optional `hmac-v1` keyed-pseudonym convention in specification
+  Appendix A and the Python `matches_ref` offline helper. Receipt schema,
+  signature verification, canonicalization, test vectors, and wire version are
+  unchanged.
 
 ## v2.0.0 — 2026-07-20
 

@@ -22,6 +22,8 @@ License: Apache 2.0
 from __future__ import annotations
 
 import base64
+import hashlib
+import hmac
 import json
 import re
 from dataclasses import dataclass
@@ -61,6 +63,8 @@ _RFC3339_RE = re.compile(
     r"^(?!0000)[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\.[0-9]{3}Z$"
 )
 _SURROGATE_RE = re.compile("[\ud800-\udfff]")
+_HMAC_REF_RE = re.compile(r"^hmac-v1:[0-9a-f]{64}$")
+_HMAC_REF_FIELDS = frozenset({"project", "record", "actor", "full_tuple"})
 # Depth/node limits so hostile receipts fail with a VerificationError instead
 # of exhausting the recursion stack or memory during canonicalization.
 MAX_PAYLOAD_DEPTH = 32
@@ -75,6 +79,7 @@ __all__ = [
     "canonicalize",
     "load_keys_from_json",
     "main",
+    "matches_ref",
     "verify_receipt",
 ]
 
@@ -106,6 +111,30 @@ class PublicKey:
     public_key_bytes: bytes  # 32 raw bytes
     active_from: datetime
     active_until: datetime | None  # None = still active
+
+
+def matches_ref(key: bytes, field_name: str, value: str, ref: str) -> bool:
+    """Match an application ``hmac-v1`` reference without contacting Allowly.
+
+    ``key`` is the decoded per-integration pseudonym key. Inputs are used
+    exactly as supplied: this helper does no trimming, case folding, or Unicode
+    normalization.
+    """
+    if not isinstance(key, bytes):
+        raise TypeError("key must be bytes")
+    if len(key) < 16:
+        raise ValueError("key must contain at least 128 bits")
+    if not isinstance(field_name, str) or field_name not in _HMAC_REF_FIELDS:
+        raise ValueError("unsupported hmac-v1 field name")
+    if not isinstance(value, str):
+        raise TypeError("value must be a string")
+    if _SURROGATE_RE.search(value):
+        raise ValueError("value contains an unpaired Unicode surrogate")
+    if not isinstance(ref, str) or not _HMAC_REF_RE.fullmatch(ref):
+        return False
+    message = field_name.encode("ascii") + b"\x00" + value.encode("utf-8")
+    expected = "hmac-v1:" + hmac.new(key, message, hashlib.sha256).hexdigest()
+    return hmac.compare_digest(expected, ref)
 
 
 def _b64url_decode(s: str) -> bytes:

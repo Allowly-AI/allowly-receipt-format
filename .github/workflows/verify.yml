@@ -25,6 +25,9 @@ jobs:
       - name: Check typed exception taxonomy
         working-directory: verifiers/python
         run: python test_exception_types.py ../../test-vectors.json
+      - name: Check hmac-v1 pseudonym references
+        working-directory: verifiers/python
+        run: python test_pseudonym_refs.py
       - name: Build package
         working-directory: verifiers/python
         run: |
