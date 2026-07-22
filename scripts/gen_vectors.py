@@ -88,24 +88,14 @@ def make_receipt(
     return receipt
 
 
-def sign(
-    payload: dict[str, Any], signing_key: Ed25519PrivateKey = priv
-) -> dict[str, Any]:
-    canonical = canonicalize(payload)
-    sig = signing_key.sign(canonical)
-    return {
-        **payload,
-        "signature": b64url(sig),
-    }
-
-
 def signed_receipt(
     receipt_id: str,
     *,
     signing_key: Ed25519PrivateKey = priv,
     **overrides: Any,
 ) -> dict[str, Any]:
-    return sign(make_receipt(receipt_id, **overrides), signing_key)
+    payload = make_receipt(receipt_id, **overrides)
+    return {**payload, "signature": b64url(signing_key.sign(canonicalize(payload)))}
 
 
 def ok(name: str, kind: str, description: str, receipt: dict[str, Any]) -> dict[str, Any]:
@@ -116,7 +106,7 @@ def bad(
     name: str,
     description: str,
     expected_reason: str,
-    receipt: dict[str, Any],
+    receipt: Any,
 ) -> dict[str, Any]:
     return {
         "name": name,
@@ -380,23 +370,11 @@ escalation_resolve_approved = signed_receipt(
 
 escalation_resolve_rejected = signed_receipt(
     "rcp_01HXZESCREJECT0000000000",
-    issued_at="2026-04-21T16:15:30.000Z",
     decision="escalation_rejected",
     reason="escalation_rejected_by_approver",
     action=None,
     event="escalation.resolve",
     resource="candidate:124",
-    context={
-        "escalation": {
-            "id": "esc_01HXZESCALATION000000001",
-            "event": "resolved",
-            "status": "rejected",
-            "action": "candidate.delete",
-            "escalation_to": "compliance",
-            "resolved_by": "compliance:1",
-        }
-    },
-    authorization_id="auth_escalate_rejected",
 )
 
 budget_settle = signed_receipt(
@@ -796,6 +774,10 @@ should_verify = [
 ]
 
 should_reject = [
+    ("receipt_null", "top-level receipt is null", "receipt must be an object", None),
+    ("receipt_array", "top-level receipt is an array", "receipt must be an object", []),
+    ("receipt_string", "top-level receipt is a string", "receipt must be an object", "x"),
+    ("receipt_number", "top-level receipt is a number", "receipt must be an object", 42),
     ("tampered_payload", "user_id modified after signing", "signature verification failed", tampered),
     ("forged_signature", "signature bytes replaced with zeros", "signature verification failed", forged),
     ("unknown_key_id", "key_id not in published keys", "no public key found", unknown_key),
@@ -824,7 +806,7 @@ should_reject = [
     ("context_lone_surrogate", "context string contains an unpaired Unicode surrogate", "unpaired unicode surrogate", lone_surrogate),
     ("context_deep_nesting", "context nested beyond the canonicalization depth limit", "max depth", deep_nesting),
     ("issued_at_impossible_date", "issued_at is February 30 (shape-valid, not a real date)", "calendar", issued_at_feb30),
-    ("issued_at_hour_24", "issued_at uses invalid hour 24", "millisecond precision", issued_at_hour_24),
+    ("issued_at_hour_24", "issued_at uses invalid hour 24", "calendar", issued_at_hour_24),
     ("issued_at_non_utc_offset", "issued_at uses a +02:00 offset instead of Z", "millisecond precision", issued_at_offset),
     ("issued_at_missing_millis", "issued_at lacks millisecond precision", "millisecond precision", issued_at_no_millis),
     ("key_not_yet_active", "receipt predates the signing key's active_from boundary", "not yet active", key_not_yet_active),

@@ -58,8 +58,7 @@ MAX_FUTURE_SKEW = timedelta(minutes=5)
 MAX_SAFE_INTEGER = 2**53 - 1
 _B64URL_RE = re.compile(r"^[A-Za-z0-9_-]*$")
 _RFC3339_RE = re.compile(
-    r"^(?!0000)[0-9]{4}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12][0-9]|3[01])"
-    r"T(?:[01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]\.[0-9]{3}Z$"
+    r"^(?!0000)[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\.[0-9]{3}Z$"
 )
 _SURROGATE_RE = re.compile("[\ud800-\udfff]")
 # Depth/node limits so hostile receipts fail with a VerificationError instead
@@ -133,15 +132,11 @@ def _parse_rfc3339(s: str) -> datetime:
             f"timestamp must be UTC millisecond precision "
             f"YYYY-MM-DDTHH:MM:SS.sssZ, got {s!r}"
         )
-    iso = s[:-1] + "+00:00"
     try:
-        dt = datetime.fromisoformat(iso)
+        return datetime.fromisoformat(s[:-1] + "+00:00")
     except ValueError:
         # e.g. Feb 30: shape-valid but not a real calendar date.
         raise SchemaError(f"not a real calendar date/time: {s}") from None
-    if dt.tzinfo is None:
-        raise SchemaError(f"timestamp missing timezone: {s}")
-    return dt
 
 
 def canonicalize(payload: dict[str, Any]) -> bytes:

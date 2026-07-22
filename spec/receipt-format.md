@@ -474,6 +474,7 @@ Vectors include:
 - `escalation.resolve` receipts with approved and rejected resolutions and resource bindings.
 
 *Receipts that MUST be rejected:*
+- A non-object top-level receipt (`null`, array, string, or number).
 - A receipt with a tampered payload (signature fails).
 - A receipt with a forged signature (zero bytes).
 - A receipt with an unknown `key_id`.

@@ -61,9 +61,6 @@ def main(vectors_path: str) -> int:
 
     assert keys[0].active_from.year == 1
 
-    for bad_receipt in (None, [], "x", 42):
-        _expect(SchemaError, bad_receipt, keys, now=now)  # type: ignore[arg-type]
-
     _expect(UnknownKeyError, receipt, [], now=now)
 
     retired_keys_doc = copy.deepcopy(keys_doc)

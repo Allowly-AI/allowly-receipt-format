@@ -111,22 +111,6 @@ async function main(vectorsPath: string): Promise<number> {
     failures++;
   }
 
-  console.log("\nTesting non-object receipt inputs...");
-  for (const receipt of [null, [], "x", 42]) {
-    try {
-      await verifyReceipt(receipt as never, keys, { now });
-      console.log(`  FAIL  ${JSON.stringify(receipt)}: should have been rejected`);
-      failures++;
-    } catch (e) {
-      if (e instanceof VerificationError) {
-        console.log(`  OK    ${JSON.stringify(receipt)} (${e.message})`);
-      } else {
-        console.log(`  FAIL  ${JSON.stringify(receipt)}: unexpected error type: ${e}`);
-        failures++;
-      }
-    }
-  }
-
   console.log(`\nTesting ${vectors.should_verify.length} should_verify vectors...`);
   for (const v of vectors.should_verify) {
     try {

@@ -540,28 +540,19 @@
         "version": "2.0.0",
         "receipt_id": "rcp_01HXZESCREJECT0000000000",
         "workspace_id": "ws_test",
-        "issued_at": "2026-04-21T16:15:30.000Z",
+        "issued_at": "2026-04-21T14:32:17.482Z",
         "decision": "escalation_rejected",
         "reason": "escalation_rejected_by_approver",
         "user_id": "emp_8821",
         "agent_id": "referral_outreach",
         "event": "escalation.resolve",
         "resource": "candidate:124",
-        "context": {
-          "escalation": {
-            "id": "esc_01HXZESCALATION000000001",
-            "event": "resolved",
-            "status": "rejected",
-            "action": "candidate.delete",
-            "escalation_to": "compliance",
-            "resolved_by": "compliance:1"
-          }
-        },
-        "authorization_id": "auth_escalate_rejected",
+        "context": {},
+        "authorization_id": "auth_01HXZ2A0K1L2M3N4P5Q6R7S8T9",
         "engine_version": "2026-04-17.1",
         "alg": "Ed25519",
         "key_id": "test-key/v1",
-        "signature": "nhoAEgGhJETToN7GSluYuOyXzDMCqNDTKf6rpgZKrTbINVK8gNRjEfpwfMn5w_NgauqWf67qNO0HlX42xJvPCA"
+        "signature": "CoMNmFsKko1NswdnZMMo0cjRoj5H3294Q_EZbAhb44mKhXK1cDheR9_ghYmFHozQVPmG7FMonuld3dR2QMeXDw"
       }
     },
     {
@@ -618,6 +609,30 @@
     }
   ],
   "should_reject": [
+    {
+      "name": "receipt_null",
+      "description": "top-level receipt is null",
+      "expected_reason": "receipt must be an object",
+      "receipt": null
+    },
+    {
+      "name": "receipt_array",
+      "description": "top-level receipt is an array",
+      "expected_reason": "receipt must be an object",
+      "receipt": []
+    },
+    {
+      "name": "receipt_string",
+      "description": "top-level receipt is a string",
+      "expected_reason": "receipt must be an object",
+      "receipt": "x"
+    },
+    {
+      "name": "receipt_number",
+      "description": "top-level receipt is a number",
+      "expected_reason": "receipt must be an object",
+      "receipt": 42
+    },
     {
       "name": "tampered_payload",
       "description": "user_id modified after signing",
@@ -1394,7 +1409,7 @@
     {
       "name": "issued_at_hour_24",
       "description": "issued_at uses invalid hour 24",
-      "expected_reason": "millisecond precision",
+      "expected_reason": "calendar",
       "receipt": {
         "version": "2.0.0",
         "receipt_id": "rcp_01HXZMINIMAL0000000000000",

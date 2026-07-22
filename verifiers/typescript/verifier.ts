@@ -480,7 +480,7 @@ function checkPolicyEval(value: unknown): void {
   }
 }
 
-const RFC3339_RE = /^(?!0000)[0-9]{4}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12][0-9]|3[01])T(?:[01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]\.[0-9]{3}Z$/;
+const RFC3339_RE = /^(?!0000)[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\.[0-9]{3}Z$/;
 
 function parseRFC3339(s: string): Date {
   if (typeof s !== "string" || !RFC3339_RE.test(s)) {
@@ -489,12 +489,9 @@ function parseRFC3339(s: string): Date {
     );
   }
   const d = new Date(s);
-  if (isNaN(d.getTime())) {
-    throw new VerificationError(`invalid RFC 3339 timestamp: ${s}`);
-  }
   // `new Date` rolls impossible dates and hour 24; round-tripping also handles
   // years 0001–0099 without Date.UTC's two-digit-year remapping.
-  if (d.toISOString() !== s) {
+  if (isNaN(d.getTime()) || d.toISOString() !== s) {
     throw new VerificationError(`not a real calendar date/time: ${s}`);
   }
   return d;
