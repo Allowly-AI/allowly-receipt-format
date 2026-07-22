@@ -58,6 +58,7 @@ def make_receipt(
     context: dict[str, Any] | None = None,
     authorization_id: str | None = DEFAULT_AUTHORIZATION_ID,
     engine_version: str = DEFAULT_ENGINE_VERSION,
+    key_id: str = KEY_ID,
     policy_eval: Any = _MISSING,
 ) -> dict[str, Any]:
     receipt: dict[str, Any] = {
@@ -80,24 +81,31 @@ def make_receipt(
         "authorization_id": authorization_id,
         "engine_version": engine_version,
         "alg": "Ed25519",
-        "key_id": KEY_ID,
+        "key_id": key_id,
     })
     if policy_eval is not _MISSING:
         receipt["policy_eval"] = policy_eval
     return receipt
 
 
-def sign(payload: dict[str, Any]) -> dict[str, Any]:
+def sign(
+    payload: dict[str, Any], signing_key: Ed25519PrivateKey = priv
+) -> dict[str, Any]:
     canonical = canonicalize(payload)
-    sig = priv.sign(canonical)
+    sig = signing_key.sign(canonical)
     return {
         **payload,
         "signature": b64url(sig),
     }
 
 
-def signed_receipt(receipt_id: str, **overrides: Any) -> dict[str, Any]:
-    return sign(make_receipt(receipt_id, **overrides))
+def signed_receipt(
+    receipt_id: str,
+    *,
+    signing_key: Ed25519PrivateKey = priv,
+    **overrides: Any,
+) -> dict[str, Any]:
+    return sign(make_receipt(receipt_id, **overrides), signing_key)
 
 
 def ok(name: str, kind: str, description: str, receipt: dict[str, Any]) -> dict[str, Any]:
@@ -370,6 +378,27 @@ escalation_resolve_approved = signed_receipt(
     authorization_id="auth_escalate",
 )
 
+escalation_resolve_rejected = signed_receipt(
+    "rcp_01HXZESCREJECT0000000000",
+    issued_at="2026-04-21T16:15:30.000Z",
+    decision="escalation_rejected",
+    reason="escalation_rejected_by_approver",
+    action=None,
+    event="escalation.resolve",
+    resource="candidate:124",
+    context={
+        "escalation": {
+            "id": "esc_01HXZESCALATION000000001",
+            "event": "resolved",
+            "status": "rejected",
+            "action": "candidate.delete",
+            "escalation_to": "compliance",
+            "resolved_by": "compliance:1",
+        }
+    },
+    authorization_id="auth_escalate_rejected",
+)
+
 budget_settle = signed_receipt(
     "rcp_01HXZBUDGETSETTLE0000000",
     issued_at="2026-04-21T16:16:00.000Z",
@@ -534,6 +563,15 @@ authorization_update_event = signed_receipt(
     engine_version="2026-06-01.2",
 )
 
+prototype_event_name = signed_receipt(
+    "rcp_01HXZPROTOTYPEEVENT00000",
+    decision="authorization_granted",
+    reason="unknown_event",
+    action=None,
+    event="toString",
+    resource=None,
+)
+
 policy_eval_on_event = signed_receipt(
     "rcp_01J0Z7Q4POLICYEVENT000",
     issued_at="2026-06-09T17:11:00.000Z",
@@ -687,6 +725,9 @@ deep_nesting["context"]["deep"] = _deep
 issued_at_feb30 = copy.deepcopy(minimal_allow)
 issued_at_feb30["issued_at"] = "2026-02-30T12:00:00.000Z"
 
+issued_at_hour_24 = copy.deepcopy(minimal_allow)
+issued_at_hour_24["issued_at"] = "2026-04-21T24:00:00.000Z"
+
 # Valid RFC 3339 instants that violate the stricter issued_at rule
 # (spec §3: exactly UTC, millisecond precision, Z suffix).
 issued_at_offset = copy.deepcopy(minimal_allow)
@@ -694,6 +735,21 @@ issued_at_offset["issued_at"] = "2026-04-21T16:32:17.482+02:00"
 
 issued_at_no_millis = copy.deepcopy(minimal_allow)
 issued_at_no_millis["issued_at"] = "2026-04-21T14:32:17Z"
+
+# Both receipts have valid signatures from the second key. They fail only its
+# half-open active window, so removing either window check breaks the vectors.
+key_not_yet_active = signed_receipt(
+    "rcp_01HXZKEYNOTACTIVE0000000",
+    issued_at="2026-03-31T23:59:59.999Z",
+    key_id=SECOND_KEY_ID,
+    signing_key=second_priv,
+)
+key_retired = signed_receipt(
+    "rcp_01HXZKEYRETIRED000000000",
+    issued_at="2026-05-01T00:00:00.000Z",
+    key_id=SECOND_KEY_ID,
+    signing_key=second_priv,
+)
 
 # --- Assemble ---
 
@@ -704,15 +760,15 @@ keys_doc = {
             "key_id": KEY_ID,
             "alg": "Ed25519",
             "public_key": b64url(pub_bytes),
-            "active_from": "2026-01-01T00:00:00Z",
+            "active_from": "0001-01-01T00:00:00.000Z",
             "active_until": None,
         },
         {
             "key_id": SECOND_KEY_ID,
             "alg": "Ed25519",
             "public_key": b64url(second_pub_bytes),
-            "active_from": "2026-01-01T00:00:00Z",
-            "active_until": None,
+            "active_from": "2026-04-01T00:00:00.000Z",
+            "active_until": "2026-05-01T00:00:00.000Z",
         }
     ],
 }
@@ -734,6 +790,7 @@ should_verify = [
     ("authorization_revoke_superseded", "authorization", "authorization.revoke with revoked_by=superseded and superseded_by forward pointer", authorization_revoke_superseded),
     ("budget_settle", "event", "budget.settle receipt with exact post-execution cost", budget_settle),
     ("escalation_resolve_approved", "event", "escalation.resolve receipt with approved decision and resource", escalation_resolve_approved),
+    ("escalation_resolve_rejected", "event", "escalation.resolve receipt with rejected decision and resource", escalation_resolve_rejected),
     ("action_control_chars_context", "action", "context string with control characters (tests \\uXXXX escaping, rule 5)", control_chars_context),
     ("action_non_bmp_context_key", "action", "context with a supplementary-plane key (tests UTF-16 key sort, rule 3)", non_bmp_key_context),
 ]
@@ -750,6 +807,7 @@ should_reject = [
     ("both_action_and_event", "both action and event present", "both 'action' and 'event'", both_fields),
     ("neither_action_nor_event", "neither action nor event present", "neither 'action' nor 'event'", neither_field),
     ("authorization_update_event_rejected", "authorization.update event was removed in draft.5", "event must be one of", authorization_update_event),
+    ("prototype_event_name_rejected", "prototype-named event is not an allowed receipt event", "event must be one of", prototype_event_name),
     ("pairing_event_create_wrong_decision", "event=authorization.create but decision=allow", "must have decision", event_wrong_decision),
     ("pairing_event_revoke_null_authorization", "event=authorization.revoke but authorization_id=null", "must have non-null authorization_id", event_null_authorization),
     ("pairing_event_with_resource", "event=authorization.create but resource is non-null", "must have null resource", event_with_resource),
@@ -759,15 +817,18 @@ should_reject = [
     ("policy_eval_matched_condition_extra_member", "matched_condition carrying an unknown member", "policy_eval.matched_condition has unknown fields", policy_eval_condition_extra_member),
     ("policy_eval_field_value_float", "policy_eval field_value uses a non-integer number", "policy_eval.field_value must be", policy_eval_float_value),
     ("integer_out_of_safe_range", "context integer exceeds the I-JSON safe range ±(2^53-1)", "safe range", integer_out_of_range),
-    ("issued_at_no_timezone", "issued_at lacks a timezone offset (not a full RFC 3339 instant)", "RFC 3339 timestamp with timezone", timestamp_no_timezone),
+    ("issued_at_no_timezone", "issued_at lacks the required UTC millisecond shape", "millisecond precision", timestamp_no_timezone),
     ("signature_value_padded", "signature carries base64 padding / non-base64url characters", "base64url", signature_padded),
     ("signature_noncanonical_pad_bits", "signature text changes only unused base64url pad bits", "base64url", signature_noncanonical_pad_bits),
     ("pairing_action_with_lifecycle_decision", "action receipt with decision=authorization_granted", "requires an event receipt", action_with_lifecycle_decision),
     ("context_lone_surrogate", "context string contains an unpaired Unicode surrogate", "unpaired unicode surrogate", lone_surrogate),
     ("context_deep_nesting", "context nested beyond the canonicalization depth limit", "max depth", deep_nesting),
     ("issued_at_impossible_date", "issued_at is February 30 (shape-valid, not a real date)", "calendar", issued_at_feb30),
+    ("issued_at_hour_24", "issued_at uses invalid hour 24", "millisecond precision", issued_at_hour_24),
     ("issued_at_non_utc_offset", "issued_at uses a +02:00 offset instead of Z", "millisecond precision", issued_at_offset),
     ("issued_at_missing_millis", "issued_at lacks millisecond precision", "millisecond precision", issued_at_no_millis),
+    ("key_not_yet_active", "receipt predates the signing key's active_from boundary", "not yet active", key_not_yet_active),
+    ("key_retired_at_issued_at", "receipt is at the signing key's exclusive active_until boundary", "retired before issued_at", key_retired),
 ]
 
 vectors = {

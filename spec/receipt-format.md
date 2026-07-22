@@ -74,7 +74,7 @@ A receipt is a JSON object with the following top-level fields. All fields are r
 | `version` | string | yes | MUST be exactly `"2.0.0"`. |
 | `receipt_id` | string | yes | ULID. Monotonic within a workspace. |
 | `workspace_id` | string | yes | Issuer identifier. Used to look up the verification key. |
-| `issued_at` | string | yes | RFC 3339 timestamp, UTC, millisecond precision, Z suffix. |
+| `issued_at` | string | yes | RFC 3339 timestamp in the exact `YYYY-MM-DDTHH:MM:SS.sssZ` UTC millisecond profile. |
 | `decision` | string | yes | See §3.3 for allowed values by receipt kind. |
 | `reason` | string | yes | Machine-readable reason code. Human-readable strings MUST NOT appear here. |
 | `user_id` | string | yes | Opaque identifier of the end-user. Customer-defined; issuers and verifiers MUST NOT assume any particular structure. SHOULD NOT contain personally identifiable information (§10.6). |
@@ -368,19 +368,21 @@ The response is a JSON document:
       "key_id": "projects/allowly-prod/...cryptoKeyVersions/3",
       "alg": "Ed25519",
       "public_key": "base64url-encoded 32-byte Ed25519 public key",
-      "active_from": "2026-04-01T00:00:00Z",
+      "active_from": "2026-04-01T00:00:00.000Z",
       "active_until": null
     },
     {
       "key_id": "projects/allowly-prod/...cryptoKeyVersions/2",
       "alg": "Ed25519",
       "public_key": "...",
-      "active_from": "2026-01-15T00:00:00Z",
-      "active_until": "2026-04-01T00:00:00Z"
+      "active_from": "2026-01-15T00:00:00.000Z",
+      "active_until": "2026-04-01T00:00:00.000Z"
     }
   ]
 }
 ```
+
+Every key entry **MUST** contain `active_from` as a string and `active_until` as either a string or `null`. Timestamp strings **MUST** use the same exact `YYYY-MM-DDTHH:MM:SS.sssZ` UTC millisecond profile as `issued_at`; other offsets or precisions are invalid. The active window is half-open: `active_from <= issued_at < active_until`. A null `active_until` means the window has no end.
 
 Keys **MUST** remain published even after rotation so historical receipts remain verifiable. `active_until` being non-null indicates the key is retired but receipts signed during its active window remain valid.
 
@@ -407,7 +409,7 @@ A verifier given a receipt `R` and the issuer's public keys **MUST** perform all
      - `decision` MUST be one of `"allow"`, `"deny"`, `"confirm"`, or `"escalate"`.
      - The reserved event-only decisions (`authorization_granted`, `authorization_revoked`, `budget_settled`, `escalation_approved`, `escalation_rejected`) MUST NOT appear.
 4. **Algorithm check.** Assert `R.alg` equals `"Ed25519"`.
-5. **Timestamp sanity.** Parse `R.issued_at` as RFC 3339. Assert it is not in the future (allowing a small skew, e.g. 5 minutes) and not absurdly far in the past (spec does not mandate a cutoff; verifier policy).
+5. **Timestamp sanity.** Parse `R.issued_at` using the exact `YYYY-MM-DDTHH:MM:SS.sssZ` profile. Assert it is a real calendar instant, is not in the future (allowing a small skew, e.g. 5 minutes), and is not absurdly far in the past (spec does not mandate a cutoff; verifier policy).
 6. **Canonicalize.** Produce the canonical payload bytes per §4.
 7. **Signature verification.**
    - Look up the public key matching `R.key_id` from the published key document.
@@ -469,7 +471,7 @@ Vectors include:
 - A `authorization.revoke` receipt with `revoked_by: "user"` in context.
 - A `authorization.revoke` receipt with `revoked_by: "superseded"` and a `superseded_by` forward pointer (§3.3 lineage convention).
 - A `budget.settle` receipt with estimated and exact post-execution cost evidence.
-- An `escalation.resolve` receipt with an approved resolution and resource binding.
+- `escalation.resolve` receipts with approved and rejected resolutions and resource bindings.
 
 *Receipts that MUST be rejected:*
 - A receipt with a tampered payload (signature fails).
@@ -483,6 +485,7 @@ Vectors include:
 - A receipt with both `action` and `event` present.
 - A receipt with neither `action` nor `event` present.
 - A receipt with `event: "authorization.update"` (unknown event — removed in draft.5).
+- A receipt with a prototype-named event such as `toString` (unknown event).
 - A receipt with `event: "authorization.create"` but `decision: "allow"` (pairing violation).
 - A receipt with `event: "authorization.revoke"` but `authorization_id: null` (pairing violation).
 - A receipt with `event: "authorization.create"` but a non-null `resource` (pairing violation).
@@ -492,8 +495,10 @@ Vectors include:
 - An action receipt with a non-integer number in `policy_eval.field_value` (canonicalization rule 6).
 - An action receipt with an integer outside the I-JSON safe range, ±(2⁵³−1) (canonicalization rule 6).
 - A receipt whose `issued_at` lacks a timezone offset (timestamp not a full RFC 3339 instant, §7 step 5).
+- A receipt whose `issued_at` uses invalid hour `24`.
 - A receipt whose signature carries padding, non-base64url characters, or non-canonical trailing pad bits (§5.1).
 - An action receipt with an event-only decision such as `authorization_granted` (reserved decision misuse).
+- Receipts immediately before a key's `active_from` and exactly at its exclusive `active_until` boundary.
 
 ## 10. Security considerations
 
@@ -557,6 +562,11 @@ The format cannot police the semantics of what customers evaluate; this guidance
     integer token spelling without decimal/exponent forms, and canonical
     base64url trailing pad bits.
   - Made the reference depth-32 and node-count-50,000 limits normative.
+  - Required exact UTC millisecond timestamps for receipts and key active
+    windows, with a half-open key window and strict `active_until` typing.
+  - Hardened both reference verifiers against non-object receipts, hostile
+    event names, and deeply nested export lines; expanded shared boundary and
+    canonicalization coverage.
 - **1.0.0 (2026-06-12)** — Stable release. Finalizes draft.6 unchanged; the wire `version` stays `"1.0"`. No format, canonicalization, or verifier behavior changes from draft.6 — this entry only drops the draft label.
 - **1.0.0-draft.6 (2026-06-10)** — Canonicalization correctness; supersession lineage.
   - **Fixed two canonicalization defects in the reference verifiers** that broke cross-language signature verification (§4.2, §10.2). (1) Key sort: §4.2 rule 3 mandates UTF-16 code-unit order, but the Python verifier's `json.dumps(sort_keys=True)` sorted by code point — divergent for supplementary-plane keys. (2) Control characters: rule 5 mandates the `\uXXXX` form, but `json.dumps` emitted short escapes (`\n`). The Python verifier now uses a hand-rolled serializer; both defects are covered by new test vectors. Corrected the §4.2 rule 3 and §10.2 prose, which had wrongly claimed `json.dumps` was conforming.

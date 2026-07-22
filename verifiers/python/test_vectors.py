@@ -24,7 +24,15 @@ GOLDEN_PAYLOAD = {
     "agent_id": "referral_outreach",
     "action": "outreach.send",
     "resource": "edge:emp_8821:conn_9f2a",
-    "context": {"session_id": "sess_7f2", "origin": "chat", "initiated_by": "user"},
+    "context": {
+        "session_id": "sess_7f2",
+        "origin": "chat",
+        "initiated_by": "user",
+        "control": "line\n\t\x00",
+        "types": [7, True, None],
+        "😀_key": "emoji",
+        "｡_key": "bmp",
+    },
     "authorization_id": "auth_01HXZ2A0K1L2M3N4P5Q6R7S8T9",
     "engine_version": "2026-04-17.1",
     "alg": "Ed25519",
@@ -34,7 +42,9 @@ GOLDEN_CANONICAL = (
     '{"action":"outreach.send","agent_id":"referral_outreach",'
     '"alg":"Ed25519",'
     '"authorization_id":"auth_01HXZ2A0K1L2M3N4P5Q6R7S8T9",'
-    '"context":{"initiated_by":"user","origin":"chat","session_id":"sess_7f2"},'
+    '"context":{"control":"line\\u000a\\u0009\\u0000","initiated_by":"user",'
+    '"origin":"chat","session_id":"sess_7f2","types":[7,true,null],'
+    '"😀_key":"emoji","｡_key":"bmp"},'
     '"decision":"allow","engine_version":"2026-04-17.1",'
     '"issued_at":"2026-04-21T14:32:17.482Z",'
     '"key_id":"projects/allowly-prod/locations/global/keyRings/allowly-signing/cryptoKeys/ws_01HXA1/cryptoKeyVersions/3",'

@@ -58,11 +58,9 @@ MAX_FUTURE_SKEW = timedelta(minutes=5)
 MAX_SAFE_INTEGER = 2**53 - 1
 _B64URL_RE = re.compile(r"^[A-Za-z0-9_-]*$")
 _RFC3339_RE = re.compile(
-    r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:\d{2})$"
+    r"^(?!0000)[0-9]{4}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12][0-9]|3[01])"
+    r"T(?:[01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]\.[0-9]{3}Z$"
 )
-# Receipt issued_at is stricter than key-document timestamps: spec §3 requires
-# exactly UTC, millisecond precision, Z suffix.
-_ISSUED_AT_RE = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$")
 _SURROGATE_RE = re.compile("[\ud800-\udfff]")
 # Depth/node limits so hostile receipts fail with a VerificationError instead
 # of exhausting the recursion stack or memory during canonicalization.
@@ -129,14 +127,13 @@ def _b64url_decode(s: str) -> bytes:
 
 
 def _parse_rfc3339(s: str) -> datetime:
-    """Parse an RFC 3339 timestamp. Requires Z suffix or explicit offset.
-
-    A timezone-less or date-only string is rejected: without an offset the
-    instant is ambiguous and verifiers would disagree on the key-window check.
-    """
+    """Parse the format's exact UTC millisecond timestamp profile."""
     if not isinstance(s, str) or not _RFC3339_RE.match(s):
-        raise SchemaError(f"not an RFC 3339 timestamp with timezone: {s!r}")
-    iso = s[:-1] + "+00:00" if s.endswith("Z") else s
+        raise SchemaError(
+            f"timestamp must be UTC millisecond precision "
+            f"YYYY-MM-DDTHH:MM:SS.sssZ, got {s!r}"
+        )
+    iso = s[:-1] + "+00:00"
     try:
         dt = datetime.fromisoformat(iso)
     except ValueError:
@@ -280,6 +277,8 @@ def verify_receipt(
             pass the workspace the keys were published for to prevent a receipt
             from verifying against another workspace's key document.
     """
+    if not isinstance(receipt, dict):
+        raise SchemaError("receipt must be an object")
     now = now or datetime.now(timezone.utc)
 
     # Step 1: version check
@@ -364,13 +363,6 @@ def verify_receipt(
 
     # Step 5: timestamp sanity
     issued_at = _parse_rfc3339(receipt["issued_at"])
-    # Spec §3: issued_at is exactly UTC, millisecond precision, Z suffix.
-    # (Key-document timestamps stay on the general RFC 3339 rule.)
-    if not _ISSUED_AT_RE.match(receipt["issued_at"]):
-        raise SchemaError(
-            f"issued_at must be UTC millisecond precision "
-            f"YYYY-MM-DDTHH:MM:SS.sssZ, got {receipt['issued_at']!r}"
-        )
     if issued_at > now + MAX_FUTURE_SKEW:
         raise SchemaError(
             f"receipt issued in the future: {issued_at.isoformat()} > {now.isoformat()}"
@@ -521,6 +513,10 @@ def load_keys_from_json(doc: dict[str, Any]) -> list[PublicKey]:
         for field in ("key_id", "alg", "public_key", "active_from"):
             if not isinstance(k.get(field), str):
                 raise SchemaError(f"keys[{i}].{field} must be a string")
+        if "active_until" not in k or not (
+            k["active_until"] is None or isinstance(k["active_until"], str)
+        ):
+            raise SchemaError(f"keys[{i}].active_until must be a string or null")
         if k["key_id"] in seen_ids:
             raise SchemaError(f"duplicate key_id in keys document: {k['key_id']!r}")
         if k["public_key"] in seen_pubs:
@@ -538,7 +534,11 @@ def load_keys_from_json(doc: dict[str, Any]) -> list[PublicKey]:
             alg=k["alg"],
             public_key_bytes=pub,
             active_from=_parse_rfc3339(k["active_from"]),
-            active_until=_parse_rfc3339(k["active_until"]) if k.get("active_until") else None,
+            active_until=(
+                None
+                if k["active_until"] is None
+                else _parse_rfc3339(k["active_until"])
+            ),
         ))
     return out
 
@@ -578,7 +578,7 @@ def _verify_export(
                 continue
             try:
                 receipt = _extract_receipt(json.loads(line))
-            except json.JSONDecodeError as e:
+            except (json.JSONDecodeError, RecursionError) as e:
                 total += 1
                 failed += 1
                 print(f"INVALID  line {lineno}: not JSON ({e})", file=sys.stderr)

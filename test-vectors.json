@@ -7,15 +7,15 @@
         "key_id": "test-key/v1",
         "alg": "Ed25519",
         "public_key": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik",
-        "active_from": "2026-01-01T00:00:00Z",
+        "active_from": "0001-01-01T00:00:00.000Z",
         "active_until": null
       },
       {
         "key_id": "test-key/v2",
         "alg": "Ed25519",
         "public_key": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w",
-        "active_from": "2026-01-01T00:00:00Z",
-        "active_until": null
+        "active_from": "2026-04-01T00:00:00.000Z",
+        "active_until": "2026-05-01T00:00:00.000Z"
       }
     ]
   },
@@ -533,6 +533,38 @@
       }
     },
     {
+      "name": "escalation_resolve_rejected",
+      "kind": "event",
+      "description": "escalation.resolve receipt with rejected decision and resource",
+      "receipt": {
+        "version": "2.0.0",
+        "receipt_id": "rcp_01HXZESCREJECT0000000000",
+        "workspace_id": "ws_test",
+        "issued_at": "2026-04-21T16:15:30.000Z",
+        "decision": "escalation_rejected",
+        "reason": "escalation_rejected_by_approver",
+        "user_id": "emp_8821",
+        "agent_id": "referral_outreach",
+        "event": "escalation.resolve",
+        "resource": "candidate:124",
+        "context": {
+          "escalation": {
+            "id": "esc_01HXZESCALATION000000001",
+            "event": "resolved",
+            "status": "rejected",
+            "action": "candidate.delete",
+            "escalation_to": "compliance",
+            "resolved_by": "compliance:1"
+          }
+        },
+        "authorization_id": "auth_escalate_rejected",
+        "engine_version": "2026-04-17.1",
+        "alg": "Ed25519",
+        "key_id": "test-key/v1",
+        "signature": "nhoAEgGhJETToN7GSluYuOyXzDMCqNDTKf6rpgZKrTbINVK8gNRjEfpwfMn5w_NgauqWf67qNO0HlX42xJvPCA"
+      }
+    },
+    {
       "name": "action_control_chars_context",
       "kind": "action",
       "description": "context string with control characters (tests \\uXXXX escaping, rule 5)",
@@ -840,6 +872,29 @@
       }
     },
     {
+      "name": "prototype_event_name_rejected",
+      "description": "prototype-named event is not an allowed receipt event",
+      "expected_reason": "event must be one of",
+      "receipt": {
+        "version": "2.0.0",
+        "receipt_id": "rcp_01HXZPROTOTYPEEVENT00000",
+        "workspace_id": "ws_test",
+        "issued_at": "2026-04-21T14:32:17.482Z",
+        "decision": "authorization_granted",
+        "reason": "unknown_event",
+        "user_id": "emp_8821",
+        "agent_id": "referral_outreach",
+        "event": "toString",
+        "resource": null,
+        "context": {},
+        "authorization_id": "auth_01HXZ2A0K1L2M3N4P5Q6R7S8T9",
+        "engine_version": "2026-04-17.1",
+        "alg": "Ed25519",
+        "key_id": "test-key/v1",
+        "signature": "hW_-of18RvDaDYeaHGWLMMJj_5oA64XoAcO2KNgHDteYeT9DBgjWER1bIqFVplDxB40ArSjqQyB2FtZ3WW6XCg"
+      }
+    },
+    {
       "name": "pairing_event_create_wrong_decision",
       "description": "event=authorization.create but decision=allow",
       "expected_reason": "must have decision",
@@ -1093,8 +1148,8 @@
     },
     {
       "name": "issued_at_no_timezone",
-      "description": "issued_at lacks a timezone offset (not a full RFC 3339 instant)",
-      "expected_reason": "RFC 3339 timestamp with timezone",
+      "description": "issued_at lacks the required UTC millisecond shape",
+      "expected_reason": "millisecond precision",
       "receipt": {
         "version": "2.0.0",
         "receipt_id": "rcp_01HXZMINIMAL0000000000000",
@@ -1337,6 +1392,29 @@
       }
     },
     {
+      "name": "issued_at_hour_24",
+      "description": "issued_at uses invalid hour 24",
+      "expected_reason": "millisecond precision",
+      "receipt": {
+        "version": "2.0.0",
+        "receipt_id": "rcp_01HXZMINIMAL0000000000000",
+        "workspace_id": "ws_test",
+        "issued_at": "2026-04-21T24:00:00.000Z",
+        "decision": "allow",
+        "reason": "authorization_granted_action_active",
+        "user_id": "emp_8821",
+        "agent_id": "referral_outreach",
+        "action": "outreach.send",
+        "resource": "edge:emp_8821:conn_9f2a",
+        "context": {},
+        "authorization_id": "auth_01HXZ2A0K1L2M3N4P5Q6R7S8T9",
+        "engine_version": "2026-04-17.1",
+        "alg": "Ed25519",
+        "key_id": "test-key/v1",
+        "signature": "XmJMEi2uqIOqrurKiiJYM7w3Box-nVoQizi_PpDwGhJvVGwSE-r0XJ0bnKLKhqXdHOvWlnR6Yev2Xi5ixM3KDg"
+      }
+    },
+    {
       "name": "issued_at_non_utc_offset",
       "description": "issued_at uses a +02:00 offset instead of Z",
       "expected_reason": "millisecond precision",
@@ -1380,6 +1458,52 @@
         "alg": "Ed25519",
         "key_id": "test-key/v1",
         "signature": "XmJMEi2uqIOqrurKiiJYM7w3Box-nVoQizi_PpDwGhJvVGwSE-r0XJ0bnKLKhqXdHOvWlnR6Yev2Xi5ixM3KDg"
+      }
+    },
+    {
+      "name": "key_not_yet_active",
+      "description": "receipt predates the signing key's active_from boundary",
+      "expected_reason": "not yet active",
+      "receipt": {
+        "version": "2.0.0",
+        "receipt_id": "rcp_01HXZKEYNOTACTIVE0000000",
+        "workspace_id": "ws_test",
+        "issued_at": "2026-03-31T23:59:59.999Z",
+        "decision": "allow",
+        "reason": "authorization_granted_action_active",
+        "user_id": "emp_8821",
+        "agent_id": "referral_outreach",
+        "action": "outreach.send",
+        "resource": "edge:emp_8821:conn_9f2a",
+        "context": {},
+        "authorization_id": "auth_01HXZ2A0K1L2M3N4P5Q6R7S8T9",
+        "engine_version": "2026-04-17.1",
+        "alg": "Ed25519",
+        "key_id": "test-key/v2",
+        "signature": "SIj-moat1dcasyCvmp8-oNV_L8w8IgLlt0ApzEcB3F5HB3cK46xxSp_Ttt3yT985Dj03pSI28laNTKOXUH-lDw"
+      }
+    },
+    {
+      "name": "key_retired_at_issued_at",
+      "description": "receipt is at the signing key's exclusive active_until boundary",
+      "expected_reason": "retired before issued_at",
+      "receipt": {
+        "version": "2.0.0",
+        "receipt_id": "rcp_01HXZKEYRETIRED000000000",
+        "workspace_id": "ws_test",
+        "issued_at": "2026-05-01T00:00:00.000Z",
+        "decision": "allow",
+        "reason": "authorization_granted_action_active",
+        "user_id": "emp_8821",
+        "agent_id": "referral_outreach",
+        "action": "outreach.send",
+        "resource": "edge:emp_8821:conn_9f2a",
+        "context": {},
+        "authorization_id": "auth_01HXZ2A0K1L2M3N4P5Q6R7S8T9",
+        "engine_version": "2026-04-17.1",
+        "alg": "Ed25519",
+        "key_id": "test-key/v2",
+        "signature": "ijb-5UNi_TdbFeQTAQzb74uTWEjOW6Ji7R-TTjiSEUVLj0hWi3fHS5JSvANYeWLHoaVC0nx2zs-7MbYs2b8nBw"
       }
     }
   ]

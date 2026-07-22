@@ -4,6 +4,10 @@
 
 - Add `budget.settle` event receipts with the paired `budget_settled` decision
   for exact post-execution cost reconciliation.
+- Require exact UTC millisecond timestamps for receipts and key active windows,
+  with strict `active_until` typing and half-open boundary vectors.
+- Make malformed receipts and export lines fail cleanly, reject hostile event
+  names, and strengthen canonicalization and event-pairing regression coverage.
 
 ## v2.0.0 — 2026-07-20
 

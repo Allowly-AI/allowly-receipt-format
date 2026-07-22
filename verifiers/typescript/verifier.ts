@@ -226,6 +226,9 @@ export async function verifyReceipt(
   publicKeys: PublicKey[],
   opts: { now?: Date; expectedWorkspaceId?: string } = {},
 ): Promise<void> {
+  if (typeof receipt !== "object" || receipt === null || Array.isArray(receipt)) {
+    throw new VerificationError("receipt must be an object");
+  }
   const now = opts.now ?? new Date();
 
   // Step 1: version check
@@ -271,7 +274,7 @@ export async function verifyReceipt(
     if (typeof event !== "string") {
       throw new VerificationError("event must be a string");
     }
-    if (!(event in EVENT_DECISIONS)) {
+    if (!Object.hasOwn(EVENT_DECISIONS, event)) {
       throw new VerificationError(
         `event must be one of ["authorization.create","authorization.revoke","budget.settle","escalation.resolve"], got ${JSON.stringify(event)}`,
       );
@@ -322,13 +325,6 @@ export async function verifyReceipt(
 
   // Step 5: timestamp sanity
   const issuedAt = parseRFC3339(r.issued_at);
-  // Spec §3: issued_at is exactly UTC, millisecond precision, Z suffix.
-  // (Key-document timestamps stay on the general RFC 3339 rule.)
-  if (!ISSUED_AT_RE.test(r.issued_at)) {
-    throw new VerificationError(
-      `issued_at must be UTC millisecond precision YYYY-MM-DDTHH:MM:SS.sssZ, got ${JSON.stringify(r.issued_at)}`,
-    );
-  }
   if (issuedAt.getTime() > now.getTime() + MAX_FUTURE_SKEW_MS) {
     throw new VerificationError(
       `receipt issued in the future: ${issuedAt.toISOString()} > ${now.toISOString()}`,
@@ -484,27 +480,21 @@ function checkPolicyEval(value: unknown): void {
   }
 }
 
-const RFC3339_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:\d{2})$/;
-// Receipt issued_at is stricter than key-document timestamps: spec §3 requires
-// exactly UTC, millisecond precision, Z suffix.
-const ISSUED_AT_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
+const RFC3339_RE = /^(?!0000)[0-9]{4}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12][0-9]|3[01])T(?:[01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]\.[0-9]{3}Z$/;
 
 function parseRFC3339(s: string): Date {
-  // `new Date(s)` alone accepts timezone-less and date-only strings, parsing
-  // them in *local* time — which makes the key-window check machine-dependent.
-  // Require a full RFC 3339 instant with an explicit offset (Z or ±HH:MM).
   if (typeof s !== "string" || !RFC3339_RE.test(s)) {
-    throw new VerificationError(`not an RFC 3339 timestamp with timezone: ${JSON.stringify(s)}`);
+    throw new VerificationError(
+      `timestamp must be UTC millisecond precision YYYY-MM-DDTHH:MM:SS.sssZ, got ${JSON.stringify(s)}`,
+    );
   }
   const d = new Date(s);
   if (isNaN(d.getTime())) {
     throw new VerificationError(`invalid RFC 3339 timestamp: ${s}`);
   }
-  // `new Date` silently rolls shape-valid but impossible dates (Feb 30 → Mar 2),
-  // so re-check the calendar day from the string's own components.
-  const y = Number(s.slice(0, 4)), mo = Number(s.slice(5, 7)), day = Number(s.slice(8, 10));
-  const utc = new Date(Date.UTC(y, mo - 1, day));
-  if (utc.getUTCFullYear() !== y || utc.getUTCMonth() !== mo - 1 || utc.getUTCDate() !== day) {
+  // `new Date` rolls impossible dates and hour 24; round-tripping also handles
+  // years 0001–0099 without Date.UTC's two-digit-year remapping.
+  if (d.toISOString() !== s) {
     throw new VerificationError(`not a real calendar date/time: ${s}`);
   }
   return d;
@@ -558,6 +548,9 @@ export function loadKeysFromJson(doc: KeyDocument): PublicKey[] {
         throw new VerificationError(`keys[${i}].${field} must be a string`);
       }
     }
+    if (!("active_until" in k) || (k.active_until !== null && typeof k.active_until !== "string")) {
+      throw new VerificationError(`keys[${i}].active_until must be a string or null`);
+    }
     if (seenIds.has(k.key_id)) {
       throw new VerificationError(`duplicate key_id in keys document: ${JSON.stringify(k.key_id)}`);
     }
@@ -575,7 +568,7 @@ export function loadKeysFromJson(doc: KeyDocument): PublicKey[] {
       alg: "Ed25519" as const,
       publicKeyBytes: pub,
       activeFrom: parseRFC3339(k.active_from),
-      activeUntil: k.active_until ? parseRFC3339(k.active_until) : null,
+      activeUntil: k.active_until === null ? null : parseRFC3339(k.active_until),
     };
   });
 }

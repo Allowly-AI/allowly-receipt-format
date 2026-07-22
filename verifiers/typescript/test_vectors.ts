@@ -21,7 +21,15 @@ const GOLDEN_PAYLOAD = {
   agent_id: "referral_outreach",
   action: "outreach.send",
   resource: "edge:emp_8821:conn_9f2a",
-  context: { session_id: "sess_7f2", origin: "chat", initiated_by: "user" },
+  context: {
+    session_id: "sess_7f2",
+    origin: "chat",
+    initiated_by: "user",
+    control: "line\n\t\u0000",
+    types: [7, true, null],
+    "😀_key": "emoji",
+    "｡_key": "bmp",
+  },
   authorization_id: "auth_01HXZ2A0K1L2M3N4P5Q6R7S8T9",
   engine_version: "2026-04-17.1",
   alg: "Ed25519",
@@ -31,7 +39,9 @@ const GOLDEN_CANONICAL =
   '{"action":"outreach.send","agent_id":"referral_outreach",' +
   '"alg":"Ed25519",' +
   '"authorization_id":"auth_01HXZ2A0K1L2M3N4P5Q6R7S8T9",' +
-  '"context":{"initiated_by":"user","origin":"chat","session_id":"sess_7f2"},' +
+  '"context":{"control":"line\\u000a\\u0009\\u0000","initiated_by":"user",' +
+  '"origin":"chat","session_id":"sess_7f2","types":[7,true,null],' +
+  '"😀_key":"emoji","｡_key":"bmp"},' +
   '"decision":"allow","engine_version":"2026-04-17.1",' +
   '"issued_at":"2026-04-21T14:32:17.482Z",' +
   '"key_id":"projects/allowly-prod/locations/global/keyRings/allowly-signing/cryptoKeys/ws_01HXA1/cryptoKeyVersions/3",' +
@@ -61,7 +71,26 @@ async function main(vectorsPath: string): Promise<number> {
 
   console.log("\nTesting keys-document hardening...");
   const dupDoc = { ...vectors.public_keys, keys: [...vectors.public_keys.keys, ...vectors.public_keys.keys] };
-  for (const [name, doc] of [["duplicate_keys", dupDoc], ["missing_keys_array", {}]] as const) {
+  const badKeyDoc = (field: "active_from" | "active_until", value: unknown) => {
+    const doc = structuredClone(vectors.public_keys);
+    doc.keys[0][field] = value;
+    return doc;
+  };
+  const missingActiveUntil = structuredClone(vectors.public_keys);
+  delete missingActiveUntil.keys[0].active_until;
+  const invalidKeyDocs = [
+    ["duplicate_keys", dupDoc],
+    ["missing_keys_array", {}],
+    ["active_from_missing_millis", badKeyDoc("active_from", "2026-01-01T00:00:00Z")],
+    ["active_from_microseconds", badKeyDoc("active_from", "2026-01-01T00:00:00.123456Z")],
+    ["active_from_nanoseconds", badKeyDoc("active_from", "2026-01-01T00:00:00.123456789Z")],
+    ["active_from_offset", badKeyDoc("active_from", "2026-01-01T00:00:00.000+00:00")],
+    ["active_until_empty", badKeyDoc("active_until", "")],
+    ["active_until_zero", badKeyDoc("active_until", 0)],
+    ["active_until_false", badKeyDoc("active_until", false)],
+    ["active_until_missing", missingActiveUntil],
+  ] as const;
+  for (const [name, doc] of invalidKeyDocs) {
     try {
       loadKeysFromJson(doc as never);
       console.log(`  FAIL  ${name}: should have been rejected`);
@@ -71,6 +100,28 @@ async function main(vectorsPath: string): Promise<number> {
         console.log(`  OK    ${name} (${e.message})`);
       } else {
         console.log(`  FAIL  ${name}: unexpected error type: ${e}`);
+        failures++;
+      }
+    }
+  }
+  if (keys[0].activeFrom.getUTCFullYear() === 1) {
+    console.log("  OK    active_from_year_0001");
+  } else {
+    console.log(`  FAIL  active_from_year_0001: got ${keys[0].activeFrom.toISOString()}`);
+    failures++;
+  }
+
+  console.log("\nTesting non-object receipt inputs...");
+  for (const receipt of [null, [], "x", 42]) {
+    try {
+      await verifyReceipt(receipt as never, keys, { now });
+      console.log(`  FAIL  ${JSON.stringify(receipt)}: should have been rejected`);
+      failures++;
+    } catch (e) {
+      if (e instanceof VerificationError) {
+        console.log(`  OK    ${JSON.stringify(receipt)} (${e.message})`);
+      } else {
+        console.log(`  FAIL  ${JSON.stringify(receipt)}: unexpected error type: ${e}`);
         failures++;
       }
     }
