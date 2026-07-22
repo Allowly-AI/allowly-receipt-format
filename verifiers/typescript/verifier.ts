@@ -21,7 +21,7 @@
  * License: Apache 2.0
  */
 
-import { webcrypto } from "node:crypto";
+import { createHmac, timingSafeEqual, webcrypto } from "node:crypto";
 
 const SPEC_VERSION = "2.0.0";
 const ACTION_DECISIONS = new Set(["allow", "deny", "confirm", "escalate"]);
@@ -568,4 +568,60 @@ export function loadKeysFromJson(doc: KeyDocument): PublicKey[] {
       activeUntil: k.active_until === null ? null : parseRFC3339(k.active_until),
     };
   });
+}
+
+// ---------------------------------------------------------------------------
+// hmac-v1 keyed pseudonym references (spec Appendix A) — optional helper
+// ---------------------------------------------------------------------------
+
+const HMAC_REF_RE = /^hmac-v1:[0-9a-f]{64}$/;
+const HMAC_REF_FIELDS = new Set(["project", "record", "actor", "full_tuple"]);
+
+/**
+ * Match an application `hmac-v1` reference without contacting Allowly
+ * (spec Appendix A). `key` is the decoded per-integration pseudonym key.
+ *
+ * Inputs are used exactly as supplied: this helper does no trimming, case
+ * folding, or Unicode normalization. It is unrelated to receipt signature
+ * verification — the receipt schema, canonicalization, and wire version are
+ * untouched by this convention.
+ */
+export function matchesRef(
+  key: Uint8Array,
+  fieldName: string,
+  value: string,
+  ref: string,
+): boolean {
+  if (!(key instanceof Uint8Array)) {
+    throw new TypeError("key must be a Uint8Array");
+  }
+  if (key.length < 16) {
+    throw new RangeError("key must contain at least 128 bits");
+  }
+  if (typeof fieldName !== "string" || !HMAC_REF_FIELDS.has(fieldName)) {
+    throw new RangeError("unsupported hmac-v1 field name");
+  }
+  if (typeof value !== "string") {
+    throw new TypeError("value must be a string");
+  }
+  if (!value.isWellFormed()) {
+    throw new RangeError("value contains an unpaired Unicode surrogate");
+  }
+  if (typeof ref !== "string" || !HMAC_REF_RE.test(ref)) {
+    return false;
+  }
+  // message = ASCII(field_name) || 0x00 || UTF8(value)  (spec §A.2)
+  const message = Buffer.concat([
+    Buffer.from(fieldName, "ascii"),
+    Buffer.from([0x00]),
+    Buffer.from(value, "utf-8"),
+  ]);
+  const expected = Buffer.from(
+    "hmac-v1:" + createHmac("sha256", key).update(message).digest("hex"),
+    "ascii",
+  );
+  const got = Buffer.from(ref, "ascii");
+  // `ref` passed HMAC_REF_RE, so it is exactly `hmac-v1:` + 64 hex — same
+  // length as `expected`; the guard keeps timingSafeEqual from throwing.
+  return expected.length === got.length && timingSafeEqual(expected, got);
 }

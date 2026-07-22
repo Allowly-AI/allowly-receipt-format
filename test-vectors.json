@@ -933,6 +933,29 @@
       }
     },
     {
+      "name": "pairing_budget_settle_wrong_decision",
+      "description": "event=budget.settle but decision=allow (must be budget_settled)",
+      "expected_reason": "must have decision",
+      "receipt": {
+        "version": "2.0.0",
+        "receipt_id": "rcp_01HXZPAIRBUDGET00000000",
+        "workspace_id": "ws_test",
+        "issued_at": "2026-04-21T16:16:00.000Z",
+        "decision": "allow",
+        "reason": "bogus_pairing",
+        "user_id": "emp_8821",
+        "agent_id": "referral_outreach",
+        "event": "budget.settle",
+        "resource": "llm:run:42",
+        "context": {},
+        "authorization_id": "auth_budget",
+        "engine_version": "2026-04-17.1",
+        "alg": "Ed25519",
+        "key_id": "test-key/v1",
+        "signature": "GooRDQsZ3vhzNNXnpjLcSCppVC6vo6ESvFJrevsiOjefxPrUJSG1Zm9guSuyY-Q14v6R46c9KOafWuzAFXq7CA"
+      }
+    },
+    {
       "name": "pairing_event_revoke_null_authorization",
       "description": "event=authorization.revoke but authorization_id=null",
       "expected_reason": "must have non-null authorization_id",

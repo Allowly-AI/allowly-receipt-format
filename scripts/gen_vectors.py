@@ -496,6 +496,18 @@ event_wrong_decision = signed_receipt(
     authorization_id="auth_bad",
 )
 
+# event=budget.settle but decision is not the paired budget_settled (wrong)
+budget_settle_wrong_decision = signed_receipt(
+    "rcp_01HXZPAIRBUDGET00000000",
+    issued_at="2026-04-21T16:16:00.000Z",
+    decision="allow",
+    reason="bogus_pairing",
+    action=None,
+    event="budget.settle",
+    resource="llm:run:42",
+    authorization_id="auth_budget",
+)
+
 # event=authorization.revoke, authorization_id=null (wrong)
 event_null_authorization = signed_receipt(
     "rcp_01HXZPAIR2000000000000000",
@@ -791,6 +803,7 @@ should_reject = [
     ("authorization_update_event_rejected", "authorization.update event was removed in draft.5", "event must be one of", authorization_update_event),
     ("prototype_event_name_rejected", "prototype-named event is not an allowed receipt event", "event must be one of", prototype_event_name),
     ("pairing_event_create_wrong_decision", "event=authorization.create but decision=allow", "must have decision", event_wrong_decision),
+    ("pairing_budget_settle_wrong_decision", "event=budget.settle but decision=allow (must be budget_settled)", "must have decision", budget_settle_wrong_decision),
     ("pairing_event_revoke_null_authorization", "event=authorization.revoke but authorization_id=null", "must have non-null authorization_id", event_null_authorization),
     ("pairing_event_with_resource", "event=authorization.create but resource is non-null", "must have null resource", event_with_resource),
     ("policy_eval_on_event_receipt", "event receipt carrying policy_eval", "policy_eval must be absent on event receipts", policy_eval_on_event),

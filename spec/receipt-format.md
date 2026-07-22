@@ -629,9 +629,10 @@ oracle; customers can use the key and the reference verifier locally.
 
 ## 11. Changelog
 
-- **Unreleased** — Added Appendix A's optional `hmac-v1` application convention
-  and the Python `matches_ref` helper. Receipt schema, signing, canonicalization,
-  and wire version are unchanged.
+- **2026-07-22 (verifier packages 2.1.0; wire format unchanged at 2.0.0)** —
+  Added Appendix A's optional `hmac-v1` application convention and the
+  `matches_ref` (Python) / `matchesRef` (TypeScript) helpers. Receipt schema,
+  signing, canonicalization, and wire version are unchanged.
 - **2.0.0 (2026-07-20)** — Protected signature header and verifier hardening.
   - Moved `alg` and `key_id` into the signed top-level payload and changed
     `signature` to the base64url signature string. The only accepted wire

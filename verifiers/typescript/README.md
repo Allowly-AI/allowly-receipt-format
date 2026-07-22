@@ -62,6 +62,26 @@ Produces the canonical JSON byte sequence per spec §4. Exposed for implementers
 
 Parses the `/v1/workspaces/{id}/keys` response into a `PublicKey[]`.
 
+### `matchesRef(key, fieldName, value, ref)`
+
+Implements the optional `hmac-v1` keyed-pseudonym convention in specification
+Appendix A. Decode the show-once integration key, then match locally — no call
+to Allowly:
+
+```typescript
+import { matchesRef } from "@allowly/verifier";
+
+const key = Buffer.from(encodedKeyB64url, "base64url"); // per-integration pseudonym key
+const ok = matchesRef(key, "record", "MRN-48291", receipt.context.record_ref);
+```
+
+`key` is a `Uint8Array` of at least 16 bytes; `fieldName` is one of `project`,
+`record`, `actor`, `full_tuple`. The value is used exactly as supplied — no
+trimming, case folding, or Unicode normalization — and comparison is
+constant-time. Use `context.ref_key_version` to select the retained key
+version. This helper is unrelated to signature verification and does not touch
+the receipt schema, canonicalization, or wire version.
+
 `verifyReceipt` accepts an already-parsed object. `JSON.parse` cannot report
 duplicate member names or preserve whether an integer was written as `1`,
 `1.0`, or `1e0`; reject those forms at the raw-JSON boundary when the original

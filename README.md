@@ -74,7 +74,7 @@ try {
 
 ## Status
 
-**2.0.0 — implementation ready; verifier packages pending owner publish.** Receipts sign top-level `alg` and `key_id`; `signature` is the base64url signature string. Reference verifiers accept only receipt format 2.0.0, enforce byte-identical canonicalization across Python and TypeScript, and reject malformed Unicode, unsafe integers, and non-canonical signature encodings.
+**Verifier packages 2.1.0 implement receipt format 2.0.0.** Receipts sign top-level `alg` and `key_id`; `signature` is the base64url signature string. Reference verifiers accept only receipt format 2.0.0, enforce byte-identical canonicalization across Python and TypeScript, and reject malformed Unicode, unsafe integers, and non-canonical signature encodings.
 
 ## Licensing
 

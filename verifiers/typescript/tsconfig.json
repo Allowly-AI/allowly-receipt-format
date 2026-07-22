@@ -11,6 +11,6 @@
     "skipLibCheck": true,
     "lib": ["ES2022", "ES2024.String", "DOM"]
   },
-  "include": ["verifier.ts", "test_vectors.ts"],
+  "include": ["verifier.ts", "test_vectors.ts", "test_pseudonym_refs.ts"],
   "exclude": ["node_modules", "dist"]
 }

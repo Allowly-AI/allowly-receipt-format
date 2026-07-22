@@ -52,6 +52,9 @@ jobs:
       - name: Run against test vectors
         working-directory: verifiers/typescript
         run: node dist/test_vectors.js ../../test-vectors.json
+      - name: Check hmac-v1 pseudonym references
+        working-directory: verifiers/typescript
+        run: node dist/test_pseudonym_refs.js
 
   cross-check:
     name: Regenerate vectors and verify both still pass
