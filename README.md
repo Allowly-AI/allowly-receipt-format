@@ -74,7 +74,7 @@ try {
 
 ## Status
 
-**Verifier packages 2.2.0 implement receipt wire format 2.1.0.** Receipts carry `schema_version: "2.1.0"` and sign top-level `alg` and `key_id`; `signature` is the base64url signature string. Reference verifiers accept only receipt wire format 2.1.0, enforce byte-identical canonicalization across Python and TypeScript, and reject malformed Unicode, unsafe integers, and non-canonical signature encodings.
+**Verifier packages 2.1.1 implement receipt wire format 2.1.0.** Package versions follow `2.<wire minor>.<patch>`: the package minor names the wire format it verifies, so pin with `~2.1.1` / `>=2.1.1,<2.2.0`. (The pre-scheme 2.1.0 packages verify wire 2.0.0 and are yanked.) Receipts carry `schema_version: "2.1.0"` and sign top-level `alg` and `key_id`; `signature` is the base64url signature string. Reference verifiers accept only receipt wire format 2.1.0, enforce byte-identical canonicalization across Python and TypeScript, and reject malformed Unicode, unsafe integers, and non-canonical signature encodings.
 
 ## Licensing
 

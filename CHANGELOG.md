@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-## v2.2.0 — 2026-07-22
+## v2.1.1 — 2026-07-22
 
 - **Receipt wire format 2.1.0.** Renamed the receipt `version` field to
   `schema_version` and set the only accepted value to `"2.1.0"`. The rename
@@ -13,6 +13,10 @@
   `"2.0.0"`, a claim 2.0.0-only verifiers reject.
 - Breaking release with no compatibility branch or deprecation window:
   pre-launch, no deployed external verifiers, no receipts in the wild.
+- Adopts the package-numbering scheme: verifier packages use
+  `2.<wire minor>.<patch>` — the package minor always names the wire format it
+  verifies, so `~2.1.x` ranges can never cross a wire boundary. Note the
+  pre-scheme packages published as 2.1.0 verify wire 2.0.0 and are yanked.
 
 ## v2.1.0 — 2026-07-22
 
