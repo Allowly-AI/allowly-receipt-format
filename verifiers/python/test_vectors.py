@@ -14,7 +14,7 @@ from allowly_receipt_format import canonicalize, verify_receipt, load_keys_from_
 # Deliberately NOT produced by the reference canonicalizer: if canonicalization
 # regresses, generated vectors would regress with it and tests would still pass.
 GOLDEN_PAYLOAD = {
-    "schema_version": "2.1.0",
+    "schema_version": "3",
     "receipt_id": "rcp_01HXZ2B3QW4N5M6P7R8S9T0V1W",
     "workspace_id": "ws_01HXA1B2C3D4E5F6G7H8J9K0L1",
     "issued_at": "2026-04-21T14:32:17.482Z",
@@ -50,7 +50,7 @@ GOLDEN_CANONICAL = (
     '"key_id":"projects/allowly-prod/locations/global/keyRings/allowly-signing/cryptoKeys/ws_01HXA1/cryptoKeyVersions/3",'
     '"reason":"authorization_granted_action_active",'
     '"receipt_id":"rcp_01HXZ2B3QW4N5M6P7R8S9T0V1W",'
-    '"resource":"edge:emp_8821:conn_9f2a","schema_version":"2.1.0","user_id":"emp_8821",'
+    '"resource":"edge:emp_8821:conn_9f2a","schema_version":"3","user_id":"emp_8821",'
     '"workspace_id":"ws_01HXA1B2C3D4E5F6G7H8J9K0L1"}'
 )
 

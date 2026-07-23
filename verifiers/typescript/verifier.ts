@@ -1,7 +1,7 @@
 /**
  * Allowly Receipt Verifier (TypeScript reference implementation).
  *
- * Verifies Allowly receipts per receipt-format.md v2.1.0.
+ * Verifies Allowly receipts per receipt-format.md wire version 3.
  *
  * Dependencies: Node.js 20+ (uses built-in node:crypto and the WebCrypto API).
  * No external runtime dependencies.
@@ -23,7 +23,7 @@
 
 import { createHmac, timingSafeEqual, webcrypto } from "node:crypto";
 
-const SPEC_VERSION = "2.1.0";
+const SPEC_VERSION = "3";
 const ACTION_DECISIONS = new Set(["allow", "deny", "confirm", "escalate"]);
 const EVENT_DECISIONS: Record<string, Set<string>> = {
   "authorization.create": new Set(["authorization_granted"]),
@@ -87,7 +87,7 @@ interface ReceiptBase {
 }
 
 export interface Receipt extends ReceiptBase {
-  schema_version: "2.1.0";
+  schema_version: "3";
   alg: string;
   key_id: string;
   signature: string;

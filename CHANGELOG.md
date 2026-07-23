@@ -2,21 +2,21 @@
 
 ## Unreleased
 
-## v2.1.1 — 2026-07-22
+## v3.0.0 — 2026-07-22
 
-- **Receipt wire format 2.1.0.** Renamed the receipt `version` field to
-  `schema_version` and set the only accepted value to `"2.1.0"`. The rename
-  moves the field's canonical sort position (before `user_id`), so 2.0.0 and
-  2.1.0 signatures are not interchangeable. Test vectors regenerated.
+- **Receipt wire format 3.** Renamed the receipt `version` field to
+  `schema_version` and set the only accepted value to `"3"`. The rename moves
+  the field's canonical sort position (before `user_id`), so wire-2.0.0 and
+  wire-3 signatures are not interchangeable. Test vectors regenerated.
 - Corrects the v2.1.0 release, which added `budget.settle` receipts to the
   spec without bumping the wire version — leaving new-event receipts labeled
   `"2.0.0"`, a claim 2.0.0-only verifiers reject.
 - Breaking release with no compatibility branch or deprecation window:
   pre-launch, no deployed external verifiers, no receipts in the wild.
-- Adopts the package-numbering scheme: verifier packages use
-  `2.<wire minor>.<patch>` — the package minor always names the wire format it
-  verifies, so `~2.1.x` ranges can never cross a wire boundary. Note the
-  pre-scheme packages published as 2.1.0 verify wire 2.0.0 and are yanked.
+- Wire versions are plain integers from now on, and verifier packages use
+  `<wire>.<minor>.<patch>` — the package major always equals the wire version
+  it verifies, so default caret ranges can never cross a wire boundary.
+  Features bump minor, fixes bump patch (standard SemVer within a wire).
 
 ## v2.1.0 — 2026-07-22
 

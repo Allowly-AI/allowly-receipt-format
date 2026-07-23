@@ -1,7 +1,7 @@
 """
 Allowly Receipt Verifier (Python reference implementation).
 
-Verifies Allowly receipts per receipt-format.md v2.1.0.
+Verifies Allowly receipts per receipt-format.md wire version 3.
 
 Usage (library):
     from allowly_receipt_format import verify_receipt, VerificationError, load_keys_from_json
@@ -34,7 +34,7 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 from cryptography.exceptions import InvalidSignature
 
 
-SPEC_VERSION = "2.1.0"
+SPEC_VERSION = "3"
 ACTION_DECISIONS = {"allow", "deny", "confirm", "escalate"}
 EVENT_DECISIONS = {
     "authorization.create": {"authorization_granted"},

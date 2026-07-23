@@ -62,7 +62,7 @@ def make_receipt(
     policy_eval: Any = _MISSING,
 ) -> dict[str, Any]:
     receipt: dict[str, Any] = {
-        "schema_version": "2.1.0",
+        "schema_version": "3",
         "receipt_id": receipt_id,
         "workspace_id": WORKSPACE_ID,
         "issued_at": issued_at,
@@ -454,7 +454,7 @@ key_id_swapped = copy.deepcopy(minimal_allow)
 key_id_swapped["key_id"] = SECOND_KEY_ID
 
 future_receipt = copy.deepcopy(minimal_allow)
-future_receipt["schema_version"] = "3.0.0"
+future_receipt["schema_version"] = "4"
 
 unknown_field = copy.deepcopy(minimal_allow)
 unknown_field["extra_field"] = "should_be_rejected"
@@ -794,7 +794,7 @@ should_reject = [
     ("forged_signature", "signature bytes replaced with zeros", "signature verification failed", forged),
     ("unknown_key_id", "key_id not in published keys", "no public key found", unknown_key),
     ("key_id_swapped", "signed key_id changed to another published key", "signature verification failed", key_id_swapped),
-    ("future_version", "schema_version 3.0.0 receipt", "unsupported schema_version", future_receipt),
+    ("future_version", "schema_version 4 receipt", "unsupported schema_version", future_receipt),
     ("unknown_top_level_field", "extra field not in spec", "unknown top-level fields", unknown_field),
     ("missing_required_field", "authorization_id field missing", "missing top-level fields", missing_field),
     ("bad_decision_value", "decision is not allow/deny/confirm/escalate", "action receipt must have decision in", bad_decision),
@@ -827,7 +827,7 @@ should_reject = [
 ]
 
 vectors = {
-    "spec_version": "2.1.0",
+    "spec_version": "3",
     "public_keys": keys_doc,
     "should_verify": [ok(*row) for row in should_verify],
     "should_reject": [bad(*row) for row in should_reject],

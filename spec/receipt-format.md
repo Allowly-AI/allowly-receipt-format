@@ -1,6 +1,6 @@
 # Allowly Receipt Format Specification
 
-**Version:** 2.1.0
+**Version:** 3
 **Status:** Stable
 **License:** This specification is published under CC-BY 4.0. Reference implementations are Apache 2.0.
 
@@ -44,7 +44,7 @@ A receipt is a JSON object with the following top-level fields. All fields are r
 
 ```json
 {
-  "schema_version": "2.1.0",
+  "schema_version": "3",
   "receipt_id": "rcp_01HXZ2B3QW4N5M6P7R8S9T0V1W",
   "workspace_id": "ws_01HXA1B2C3D4E5F6G7H8J9K0L1",
   "issued_at": "2026-04-21T14:32:17.482Z",
@@ -71,7 +71,7 @@ A receipt is a JSON object with the following top-level fields. All fields are r
 
 | Field | Type | Required | Notes |
 |---|---|---|---|
-| `schema_version` | string | yes | Receipt wire-format version. MUST be exactly `"2.1.0"`. |
+| `schema_version` | string | yes | Receipt wire-format version. MUST be exactly `"3"`. Wire versions are plain integers; each distinct wire format has exactly one identity. |
 | `receipt_id` | string | yes | ULID. Monotonic within a workspace. |
 | `workspace_id` | string | yes | Issuer identifier. Used to look up the verification key. |
 | `issued_at` | string | yes | RFC 3339 timestamp in the exact `YYYY-MM-DDTHH:MM:SS.sssZ` UTC millisecond profile. |
@@ -92,7 +92,7 @@ A receipt is a JSON object with the following top-level fields. All fields are r
 
 ### 3.2 Extensibility
 
-Verifiers implementing this specification accept only `"2.1.0"` and **MUST** reject every other value. Future incompatible receipt shapes require a new wire version and matching verifier release. Issuers **MUST NOT** emit fields under a version that does not define them.
+Verifiers implementing this specification accept only `"3"` and **MUST** reject every other value. Future incompatible receipt shapes require a new wire version and matching verifier release. Issuers **MUST NOT** emit fields under a version that does not define them.
 
 ### 3.3 Receipt kinds
 
@@ -147,7 +147,7 @@ The two-field discriminator design (rather than a single overloaded field) makes
 
 ```json
 {
-  "schema_version": "2.1.0",
+  "schema_version": "3",
   "receipt_id": "rcp_01HXZAUTHORIZATIONCREATE0000000",
   "workspace_id": "ws_01HXA1B2C3D4E5F6G7H8J9K0L1",
   "issued_at": "2026-04-21T14:30:00.000Z",
@@ -208,7 +208,7 @@ Issuers that route action decisions through per-action conditions MAY record the
 
 ```json
 {
-  "schema_version": "2.1.0",
+  "schema_version": "3",
   "receipt_id": "rcp_01J0Z7Q4BORDERLINE0CONFIRM",
   "workspace_id": "ws_01HXA1B2C3D4E5F6G7H8J9K0L1",
   "issued_at": "2026-06-09T17:04:09.114Z",
@@ -292,7 +292,7 @@ The payload for the example in §3 canonicalizes to (linebreaks for display only
 "decision":"allow","engine_version":"2026-04-17.1","issued_at":
 "2026-04-21T14:32:17.482Z","key_id":"projects/allowly-prod/locations/global/keyRings/allowly-signing/cryptoKeys/ws_01HXA1/cryptoKeyVersions/3","reason":"authorization_granted_action_active",
 "receipt_id":"rcp_01HXZ2B3QW4N5M6P7R8S9T0V1W","resource":
-"edge:emp_8821:conn_9f2a","schema_version":"2.1.0","user_id":"emp_8821",
+"edge:emp_8821:conn_9f2a","schema_version":"3","user_id":"emp_8821",
 "workspace_id":"ws_01HXA1B2C3D4E5F6G7H8J9K0L1"}
 ```
 
@@ -313,7 +313,7 @@ Verifiers **MUST** use standard RFC 8032 Ed25519 verification over the raw canon
 
 ### 5.2 Protected algorithm and key identifier
 
-Format 2.1.0 places `alg` and `key_id` at the top level. Removing only the
+Format 3 places `alg` and `key_id` at the top level. Removing only the
 `signature` field for canonicalization leaves both fields in the signed bytes,
 so neither the algorithm nor trust-anchor selector can be changed after issue.
 The `signature` field contains only the canonical unpadded base64url signature
@@ -329,7 +329,7 @@ This separation is deliberate. Pending is a transport-layer concern, not a recei
 - Customers cannot accidentally serialize a pending response as audit evidence. The pending response and the signed receipt have different shapes; passing the wrong one to a verifier or a long-term store fails immediately, not silently.
 - The receipt format spec stays focused on a single artifact: the signed receipt.
 
-Issuers **MUST NOT** emit any object claiming to be a 2.1.0 receipt with `signature` set to a non-signature value (e.g. a placeholder string). Verifiers **MUST** reject any such object on the schema check.
+Issuers **MUST NOT** emit any object claiming to be a format-3 receipt with `signature` set to a non-signature value (e.g. a placeholder string). Verifiers **MUST** reject any such object on the schema check.
 
 ### 5.4 Implementation notes on signing (non-normative)
 
@@ -392,7 +392,7 @@ Verifiers **SHOULD** cache this document; issuers **SHOULD** set `Cache-Control:
 
 A verifier given a receipt `R` and the issuer's public keys **MUST** perform all of the following steps in order, and **MUST** reject the receipt if any step fails.
 
-1. **Version check.** Assert `R.schema_version` is exactly `"2.1.0"`.
+1. **Version check.** Assert `R.schema_version` is exactly `"3"`.
 2. **Schema check.** Assert all required fields are present with the correct types and no unknown top-level fields are present. Assert top-level `alg` and `key_id` are strings and `signature` is a non-empty string. The signature text MUST be canonical unpadded base64url and decode to exactly 64 bytes; verifiers MUST reject non-zero unused pad bits by decoding and re-encoding before comparison. If `R.policy_eval` is present, assert it conforms to §3.6.1: an object with exactly `matched_condition` (an object with exactly the members `field`, `op`, `value` — or null; `value` may be a scalar or an array of scalars) and `field_value` (string, integer, boolean, or null), and no other members.
 3. **Receipt kind and pairing check.** Determine the receipt kind from which discriminator field is present, and enforce the corresponding constraints:
    - Exactly one of `action` and `event` MUST be present. Reject if both are present, or if neither is present.
@@ -479,7 +479,7 @@ Vectors include:
 - A receipt with a forged signature (zero bytes).
 - A receipt with an unknown `key_id`.
 - A receipt whose signed `key_id` was changed to another published key.
-- A receipt with `schema_version: "3.0.0"`.
+- A receipt with `schema_version: "4"`.
 - A receipt with an unknown top-level field.
 - A receipt with a required field missing.
 - A receipt with `decision: "maybe"` (invalid decision value).
@@ -507,7 +507,7 @@ Vectors include:
 
 If an issuer's Ed25519 private key is compromised, all receipts signed under that key are untrustworthy from the moment of compromise until rotation. Issuers **SHOULD** rotate keys at least annually. Verifiers **SHOULD** consult the key document's `active_until` field when verifying old receipts; a key retired for compromise should have `active_until` set to the compromise time. Note the limit of this mitigation: the window check compares `active_until` against the receipt's *claimed* `issued_at`, and an attacker holding the key controls that claim — a receipt backdated to before the compromise time still verifies (§7 item 6). Retiring a key bounds honest use; it does not detect backdated forgeries. Detecting those requires evidence outside this format, such as an external timestamp or the issuer's own receipt log.
 
-Format 2.1.0 signs `alg` and `key_id`, so changing either one invalidates the
+Format 3 signs `alg` and `key_id`, so changing either one invalidates the
 signature.
 
 ### 10.2 Canonicalization fragility
@@ -558,7 +558,7 @@ The format cannot police the semantics of what customers evaluate; this guidance
 This appendix defines an optional application convention for pseudonymous
 strings carried inside an existing receipt `context`. It adds no receipt field,
 does not change canonicalization or signing, and does not change wire version
-`2.1.0`. Verifiers that do not use this convention continue to verify the same
+`3`. Verifiers that do not use this convention continue to verify the same
 receipt bytes.
 
 ### A.1 Key and field separation
@@ -629,19 +629,23 @@ oracle; customers can use the key and the reference verifier locally.
 
 ## 11. Changelog
 
-- **2.1.0 (2026-07-22)** — Wire version correction; self-describing version field.
+- **3 (2026-07-22)** — Self-describing version field; integer wire identities.
   - **Renamed `version` to `schema_version`.** The field's canonical sort
-    position moves (it now sorts before `user_id`), so 2.0.0 and 2.1.0
-    signatures are not interchangeable. The only accepted wire version is
-    `"2.1.0"`.
-  - **`budget.settle` formally belongs to wire 2.1.0.** The `budget.settle`
-    event and its paired `budget_settled` decision were mistakenly added to
-    the 2.0.0 spec text without a wire-version bump, so receipts carrying the
-    new event still claimed `"2.0.0"` — a claim 2.0.0-only verifiers reject.
-    This release corrects the label: the event enum including `budget.settle`
-    is defined under `"2.1.0"`.
+    position moves (it now sorts before `user_id`), so wire-2.0.0 and wire-3
+    signatures are not interchangeable. The only accepted value is `"3"`.
+  - **Wire versions are plain integers from now on** (`"3"`, `"4"`, …). A
+    signed wire format is an exact-match contract, so dotted versions carry
+    no range semantics and invite mislabeling. Verifier packages version as
+    `<wire>.<minor>.<patch>`, so default caret ranges can never cross a wire
+    boundary.
+  - **`budget.settle` formally belongs to wire 3.** The event and its paired
+    `budget_settled` decision were mistakenly added to the 2.0.0 spec text
+    without a wire-version bump, so receipts carrying the new event still
+    claimed `"2.0.0"` — a claim 2.0.0-only verifiers reject. This release
+    corrects the label.
   - Breaking release with no deprecation window: made pre-launch, with no
-    deployed external verifiers and no receipts in the wild.
+    deployed external verifiers and no receipts in the wild. (Supersedes a
+    same-day interim cut labeled 2.1.0 that was never published.)
 - **2026-07-22 (verifier packages 2.1.0; wire format unchanged at 2.0.0)** —
   Added Appendix A's optional `hmac-v1` application convention and the
   `matches_ref` (Python) / `matchesRef` (TypeScript) helpers. Receipt schema,
