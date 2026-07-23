@@ -4,7 +4,7 @@ An open format for **cryptographically signed, third-party-verifiable receipts**
 
 A receipt is a signed record of one decision: *at time T, issuer W decided that agent A may (or may not) perform action X on resource R for user U under authorization C.* Anyone holding the receipt and the issuer's Ed25519 public key can verify it offline, without contacting the issuer.
 
-Action receipts can include `policy_eval`, a small record of which immutable authorization condition routed a decision to `deny`, `confirm`, or `escalate`. Receipt format 2.0.0 signs the algorithm and key identifier so the trust-anchor selector cannot be swapped after issue.
+Action receipts can include `policy_eval`, a small record of which immutable authorization condition routed a decision to `deny`, `confirm`, or `escalate`. Receipt format 2.1.0 signs the algorithm and key identifier so the trust-anchor selector cannot be swapped after issue.
 
 Specification Appendix A also defines an optional `hmac-v1` convention for
 customer-recomputable pseudonymous values inside `context`; it does not change
@@ -74,7 +74,7 @@ try {
 
 ## Status
 
-**Verifier packages 2.1.0 implement receipt format 2.0.0.** Receipts sign top-level `alg` and `key_id`; `signature` is the base64url signature string. Reference verifiers accept only receipt format 2.0.0, enforce byte-identical canonicalization across Python and TypeScript, and reject malformed Unicode, unsafe integers, and non-canonical signature encodings.
+**Verifier packages 2.2.0 implement receipt wire format 2.1.0.** Receipts carry `schema_version: "2.1.0"` and sign top-level `alg` and `key_id`; `signature` is the base64url signature string. Reference verifiers accept only receipt wire format 2.1.0, enforce byte-identical canonicalization across Python and TypeScript, and reject malformed Unicode, unsafe integers, and non-canonical signature encodings.
 
 ## Licensing
 

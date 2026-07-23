@@ -1,7 +1,7 @@
 """
 Allowly Receipt Verifier (Python reference implementation).
 
-Verifies Allowly receipts per receipt-format.md v2.0.0.
+Verifies Allowly receipts per receipt-format.md v2.1.0.
 
 Usage (library):
     from allowly_receipt_format import verify_receipt, VerificationError, load_keys_from_json
@@ -34,7 +34,7 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 from cryptography.exceptions import InvalidSignature
 
 
-SPEC_VERSION = "2.0.0"
+SPEC_VERSION = "2.1.0"
 ACTION_DECISIONS = {"allow", "deny", "confirm", "escalate"}
 EVENT_DECISIONS = {
     "authorization.create": {"authorization_granted"},
@@ -45,7 +45,7 @@ EVENT_DECISIONS = {
 AUTHORIZATION_LIFECYCLE_EVENTS = {"authorization.create", "authorization.revoke"}
 EVENT_ONLY_DECISIONS = {decision for decisions in EVENT_DECISIONS.values() for decision in decisions}
 REQUIRED_FIELDS = {
-    "version", "receipt_id", "workspace_id", "issued_at", "decision", "reason",
+    "schema_version", "receipt_id", "workspace_id", "issued_at", "decision", "reason",
     "user_id", "agent_id", "resource", "context",
     "authorization_id", "engine_version", "alg", "key_id", "signature",
 }
@@ -306,9 +306,9 @@ def verify_receipt(
     now = now or datetime.now(timezone.utc)
 
     # Step 1: version check
-    if receipt.get("version") != SPEC_VERSION:
+    if receipt.get("schema_version") != SPEC_VERSION:
         raise SchemaError(
-            f"unsupported version: {receipt.get('version')!r} (want {SPEC_VERSION!r})"
+            f"unsupported schema_version: {receipt.get('schema_version')!r} (want {SPEC_VERSION!r})"
         )
 
     if (
@@ -419,7 +419,7 @@ def _check_schema(receipt: dict[str, Any]) -> None:
         raise SchemaError(f"missing top-level fields: {sorted(missing)}")
 
     # String fields (always present)
-    for field in ("version", "receipt_id", "workspace_id", "issued_at",
+    for field in ("schema_version", "receipt_id", "workspace_id", "issued_at",
                   "decision", "reason", "user_id", "agent_id",
                   "engine_version"):
         if not isinstance(receipt[field], str):

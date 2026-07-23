@@ -1,6 +1,6 @@
 # Python Reference Verifier
 
-Packaged Python verifier for Allowly Receipt Format 2.0.0.
+Packaged Python verifier for Allowly Receipt Format 2.1.0.
 
 ## Install
 

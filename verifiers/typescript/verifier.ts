@@ -1,7 +1,7 @@
 /**
  * Allowly Receipt Verifier (TypeScript reference implementation).
  *
- * Verifies Allowly receipts per receipt-format.md v2.0.0.
+ * Verifies Allowly receipts per receipt-format.md v2.1.0.
  *
  * Dependencies: Node.js 20+ (uses built-in node:crypto and the WebCrypto API).
  * No external runtime dependencies.
@@ -23,7 +23,7 @@
 
 import { createHmac, timingSafeEqual, webcrypto } from "node:crypto";
 
-const SPEC_VERSION = "2.0.0";
+const SPEC_VERSION = "2.1.0";
 const ACTION_DECISIONS = new Set(["allow", "deny", "confirm", "escalate"]);
 const EVENT_DECISIONS: Record<string, Set<string>> = {
   "authorization.create": new Set(["authorization_granted"]),
@@ -34,7 +34,7 @@ const EVENT_DECISIONS: Record<string, Set<string>> = {
 const AUTHORIZATION_LIFECYCLE_EVENTS = new Set(["authorization.create", "authorization.revoke"]);
 const EVENT_ONLY_DECISIONS = new Set(Object.values(EVENT_DECISIONS).flatMap((decisions) => [...decisions]));
 const REQUIRED_FIELDS = new Set([
-  "version", "receipt_id", "workspace_id", "issued_at", "decision", "reason",
+  "schema_version", "receipt_id", "workspace_id", "issued_at", "decision", "reason",
   "user_id", "agent_id", "resource", "context",
   "authorization_id", "engine_version", "alg", "key_id", "signature",
 ]);
@@ -87,7 +87,7 @@ interface ReceiptBase {
 }
 
 export interface Receipt extends ReceiptBase {
-  version: "2.0.0";
+  schema_version: "2.1.0";
   alg: string;
   key_id: string;
   signature: string;
@@ -232,9 +232,9 @@ export async function verifyReceipt(
   const now = opts.now ?? new Date();
 
   // Step 1: version check
-  if (receipt.version !== SPEC_VERSION) {
+  if (receipt.schema_version !== SPEC_VERSION) {
     throw new VerificationError(
-      `unsupported version: ${JSON.stringify(receipt.version)} (want "${SPEC_VERSION}")`,
+      `unsupported schema_version: ${JSON.stringify(receipt.schema_version)} (want "${SPEC_VERSION}")`,
     );
   }
 
@@ -366,7 +366,7 @@ function checkSchema(receipt: Record<string, unknown>): void {
   }
 
   const stringFields = [
-    "version", "receipt_id", "workspace_id", "issued_at", "decision", "reason",
+    "schema_version", "receipt_id", "workspace_id", "issued_at", "decision", "reason",
     "user_id", "agent_id", "engine_version",
   ];
   for (const f of stringFields) {

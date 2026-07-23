@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+## v2.2.0 — 2026-07-22
+
+- **Receipt wire format 2.1.0.** Renamed the receipt `version` field to
+  `schema_version` and set the only accepted value to `"2.1.0"`. The rename
+  moves the field's canonical sort position (before `user_id`), so 2.0.0 and
+  2.1.0 signatures are not interchangeable. Test vectors regenerated.
+- Corrects the v2.1.0 release, which added `budget.settle` receipts to the
+  spec without bumping the wire version — leaving new-event receipts labeled
+  `"2.0.0"`, a claim 2.0.0-only verifiers reject.
+- Breaking release with no compatibility branch or deprecation window:
+  pre-launch, no deployed external verifiers, no receipts in the wild.
+
 ## v2.1.0 — 2026-07-22
 
 - Add `budget.settle` event receipts with the paired `budget_settled` decision
