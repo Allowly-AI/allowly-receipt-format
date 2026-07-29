@@ -19,10 +19,15 @@ import { verifyReceipt, VerificationError, loadKeysFromJson } from "@allowly/ver
 
 const receipt = JSON.parse(receiptJson);
 const keysDoc = JSON.parse(keysJson);
+const configuredWorkspaceId = process.env.ALLOWLY_WORKSPACE_ID;
+if (!configuredWorkspaceId) throw new Error("ALLOWLY_WORKSPACE_ID is required");
+if (keysDoc.workspace_id !== configuredWorkspaceId) {
+  throw new Error("key document workspace does not match configuration");
+}
 const keys = loadKeysFromJson(keysDoc);
 
 try {
-  await verifyReceipt(receipt, keys, { expectedWorkspaceId: keysDoc.workspace_id });
+  await verifyReceipt(receipt, keys, { expectedWorkspaceId: configuredWorkspaceId });
   console.log("valid");
 } catch (e) {
   if (e instanceof VerificationError) {
@@ -36,8 +41,13 @@ try {
 ## Fetching the public keys
 
 ```typescript
-const res = await fetch(`https://api.allowly.ai/v1/workspaces/${workspaceId}/keys`);
+const configuredWorkspaceId = process.env.ALLOWLY_WORKSPACE_ID;
+if (!configuredWorkspaceId) throw new Error("ALLOWLY_WORKSPACE_ID is required");
+const res = await fetch(`https://api.allowly.ai/v1/workspaces/${configuredWorkspaceId}/keys`);
 const keysDoc = await res.json();
+if (keysDoc.workspace_id !== configuredWorkspaceId) {
+  throw new Error("key document workspace does not match configuration");
+}
 const keys = loadKeysFromJson(keysDoc);
 ```
 
@@ -52,7 +62,7 @@ Verifies a receipt. Resolves on success, throws `VerificationError` on any failu
 - `receipt` — the full receipt object (payload + signature).
 - `publicKeys` — array of `PublicKey` objects. Get these via `loadKeysFromJson`.
 - `opts.now` — optional `Date` override for time checks. Defaults to `new Date()`.
-- `opts.expectedWorkspaceId` — optional. If set, the receipt's `workspace_id` must equal it. Pass the workspace the keys were published for (spec §7, "Workspace binding"); a `key_id` alone does not bind a receipt to a workspace.
+- `opts.expectedWorkspaceId` — optional. If set, the receipt's `workspace_id` must equal it. Pass a caller-trusted configured workspace ID, never one copied from the receipt or key document (spec §7, "Workspace binding"); a `key_id` alone does not bind a receipt to a workspace.
 
 ### `canonicalize(payload)`
 

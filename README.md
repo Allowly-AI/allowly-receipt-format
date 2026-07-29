@@ -35,16 +35,23 @@ pip install allowly-receipt-format
 allowly-receipt-verify path/to/receipt.json path/to/keys.json
 ```
 
+Obtain `keys.json` for the workspace ID in caller-trusted configuration; never
+choose the trust anchor from the receipt's own `workspace_id` claim.
+
 ```python
+import os
+
 from allowly_receipt_format import verify_receipt, load_keys_from_json
 
-# Always pass expected_workspace_id: key ids alone do not bind a receipt
-# to a workspace, so verifying without it accepts receipts signed for a
-# different (or attacker-supplied) key document.
+# Load this from caller-trusted configuration, never from the receipt or key
+# document. Key ids alone do not bind a receipt to a workspace.
+configured_workspace_id = os.environ["ALLOWLY_WORKSPACE_ID"]
+if keys_doc.get("workspace_id") != configured_workspace_id:
+    raise ValueError("key document workspace does not match configuration")
 verify_receipt(
     receipt,
     load_keys_from_json(keys_doc),
-    expected_workspace_id=keys_doc["workspace_id"],
+    expected_workspace_id=configured_workspace_id,
 )  # raises VerificationError if invalid
 ```
 
@@ -58,11 +65,16 @@ npm install @allowly/verifier
 import { verifyReceipt, loadKeysFromJson, VerificationError } from "@allowly/verifier";
 
 // verifyReceipt resolves on success and throws VerificationError on failure —
-// it does not return a boolean. Always pass expectedWorkspaceId: key ids alone
-// do not bind a receipt to a workspace.
+// it does not return a boolean. Load the workspace id from caller-trusted
+// configuration, never from the receipt or key document.
+const configuredWorkspaceId = process.env.ALLOWLY_WORKSPACE_ID;
+if (!configuredWorkspaceId) throw new Error("ALLOWLY_WORKSPACE_ID is required");
+if (keysDoc.workspace_id !== configuredWorkspaceId) {
+  throw new Error("key document workspace does not match configuration");
+}
 try {
   await verifyReceipt(receipt, loadKeysFromJson(keysDoc), {
-    expectedWorkspaceId: keysDoc.workspace_id,
+    expectedWorkspaceId: configuredWorkspaceId,
   });
   // valid
 } catch (e) {

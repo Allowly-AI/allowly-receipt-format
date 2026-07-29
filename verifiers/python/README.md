@@ -50,24 +50,31 @@ Exit codes:
 ```python
 from allowly_receipt_format import verify_receipt, VerificationError, load_keys_from_json
 import json
+import os
 
 with open("receipt.json") as f:
     receipt = json.load(f)
 with open("keys.json") as f:
     keys_doc = json.load(f)
+configured_workspace_id = os.environ["ALLOWLY_WORKSPACE_ID"]
+if keys_doc.get("workspace_id") != configured_workspace_id:
+    raise ValueError("key document workspace does not match configuration")
 keys = load_keys_from_json(keys_doc)
 
 try:
-    verify_receipt(receipt, keys, expected_workspace_id=keys_doc["workspace_id"])
+    verify_receipt(receipt, keys, expected_workspace_id=configured_workspace_id)
     print("valid")
 except VerificationError as e:
     print(f"invalid: {e}")
 ```
 
 Always pass `expected_workspace_id` to bind the receipt to a workspace — a
-`key_id` alone does not (spec §7, "Workspace binding"). The
-`allowly-receipt-verify` CLI enforces this automatically using the key
-document's `workspace_id`:
+`key_id` alone does not (spec §7, "Workspace binding"). Take that ID from
+caller-trusted configuration, never from the receipt or key document, and
+reject a key document that declares a different workspace. The
+`allowly-receipt-verify` CLI checks that a receipt agrees with the supplied key
+document's `workspace_id`; the caller remains responsible for supplying the key
+document obtained for the trusted configured workspace:
 
 ```python
 verify_receipt(receipt, keys, expected_workspace_id="ws_01HXA1B2C3D4E5F6G7H8J9K0L1")
