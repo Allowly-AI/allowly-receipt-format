@@ -4,7 +4,7 @@ An open format for **cryptographically signed, third-party-verifiable receipts**
 
 A receipt is a signed record of one decision: *at time T, issuer W decided that agent A may (or may not) perform action X on resource R for user U under authorization C.* Anyone holding the receipt and the issuer's Ed25519 public key can verify it offline, without contacting the issuer.
 
-Action receipts can include `policy_eval`, a small record of which immutable authorization condition routed a decision to `deny`, `confirm`, or `escalate`. Receipt format 2.1.0 signs the algorithm and key identifier so the trust-anchor selector cannot be swapped after issue.
+Action receipts can include `policy_eval`, a small record of which immutable authorization condition routed a decision to `deny`, `confirm`, or `escalate`. The current wire format is `"3"` (wire versions are plain integer strings); it signs the algorithm and key identifier so the trust-anchor selector cannot be swapped after issue.
 
 Specification Appendix A also defines an optional `hmac-v1` convention for
 customer-recomputable pseudonymous values inside `context`; it does not change
@@ -35,16 +35,23 @@ pip install allowly-receipt-format
 allowly-receipt-verify path/to/receipt.json path/to/keys.json
 ```
 
+Obtain `keys.json` for the workspace ID in caller-trusted configuration; never
+choose the trust anchor from the receipt's own `workspace_id` claim.
+
 ```python
+import os
+
 from allowly_receipt_format import verify_receipt, load_keys_from_json
 
-# Always pass expected_workspace_id: key ids alone do not bind a receipt
-# to a workspace, so verifying without it accepts receipts signed for a
-# different (or attacker-supplied) key document.
+# Load this from caller-trusted configuration, never from the receipt or key
+# document. Key ids alone do not bind a receipt to a workspace.
+configured_workspace_id = os.environ["ALLOWLY_WORKSPACE_ID"]
+if keys_doc.get("workspace_id") != configured_workspace_id:
+    raise ValueError("key document workspace does not match configuration")
 verify_receipt(
     receipt,
     load_keys_from_json(keys_doc),
-    expected_workspace_id=keys_doc["workspace_id"],
+    expected_workspace_id=configured_workspace_id,
 )  # raises VerificationError if invalid
 ```
 
@@ -58,11 +65,16 @@ npm install @allowly/verifier
 import { verifyReceipt, loadKeysFromJson, VerificationError } from "@allowly/verifier";
 
 // verifyReceipt resolves on success and throws VerificationError on failure —
-// it does not return a boolean. Always pass expectedWorkspaceId: key ids alone
-// do not bind a receipt to a workspace.
+// it does not return a boolean. Load the workspace id from caller-trusted
+// configuration, never from the receipt or key document.
+const configuredWorkspaceId = process.env.ALLOWLY_WORKSPACE_ID;
+if (!configuredWorkspaceId) throw new Error("ALLOWLY_WORKSPACE_ID is required");
+if (keysDoc.workspace_id !== configuredWorkspaceId) {
+  throw new Error("key document workspace does not match configuration");
+}
 try {
   await verifyReceipt(receipt, loadKeysFromJson(keysDoc), {
-    expectedWorkspaceId: keysDoc.workspace_id,
+    expectedWorkspaceId: configuredWorkspaceId,
   });
   // valid
 } catch (e) {

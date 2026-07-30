@@ -22,7 +22,7 @@ Copyright 2026 Allowly and contributors.
 
 When referring to the specification, please use:
 
-  "Allowly Receipt Format Specification, v2.0.0,
+  "Allowly Receipt Format Specification, wire format 3,
    https://github.com/Allowly-AI/allowly-receipt-format"
 
 Reference implementations (files under verifiers/) are licensed under Apache 2.0.
