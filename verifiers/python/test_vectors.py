@@ -13,6 +13,7 @@ from allowly_receipt_format import (
     canonicalize,
     checkpoint_merkle_root,
     load_keys_from_json,
+    public_key_fingerprint,
     verify_checkpoint,
     verify_receipt,
 )
@@ -67,6 +68,7 @@ def main(vectors_path: str) -> int:
         vectors = json.load(f)
 
     keys = load_keys_from_json(vectors["public_keys"])
+    assert vectors["public_keys"]["keys"][0]["public_key_fingerprint"] == public_key_fingerprint(keys[0])
     # All vectors use issued_at in 2026; pin "now" so timestamp checks pass deterministically.
     now = datetime(2026, 12, 31, tzinfo=timezone.utc)
 

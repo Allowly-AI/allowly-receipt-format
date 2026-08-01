@@ -10,6 +10,7 @@ import io
 import json
 import sys
 from contextlib import redirect_stderr, redirect_stdout
+from dataclasses import replace
 from datetime import datetime, timezone
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -22,6 +23,7 @@ from allowly_receipt_format import (
     VerificationError,
     load_keys_from_json,
     main as verifier_main,
+    public_key_fingerprint,
     verify_receipt,
 )
 
@@ -55,13 +57,27 @@ def main(vectors_path: str) -> int:
         for vector in vectors["should_verify"]
         if vector["name"] == "action_minimal_allow"
     ))
+    rotated_receipt = copy.deepcopy(next(
+        vector["receipt"]
+        for vector in vectors["should_verify"]
+        if vector["name"] == "action_rotated_key"
+    ))
     keys_doc = copy.deepcopy(vectors["public_keys"])
     keys = load_keys_from_json(keys_doc)
     now = datetime(2026, 12, 31, tzinfo=timezone.utc)
 
+    try:
+        verify_receipt(receipt, keys, now=datetime(2026, 12, 31))
+    except SchemaError as exc:
+        assert "now must be an aware datetime" in str(exc)
+    else:
+        raise AssertionError("naive verification clock was accepted")
+
     assert keys[0].active_from.year == 1
+    assert keys_doc["keys"][0]["public_key_fingerprint"] == public_key_fingerprint(keys[0])
 
     _expect(UnknownKeyError, receipt, [], now=now)
+    _expect(SchemaError, receipt, [replace(keys[0], alg="RSA"), *keys[1:]], now=now)
 
     retired_keys_doc = copy.deepcopy(keys_doc)
     key_id = receipt["key_id"]
@@ -79,6 +95,18 @@ def main(vectors_path: str) -> int:
     malformed["extra"] = "not in receipt schema"
     _expect(SchemaError, malformed, keys, now=now)
 
+    try:
+        verify_receipt(
+            receipt,
+            keys,
+            now=now,
+            trusted_key_fingerprints={"sha256:" + "0" * 64},
+        )
+    except VerificationError as exc:
+        assert "fingerprint is not trusted" in str(exc)
+    else:
+        raise AssertionError("untrusted public-key fingerprint was accepted")
+
     for exc_type in (
         SchemaError,
         UnknownKeyError,
@@ -92,11 +120,20 @@ def main(vectors_path: str) -> int:
     # (legacy v1.0 receipts still carry an unsigned key selector).
     for bad_doc in (
         {},                                # missing 'keys'
-        {"keys": "not-a-list"},
-        {"keys": [{}]},                    # entry missing fields
-        {"keys": keys_doc["keys"] * 2},    # duplicate key_id + public key
+        {"workspace_id": "", "keys": []},
+        {"workspace_id": "ws", "keys": "not-a-list"},
+        {"workspace_id": "ws", "keys": [{}]},
+        {**keys_doc, "keys": keys_doc["keys"] * 2},
     ):
         _expect_bad_keys(bad_doc)  # type: ignore[arg-type]
+
+    for field, value in (
+        ("alg", "RSA"),
+        ("public_key_fingerprint", "sha256:" + "0" * 64),
+    ):
+        bad_doc = copy.deepcopy(keys_doc)
+        bad_doc["keys"][0][field] = value
+        _expect_bad_keys(bad_doc)
 
     for timestamp in (
         "2026-01-01T00:00:00Z",
@@ -125,9 +162,71 @@ def main(vectors_path: str) -> int:
         export_path.write_text("[" * 2000 + "]" * 2000 + "\n{}\n", encoding="utf-8")
         stdout, stderr = io.StringIO(), io.StringIO()
         with redirect_stdout(stdout), redirect_stderr(stderr):
-            rc = verifier_main(["--export", str(export_path), str(keys_path)])
+            rc = verifier_main([
+                "--export", str(export_path),
+                "--workspace-id", keys_doc["workspace_id"],
+                "--trusted-key-fingerprint", public_key_fingerprint(keys[0]),
+                str(keys_path),
+            ])
         assert rc == 1
         assert "(2 checked)" in stdout.getvalue()
+
+        duplicate_path = tmp_path / "duplicate.jsonl"
+        encoded = json.dumps(receipt, separators=(",", ":"))
+        duplicate_path.write_text(encoded[:-1] + ',"decision":"allow"}\n', encoding="utf-8")
+        stdout, stderr = io.StringIO(), io.StringIO()
+        with redirect_stdout(stdout), redirect_stderr(stderr):
+            rc = verifier_main([
+                "--export", str(duplicate_path),
+                "--workspace-id", keys_doc["workspace_id"],
+                "--trusted-key-fingerprint", public_key_fingerprint(keys[0]),
+                str(keys_path),
+            ])
+        assert rc == 1
+        assert "duplicate JSON object name" in stderr.getvalue()
+
+        receipt_path = tmp_path / "receipt.json"
+        duplicate_keys_path = tmp_path / "duplicate-keys.json"
+        receipt_path.write_text(json.dumps(receipt), encoding="utf-8")
+        duplicate_keys_path.write_text(
+            '{"workspace_id":"ws_test","workspace_id":"ws_test","keys":[]}',
+            encoding="utf-8",
+        )
+        stdout, stderr = io.StringIO(), io.StringIO()
+        with redirect_stdout(stdout), redirect_stderr(stderr):
+            rc = verifier_main([
+                "--workspace-id", keys_doc["workspace_id"],
+                "--trusted-key-fingerprint", public_key_fingerprint(keys[0]),
+                str(receipt_path), str(duplicate_keys_path),
+            ])
+        assert rc == 1
+        assert "duplicate JSON object name" in stderr.getvalue()
+
+        rotation_path = tmp_path / "rotation.jsonl"
+        rotation_path.write_text(
+            "\n".join(json.dumps(item) for item in (receipt, rotated_receipt)) + "\n",
+            encoding="utf-8",
+        )
+        stdout, stderr = io.StringIO(), io.StringIO()
+        with redirect_stdout(stdout), redirect_stderr(stderr):
+            rc = verifier_main([
+                "--export", str(rotation_path),
+                "--workspace-id", keys_doc["workspace_id"],
+                "--trusted-key-fingerprint", public_key_fingerprint(keys[0]),
+                str(keys_path),
+            ])
+        assert rc == 1
+        assert "fingerprint is not trusted" in stderr.getvalue()
+
+        with redirect_stdout(io.StringIO()), redirect_stderr(io.StringIO()):
+            rc = verifier_main([
+                "--export", str(rotation_path),
+                "--workspace-id", keys_doc["workspace_id"],
+                "--trusted-key-fingerprint", public_key_fingerprint(keys[0]),
+                "--trusted-key-fingerprint", public_key_fingerprint(keys[1]),
+                str(keys_path),
+            ])
+        assert rc == 0
 
         checkpoint_case = vectors["checkpoint_cases"][0]
         export_path.write_text(
@@ -138,27 +237,35 @@ def main(vectors_path: str) -> int:
         evidence = {
             "version": "receipt_checkpoint_evidence.v1",
             "claim": "issuer-signed set commitment only",
-            "checkpoints": [
-                {
-                    "checkpoint": checkpoint_case["checkpoint"],
-                    "member_receipt_ids": [
-                        receipt["receipt_id"] for receipt in checkpoint_case["receipts"]
-                    ],
-                }
-            ],
+            "checkpoints": [{
+                "checkpoint": checkpoint_case["checkpoint"],
+                "member_receipt_ids": [
+                    receipt["receipt_id"] for receipt in checkpoint_case["receipts"]
+                ],
+            }],
         }
         evidence_path.write_text(json.dumps(evidence), encoding="utf-8")
         with redirect_stdout(io.StringIO()), redirect_stderr(io.StringIO()):
-            rc = verifier_main(
-                [
-                    "--export",
-                    str(export_path),
-                    "--checkpoint-evidence",
-                    str(evidence_path),
-                    str(keys_path),
-                ]
-            )
+            rc = verifier_main([
+                "--export", str(export_path),
+                "--checkpoint-evidence", str(evidence_path),
+                "--workspace-id", keys_doc["workspace_id"],
+                "--trusted-key-fingerprint", public_key_fingerprint(keys[0]),
+                str(keys_path),
+            ])
         assert rc == 0
+
+        stderr = io.StringIO()
+        with redirect_stdout(io.StringIO()), redirect_stderr(stderr):
+            rc = verifier_main([
+                "--export", str(export_path),
+                "--checkpoint-evidence", str(evidence_path),
+                "--workspace-id", keys_doc["workspace_id"],
+                "--trusted-key-fingerprint", public_key_fingerprint(keys[1]),
+                str(keys_path),
+            ])
+        assert rc == 1
+        assert "fingerprint is not trusted" in stderr.getvalue()
 
         empty_checkpoint = next(
             item["receipt"]
@@ -173,10 +280,10 @@ def main(vectors_path: str) -> int:
         evidence_path.write_text(json.dumps(evidence), encoding="utf-8")
         with redirect_stdout(io.StringIO()), redirect_stderr(io.StringIO()):
             rc = verifier_main([
-                "--export",
-                str(export_path),
-                "--checkpoint-evidence",
-                str(evidence_path),
+                "--export", str(export_path),
+                "--checkpoint-evidence", str(evidence_path),
+                "--workspace-id", keys_doc["workspace_id"],
+                "--trusted-key-fingerprint", public_key_fingerprint(keys[0]),
                 str(keys_path),
             ])
         assert rc == 0
@@ -189,25 +296,19 @@ def main(vectors_path: str) -> int:
             "checkpoint": checkpoint_case["checkpoint"],
             "member_receipt_ids": [
                 receipt["receipt_id"] for receipt in checkpoint_case["receipts"]
-            ],
+            ][:-1],
         }]
 
-        evidence["checkpoints"][0]["member_receipt_ids"] = evidence["checkpoints"][0][
-            "member_receipt_ids"
-        ][:-1]
         evidence_path.write_text(json.dumps(evidence), encoding="utf-8")
         with redirect_stdout(io.StringIO()), redirect_stderr(io.StringIO()):
-            rc = verifier_main(
-                [
-                    "--export",
-                    str(export_path),
-                    "--checkpoint-evidence",
-                    str(evidence_path),
-                    str(keys_path),
-                ]
-            )
+            rc = verifier_main([
+                "--export", str(export_path),
+                "--checkpoint-evidence", str(evidence_path),
+                "--workspace-id", keys_doc["workspace_id"],
+                "--trusted-key-fingerprint", public_key_fingerprint(keys[0]),
+                str(keys_path),
+            ])
         assert rc == 1
-
     print("Exception taxonomy passes.")
     return 0
 

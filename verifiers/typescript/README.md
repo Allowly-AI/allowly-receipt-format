@@ -20,14 +20,19 @@ import { verifyReceipt, VerificationError, loadKeysFromJson } from "@allowly/ver
 const receipt = JSON.parse(receiptJson);
 const keysDoc = JSON.parse(keysJson);
 const configuredWorkspaceId = process.env.ALLOWLY_WORKSPACE_ID;
+const configuredKeyFingerprint = process.env.ALLOWLY_TRUSTED_KEY_FINGERPRINT;
 if (!configuredWorkspaceId) throw new Error("ALLOWLY_WORKSPACE_ID is required");
+if (!configuredKeyFingerprint) throw new Error("ALLOWLY_TRUSTED_KEY_FINGERPRINT is required");
 if (keysDoc.workspace_id !== configuredWorkspaceId) {
   throw new Error("key document workspace does not match configuration");
 }
 const keys = loadKeysFromJson(keysDoc);
 
 try {
-  await verifyReceipt(receipt, keys, { expectedWorkspaceId: configuredWorkspaceId });
+  await verifyReceipt(receipt, keys, {
+    expectedWorkspaceId: configuredWorkspaceId,
+    trustedKeyFingerprints: new Set([configuredKeyFingerprint]),
+  });
   console.log("valid");
 } catch (e) {
   if (e instanceof VerificationError) {
@@ -63,6 +68,10 @@ Verifies a receipt. Resolves on success, throws `VerificationError` on any failu
 - `publicKeys` — array of `PublicKey` objects. Get these via `loadKeysFromJson`.
 - `opts.now` — optional `Date` override for time checks. Defaults to `new Date()`.
 - `opts.expectedWorkspaceId` — optional. If set, the receipt's `workspace_id` must equal it. Pass a caller-trusted configured workspace ID, never one copied from the receipt or key document (spec §7, "Workspace binding"); a `key_id` alone does not bind a receipt to a workspace.
+- `opts.trustedKeyFingerprints` — optional `ReadonlySet<string>`. If set, the
+  selected receipt key must match a caller-trusted `sha256:<64 lowercase hex>`
+  fingerprint. Include every trusted rotation key that may have signed the
+  selected receipts.
 
 ### `canonicalize(payload)`
 
@@ -72,13 +81,24 @@ Produces the canonical JSON byte sequence per spec §4. Exposed for implementers
 
 Verifies the checkpoint and member signatures, exact UTC-day period, count,
 Merkle root, and optional prior checkpoint linkage. `opts.expectedWorkspaceId`
-is required and must come from caller-trusted configuration. Success proves the
+is required and must come from caller-trusted configuration. Pass caller-trusted
+rotation keys through `opts.trustedKeyFingerprints`; the pins are applied to the
+checkpoint, every member, and the optional prior checkpoint. Success proves the
 supplied set matches the signed commitment; without external anchoring it does
 not prove issuer-registry or real-world completeness.
 
 ### `loadKeysFromJson(doc)`
 
-Parses the `/v1/workspaces/{id}/keys` response into a `PublicKey[]`.
+Parses the `/v1/workspaces/{id}/keys` response into a `PublicKey[]`. It requires
+a non-empty `workspace_id`, requires every key's `alg` to equal `Ed25519`, and
+validates any advertised `public_key_fingerprint` against the decoded key.
+Bundled fingerprint values are not caller-trusted merely because they accompany
+the receipts.
+
+### `publicKeyFingerprint(key)`
+
+Returns the canonical `sha256:<64 lowercase hex>` fingerprint over the key's
+decoded raw 32-byte Ed25519 public key.
 
 ### `matchesRef(key, fieldName, value, ref)`
 
@@ -107,7 +127,7 @@ receipt text is untrusted (spec §4.2).
 
 ## What verification proves
 
-A valid receipt attests that the issuer made the recorded decision at the recorded time for the recorded subject/action. It does **not** prove that the action actually happened, that the user's authorization was informed, or that the `user_id` corresponds to any real-world person. See spec §7.1.
+A valid receipt proves that the selected private key signed the exact recorded decision and timestamp for the recorded subject/action. It does **not** independently prove when signing happened, that the action actually happened, that the user's authorization was informed, or that the `user_id` corresponds to any real-world person. See spec §7.1.
 
 ## License
 

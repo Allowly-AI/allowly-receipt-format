@@ -2,7 +2,7 @@
 
 An open format for **cryptographically signed, third-party-verifiable receipts** of AI agent authorization decisions.
 
-A receipt is a signed record of one decision: *at time T, issuer W decided that agent A may (or may not) perform action X on resource R for user U under authorization C.* Anyone holding the receipt and the issuer's Ed25519 public key can verify it offline, without contacting the issuer.
+A receipt is a signed record of one decision: *at time T, issuer W decided that agent A may (or may not) perform action X on resource R for user U under authorization C.* Anyone holding the receipt and an authenticated copy of the issuer's Ed25519 public key or fingerprint can verify it offline, without contacting the issuer.
 
 Action receipts can include `policy_eval`, a small record of which immutable authorization condition routed a decision to `deny`, `confirm`, or `escalate`. Daily `receipt.checkpoint` events commit to the issuer's registered signed receipt set for one UTC day. The current wire format is `"4"` (wire versions are plain integer strings).
 
@@ -32,11 +32,18 @@ Verify a receipt in Python:
 
 ```bash
 pip install allowly-receipt-format
-allowly-receipt-verify path/to/receipt.json path/to/keys.json
+allowly-receipt-verify \
+  --workspace-id "$ALLOWLY_WORKSPACE_ID" \
+  --trusted-key-fingerprint "$ALLOWLY_TRUSTED_KEY_FINGERPRINT" \
+  path/to/receipt.json path/to/keys.json
 ```
 
 Obtain `keys.json` for the workspace ID in caller-trusted configuration; never
-choose the trust anchor from the receipt's own `workspace_id` claim.
+choose the trust anchor from the receipt's own `workspace_id` claim. Obtain the
+`sha256:<64 lowercase hex>` fingerprint of each trusted Ed25519 public key over
+an authenticated channel; repeat `--trusted-key-fingerprint` after rotations.
+A key document or fingerprint bundled with receipts is not trusted merely
+because it is in the same archive.
 
 ```python
 import os
@@ -52,6 +59,7 @@ verify_receipt(
     receipt,
     load_keys_from_json(keys_doc),
     expected_workspace_id=configured_workspace_id,
+    trusted_key_fingerprints={os.environ["ALLOWLY_TRUSTED_KEY_FINGERPRINT"]},
 )  # raises VerificationError if invalid
 ```
 
@@ -68,13 +76,18 @@ import { verifyReceipt, loadKeysFromJson, VerificationError } from "@allowly/ver
 // it does not return a boolean. Load the workspace id from caller-trusted
 // configuration, never from the receipt or key document.
 const configuredWorkspaceId = process.env.ALLOWLY_WORKSPACE_ID;
+const configuredKeyFingerprint = process.env.ALLOWLY_TRUSTED_KEY_FINGERPRINT;
 if (!configuredWorkspaceId) throw new Error("ALLOWLY_WORKSPACE_ID is required");
+if (!configuredKeyFingerprint) {
+  throw new Error("ALLOWLY_TRUSTED_KEY_FINGERPRINT is required");
+}
 if (keysDoc.workspace_id !== configuredWorkspaceId) {
   throw new Error("key document workspace does not match configuration");
 }
 try {
   await verifyReceipt(receipt, loadKeysFromJson(keysDoc), {
     expectedWorkspaceId: configuredWorkspaceId,
+    trustedKeyFingerprints: new Set([configuredKeyFingerprint]),
   });
   // valid
 } catch (e) {
