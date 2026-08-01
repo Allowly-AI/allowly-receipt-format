@@ -9,6 +9,7 @@ from .verifier import (
     load_keys_from_json,
     main,
     matches_ref,
+    public_key_fingerprint,
     verify_receipt,
 )
 
@@ -23,5 +24,6 @@ __all__ = [
     "load_keys_from_json",
     "main",
     "matches_ref",
+    "public_key_fingerprint",
     "verify_receipt",
 ]

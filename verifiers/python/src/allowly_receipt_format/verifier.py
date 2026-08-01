@@ -13,7 +13,8 @@ Usage (library):
         print(f"invalid: {e}")
 
 Usage (CLI):
-    python verifier.py path/to/receipt.json path/to/keys.json
+    allowly-receipt-verify --workspace-id WORKSPACE \
+        --trusted-key-fingerprint sha256:HEX receipt.json keys.json
 
 Spec: https://github.com/Allowly-AI/allowly-receipt-format
 License: Apache 2.0
@@ -65,6 +66,7 @@ _RFC3339_RE = re.compile(
 _SURROGATE_RE = re.compile("[\ud800-\udfff]")
 _HMAC_REF_RE = re.compile(r"^hmac-v1:[0-9a-f]{64}$")
 _HMAC_REF_FIELDS = frozenset({"project", "record", "actor", "full_tuple"})
+_PUBLIC_KEY_FINGERPRINT_RE = re.compile(r"^sha256:[0-9a-f]{64}$")
 # Depth/node limits so hostile receipts fail with a VerificationError instead
 # of exhausting the recursion stack or memory during canonicalization.
 MAX_PAYLOAD_DEPTH = 32
@@ -80,6 +82,7 @@ __all__ = [
     "load_keys_from_json",
     "main",
     "matches_ref",
+    "public_key_fingerprint",
     "verify_receipt",
 ]
 
@@ -111,6 +114,11 @@ class PublicKey:
     public_key_bytes: bytes  # 32 raw bytes
     active_from: datetime
     active_until: datetime | None  # None = still active
+
+
+def public_key_fingerprint(key: PublicKey) -> str:
+    """Return the canonical SHA-256 fingerprint of an Ed25519 public key."""
+    return "sha256:" + hashlib.sha256(key.public_key_bytes).hexdigest()
 
 
 def matches_ref(key: bytes, field_name: str, value: str, ref: str) -> bool:
@@ -288,6 +296,7 @@ def verify_receipt(
     *,
     now: datetime | None = None,
     expected_workspace_id: str | None = None,
+    trusted_key_fingerprints: set[str] | frozenset[str] | None = None,
 ) -> None:
     """
     Verify a receipt. Raises VerificationError on any failure.
@@ -300,10 +309,15 @@ def verify_receipt(
             equal it. Key ids alone do not bind a receipt to a workspace, so
             pass the workspace the keys were published for to prevent a receipt
             from verifying against another workspace's key document.
+        trusted_key_fingerprints: if given, the selected public key's canonical
+            ``sha256:<hex>`` fingerprint MUST be present in this caller-trusted set.
     """
     if not isinstance(receipt, dict):
         raise SchemaError("receipt must be an object")
-    now = now or datetime.now(timezone.utc)
+    if now is None:
+        now = datetime.now(timezone.utc)
+    elif type(now) is not datetime or now.utcoffset() is None:
+        raise SchemaError("now must be an aware datetime")
 
     # Step 1: version check
     if receipt.get("schema_version") != SPEC_VERSION:
@@ -398,6 +412,12 @@ def verify_receipt(
 
     # Step 7: signature verification
     key = _find_key(public_keys, receipt["key_id"], issued_at)
+    fingerprint = public_key_fingerprint(key)
+    if (
+        trusted_key_fingerprints is not None
+        and fingerprint not in trusted_key_fingerprints
+    ):
+        raise VerificationError(f"public key fingerprint is not trusted: {fingerprint}")
     sig_bytes = _b64url_decode(receipt["signature"])  # length already validated in schema check
 
     try:
@@ -508,13 +528,46 @@ def _find_key(
     keys: list[PublicKey], key_id: str, issued_at: datetime
 ) -> PublicKey:
     for k in keys:
-        if k.key_id != key_id:
+        try:
+            candidate_id = k.key_id
+        except (AttributeError, TypeError):
+            raise SchemaError("public key entries must have PublicKey fields") from None
+        if candidate_id != key_id:
             continue
-        if issued_at < k.active_from:
+        try:
+            alg = k.alg
+            raw_public_key = k.public_key_bytes
+            active_from = k.active_from
+            active_until = k.active_until
+        except (AttributeError, TypeError):
+            raise SchemaError("selected public key has invalid fields") from None
+        if not isinstance(raw_public_key, (bytes, bytearray, memoryview)):
+            raise SchemaError("selected public key bytes must be bytes-like")
+        public_key_bytes = bytes(raw_public_key)
+        if alg != "Ed25519":
+            raise SchemaError(f"unsupported public key alg: {alg!r}")
+        if len(public_key_bytes) != 32:
+            raise SchemaError("selected Ed25519 public key must contain 32 raw bytes")
+        if type(active_from) is not datetime or active_from.utcoffset() is None:
+            raise SchemaError("selected public key active_from must be an aware datetime")
+        if active_until is not None and (
+            type(active_until) is not datetime or active_until.utcoffset() is None
+        ):
+            raise SchemaError("selected public key active_until must be an aware datetime or None")
+        if active_until is not None and active_until <= active_from:
+            raise SchemaError("selected public key active window is empty")
+        key = PublicKey(
+            key_id=candidate_id,
+            alg=alg,
+            public_key_bytes=public_key_bytes,
+            active_from=active_from,
+            active_until=active_until,
+        )
+        if issued_at < key.active_from:
             raise KeyOutsideActiveWindowError(f"key {key_id!r} not yet active at issued_at")
-        if k.active_until is not None and issued_at >= k.active_until:
+        if key.active_until is not None and issued_at >= key.active_until:
             raise KeyOutsideActiveWindowError(f"key {key_id!r} retired before issued_at")
-        return k
+        return key
     raise UnknownKeyError(f"no public key found for key_id={key_id!r}")
 
 
@@ -526,8 +579,15 @@ def load_keys_from_json(doc: dict[str, Any]) -> list[PublicKey]:
     lookup is unambiguous and one public key cannot carry conflicting active
     windows (spec §10.1).
     """
-    if not isinstance(doc, dict) or not isinstance(doc.get("keys"), list):
-        raise SchemaError("keys document must be an object with a 'keys' array")
+    if (
+        not isinstance(doc, dict)
+        or not isinstance(doc.get("workspace_id"), str)
+        or not doc["workspace_id"]
+        or not isinstance(doc.get("keys"), list)
+    ):
+        raise SchemaError(
+            "keys document must be an object with a non-empty 'workspace_id' and a 'keys' array"
+        )
     out = []
     seen_ids: set[str] = set()
     seen_pubs: set[str] = set()
@@ -537,6 +597,8 @@ def load_keys_from_json(doc: dict[str, Any]) -> list[PublicKey]:
         for field in ("key_id", "alg", "public_key", "active_from"):
             if not isinstance(k.get(field), str):
                 raise SchemaError(f"keys[{i}].{field} must be a string")
+        if k["alg"] != "Ed25519":
+            raise SchemaError(f"keys[{i}].alg must be 'Ed25519'")
         if "active_until" not in k or not (
             k["active_until"] is None or isinstance(k["active_until"], str)
         ):
@@ -553,7 +615,7 @@ def load_keys_from_json(doc: dict[str, Any]) -> list[PublicKey]:
             raise SchemaError(f"keys[{i}].public_key is not valid base64url") from None
         if len(pub) != 32:
             raise SchemaError(f"keys[{i}].public_key must decode to 32 bytes, got {len(pub)}")
-        out.append(PublicKey(
+        key = PublicKey(
             key_id=k["key_id"],
             alg=k["alg"],
             public_key_bytes=pub,
@@ -563,8 +625,30 @@ def load_keys_from_json(doc: dict[str, Any]) -> list[PublicKey]:
                 if k["active_until"] is None
                 else _parse_rfc3339(k["active_until"])
             ),
-        ))
+        )
+        if (
+            "public_key_fingerprint" in k
+            and k["public_key_fingerprint"] != public_key_fingerprint(key)
+        ):
+            raise SchemaError(
+                f"keys[{i}].public_key_fingerprint does not match public_key"
+            )
+        out.append(key)
     return out
+
+
+def _reject_duplicate_json_names(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+    obj: dict[str, Any] = {}
+    for name, value in pairs:
+        if name in obj:
+            raise SchemaError(f"duplicate JSON object name: {name!r}")
+        obj[name] = value
+    return obj
+
+
+def _load_json_file(path: str) -> Any:
+    with open(path, encoding="utf-8") as f:
+        return json.load(f, object_pairs_hook=_reject_duplicate_json_names)
 
 
 def _open_maybe_gzip(path: str):
@@ -587,7 +671,8 @@ def _extract_receipt(obj: Any) -> dict[str, Any]:
 def _verify_export(
     path: str,
     keys: list[PublicKey],
-    expected_workspace_id: str | None,
+    expected_workspace_id: str,
+    trusted_key_fingerprints: set[str],
     authorization_id: str | None,
 ) -> int:
     import sys
@@ -601,8 +686,11 @@ def _verify_export(
             if not line:
                 continue
             try:
-                receipt = _extract_receipt(json.loads(line))
-            except (json.JSONDecodeError, RecursionError) as e:
+                receipt = _extract_receipt(json.loads(
+                    line,
+                    object_pairs_hook=_reject_duplicate_json_names,
+                ))
+            except (json.JSONDecodeError, RecursionError, SchemaError) as e:
                 total += 1
                 failed += 1
                 print(f"INVALID  line {lineno}: not JSON ({e})", file=sys.stderr)
@@ -618,7 +706,12 @@ def _verify_export(
             total += 1
             rid = receipt.get("receipt_id", f"line {lineno}")
             try:
-                verify_receipt(receipt, keys, expected_workspace_id=expected_workspace_id)
+                verify_receipt(
+                    receipt,
+                    keys,
+                    expected_workspace_id=expected_workspace_id,
+                    trusted_key_fingerprints=trusted_key_fingerprints,
+                )
                 label = receipt.get("action") or receipt.get("event") or "?"
                 print(f"OK  {rid}  {label}  {receipt.get('decision')}")
                 ok += 1
@@ -694,6 +787,18 @@ def main(argv: list[str] | None = None) -> int:
         help="single mode: <receipt.json> <keys.json>; with --export: <keys.json>",
     )
     p.add_argument(
+        "--workspace-id",
+        required=True,
+        help="caller-trusted workspace ID; must match both keys.json and every receipt",
+    )
+    p.add_argument(
+        "--trusted-key-fingerprint",
+        action="append",
+        required=True,
+        metavar="sha256:HEX",
+        help="caller-trusted SHA-256 Ed25519 public-key fingerprint; repeat for rotations",
+    )
+    p.add_argument(
         "--export",
         metavar="FILE",
         help="verify a JSONL or .jsonl.gz export in bulk (audit-package chain.jsonl or a receipt export)",
@@ -705,40 +810,52 @@ def main(argv: list[str] | None = None) -> int:
     )
     args = p.parse_args(argv)
 
-    # The keys document is published per workspace; bind receipts to it so a
-    # receipt cannot verify against another workspace's keys that share a key_id.
+    trusted_fingerprints = set(args.trusted_key_fingerprint)
+    if any(not _PUBLIC_KEY_FINGERPRINT_RE.fullmatch(fp) for fp in trusted_fingerprints):
+        p.error("--trusted-key-fingerprint must be sha256: followed by 64 lowercase hex characters")
+
     if args.export:
         if len(args.paths) != 1:
             p.error("with --export, provide exactly one positional argument: the keys JSON file")
-        with open(args.paths[0]) as f:
-            keys_doc = json.load(f)
+    else:
+        if args.authorization_id:
+            p.error("--authorization-id requires --export")
+        if len(args.paths) != 2:
+            p.error("provide <receipt.json> <keys.json>, or use --export <file> <keys.json>")
+
+    try:
+        keys_doc = _load_json_file(args.paths[-1])
         keys = load_keys_from_json(keys_doc)
+        if keys_doc["workspace_id"] != args.workspace_id:
+            raise SchemaError(
+                f"workspace_id mismatch: keys document has {keys_doc['workspace_id']!r}, "
+                f"expected {args.workspace_id!r}"
+            )
+    except (OSError, json.JSONDecodeError, RecursionError, VerificationError) as e:
+        print(f"INVALID  keys document: {e}", file=sys.stderr)
+        return 1
+
+    if args.export:
         return _verify_export(
             args.export,
             keys,
-            keys_doc.get("workspace_id"),
+            args.workspace_id,
+            trusted_fingerprints,
             args.authorization_id,
         )
 
-    if args.authorization_id:
-        p.error("--authorization-id requires --export")
-    if len(args.paths) != 2:
-        p.error("provide <receipt.json> <keys.json>, or use --export <file> <keys.json>")
-
-    receipt_path, keys_path = args.paths
-    with open(receipt_path) as f:
-        receipt = json.load(f)
-    with open(keys_path) as f:
-        keys_doc = json.load(f)
-
-    keys = load_keys_from_json(keys_doc)
-    expected_workspace_id = keys_doc.get("workspace_id")
-
+    receipt_path, _keys_path = args.paths
     try:
-        verify_receipt(receipt, keys, expected_workspace_id=expected_workspace_id)
+        receipt = _load_json_file(receipt_path)
+        verify_receipt(
+            receipt,
+            keys,
+            expected_workspace_id=args.workspace_id,
+            trusted_key_fingerprints=trusted_fingerprints,
+        )
         print(f"OK  receipt_id={receipt['receipt_id']} decision={receipt['decision']}")
         return 0
-    except VerificationError as e:
+    except (OSError, json.JSONDecodeError, RecursionError, VerificationError) as e:
         print(f"INVALID  {e}", file=sys.stderr)
         return 1
 

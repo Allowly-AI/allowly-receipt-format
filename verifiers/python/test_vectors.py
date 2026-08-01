@@ -8,7 +8,13 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-from allowly_receipt_format import canonicalize, verify_receipt, load_keys_from_json, VerificationError
+from allowly_receipt_format import (
+    VerificationError,
+    canonicalize,
+    load_keys_from_json,
+    public_key_fingerprint,
+    verify_receipt,
+)
 
 # Hand-written expected canonical form for the spec §4.3 reference example.
 # Deliberately NOT produced by the reference canonicalizer: if canonicalization
@@ -60,6 +66,7 @@ def main(vectors_path: str) -> int:
         vectors = json.load(f)
 
     keys = load_keys_from_json(vectors["public_keys"])
+    assert vectors["public_keys"]["keys"][0]["public_key_fingerprint"] == public_key_fingerprint(keys[0])
     # All vectors use issued_at in 2026; pin "now" so timestamp checks pass deterministically.
     now = datetime(2026, 12, 31, tzinfo=timezone.utc)
 

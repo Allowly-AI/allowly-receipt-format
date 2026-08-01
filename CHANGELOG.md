@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+- Prepare verifier packages 3.1.0 without changing receipt wire format 3.
+- Require non-empty workspace IDs and Ed25519 algorithms in key documents;
+  validate optional `sha256:<hex>` raw-public-key fingerprints.
+- Require the Python CLI to receive caller-trusted workspace and key
+  fingerprints, reject duplicate raw JSON names, and pin every selected key.
+- Reject TypeScript receipt fields supplied only through a prototype, nested
+  non-JSON objects, accessors, and sparse arrays.
+- Correct active specification text for receipt-ID ordering, canonicalization's
+  relationship to RFC 8785, Google Cloud KMS Ed25519 input, and workspace/key
+  trust binding.
+
 ## v3.0.0 — 2026-07-22
 
 - **Receipt wire format 3.** Renamed the receipt `version` field to
@@ -21,7 +32,7 @@
 ## v2.1.0 — 2026-07-22
 
 - Add `budget.settle` event receipts with the paired `budget_settled` decision
-  for exact post-execution cost reconciliation.
+  for recording client-reported actual-cost reconciliation.
 - Require exact UTC millisecond timestamps for receipts and key active windows,
   with strict `active_until` typing and half-open boundary vectors.
 - Make malformed receipts and export lines fail cleanly, reject hostile event

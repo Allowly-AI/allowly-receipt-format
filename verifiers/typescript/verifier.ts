@@ -21,7 +21,7 @@
  * License: Apache 2.0
  */
 
-import { createHmac, timingSafeEqual, webcrypto } from "node:crypto";
+import { createHash, createHmac, timingSafeEqual, webcrypto } from "node:crypto";
 
 const SPEC_VERSION = "3";
 const ACTION_DECISIONS = new Set(["allow", "deny", "confirm", "escalate"]);
@@ -60,6 +60,10 @@ export interface PublicKey {
   publicKeyBytes: Uint8Array;  // 32 raw bytes
   activeFrom: Date;
   activeUntil: Date | null;
+}
+
+export function publicKeyFingerprint(key: PublicKey): string {
+  return "sha256:" + createHash("sha256").update(key.publicKeyBytes).digest("hex");
 }
 
 interface ReceiptBase {
@@ -125,12 +129,26 @@ const MAX_PAYLOAD_DEPTH = 32;
 const MAX_PAYLOAD_NODES = 50_000;
 
 export function canonicalize(payload: unknown): Uint8Array {
-  validateTree(payload);
-  const s = stringify(payload);
+  const snapshot = snapshotJson(payload, "payload");
+  const s = stringify(snapshot);
   return new TextEncoder().encode(s);
 }
 
-function validateTree(payload: unknown): void {
+function snapshotJson(value: unknown, label: string, checkCanonicalNumbers = true): unknown {
+  // Reject values that structuredClone would silently normalize, then clone
+  // once so validation and serialization cannot observe different values.
+  validateTree(value, checkCanonicalNumbers);
+  let snapshot: unknown;
+  try {
+    snapshot = structuredClone(value);
+  } catch {
+    throw new VerificationError(`${label} must be structured-cloneable JSON data`);
+  }
+  validateTree(snapshot, checkCanonicalNumbers);
+  return snapshot;
+}
+
+function validateTree(payload: unknown, checkCanonicalNumbers = true): void {
   // Iterative pre-walk: bound depth/size, reject lone surrogates and
   // non-integer/unsafe numbers (spec §4.2 rules 1 and 6). Without the
   // well-formedness check, TextEncoder silently replaces an unpaired
@@ -148,13 +166,13 @@ function validateTree(payload: unknown): void {
       throw new VerificationError(`payload exceeds max node count ${MAX_PAYLOAD_NODES}`);
     }
     if (typeof value === "number") {
-      if (!Number.isInteger(value)) {
+      if (checkCanonicalNumbers && !Number.isInteger(value)) {
         throw new VerificationError("receipts must not contain non-integer numbers");
       }
       // Integers outside the I-JSON safe range (±(2^53-1)) lose precision in
       // doubles and would render with an exponent (e.g. "1e+21"), violating
       // §4.2 rule 6. Number.isSafeInteger excludes them.
-      if (!Number.isSafeInteger(value)) {
+      if (checkCanonicalNumbers && !Number.isSafeInteger(value)) {
         throw new VerificationError(
           "integer exceeds the safe range ±(2^53-1); receipts must not carry integers that lose precision in IEEE-754 doubles",
         );
@@ -164,14 +182,35 @@ function validateTree(payload: unknown): void {
         throw new VerificationError("string contains an unpaired Unicode surrogate");
       }
     } else if (Array.isArray(value)) {
-      for (const item of value) stack.push([item, depth + 1]);
+      const keys = Object.keys(value);
+      if (keys.length !== value.length || keys.some((key, index) => key !== String(index))) {
+        throw new VerificationError("payload arrays must be dense JSON arrays without extra properties");
+      }
+      const descriptors = Object.getOwnPropertyDescriptors(value);
+      for (const key of keys) {
+        const descriptor = descriptors[key];
+        if (!("value" in descriptor)) {
+          throw new VerificationError("payload must not contain accessor properties");
+        }
+        stack.push([descriptor.value, depth + 1]);
+      }
     } else if (value !== null && typeof value === "object") {
-      for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+      const prototype = Object.getPrototypeOf(value);
+      if (prototype !== Object.prototype && prototype !== null) {
+        throw new VerificationError("payload objects must be plain JSON objects");
+      }
+      for (const [k, descriptor] of Object.entries(Object.getOwnPropertyDescriptors(value))) {
+        if (!descriptor.enumerable) continue;
         if (!k.isWellFormed()) {
           throw new VerificationError("string contains an unpaired Unicode surrogate");
         }
-        stack.push([v, depth + 1]);
+        if (!("value" in descriptor)) {
+          throw new VerificationError("payload must not contain accessor properties");
+        }
+        stack.push([descriptor.value, depth + 1]);
       }
+    } else if (value !== null && !["boolean", "number", "string"].includes(typeof value)) {
+      throw new VerificationError(`unsupported type in payload: ${typeof value}`);
     }
   }
 }
@@ -224,17 +263,40 @@ function encodeString(s: string): string {
 export async function verifyReceipt(
   receipt: Record<string, unknown>,
   publicKeys: PublicKey[],
-  opts: { now?: Date; expectedWorkspaceId?: string } = {},
+  opts: {
+    now?: Date;
+    expectedWorkspaceId?: string;
+    trustedKeyFingerprints?: ReadonlySet<string>;
+  } = {},
 ): Promise<void> {
   if (typeof receipt !== "object" || receipt === null || Array.isArray(receipt)) {
     throw new VerificationError("receipt must be an object");
   }
+  const ownReceipt = snapshotJson(receipt, "receipt", false) as Record<string, unknown>;
+  if (!Array.isArray(publicKeys)) {
+    throw new VerificationError("publicKeys must be an array");
+  }
+  let keySnapshots: PublicKey[];
+  try {
+    keySnapshots = structuredClone(publicKeys);
+  } catch {
+    throw new VerificationError("publicKeys must be structured-cloneable data");
+  }
   const now = opts.now ?? new Date();
+  let nowMs: number;
+  try {
+    nowMs = Date.prototype.getTime.call(now);
+  } catch {
+    throw new VerificationError("now must be a valid Date");
+  }
+  if (!Number.isFinite(nowMs)) {
+    throw new VerificationError("now must be a valid Date");
+  }
 
   // Step 1: version check
-  if (receipt.schema_version !== SPEC_VERSION) {
+  if (ownReceipt.schema_version !== SPEC_VERSION) {
     throw new VerificationError(
-      `unsupported schema_version: ${JSON.stringify(receipt.schema_version)} (want "${SPEC_VERSION}")`,
+      `unsupported schema_version: ${JSON.stringify(ownReceipt.schema_version)} (want "${SPEC_VERSION}")`,
     );
   }
 
@@ -242,21 +304,21 @@ export async function verifyReceipt(
   // workspace the keys were published for, require the receipt to match it.
   if (
     opts.expectedWorkspaceId !== undefined &&
-    receipt.workspace_id !== opts.expectedWorkspaceId
+    ownReceipt.workspace_id !== opts.expectedWorkspaceId
   ) {
     throw new VerificationError(
-      `workspace_id mismatch: receipt has ${JSON.stringify(receipt.workspace_id)}, ` +
+      `workspace_id mismatch: receipt has ${JSON.stringify(ownReceipt.workspace_id)}, ` +
         `expected ${JSON.stringify(opts.expectedWorkspaceId)}`,
     );
   }
 
   // Step 2: schema check (includes signature shape — rejects placeholders)
-  checkSchema(receipt);
-  const r = receipt as unknown as Receipt;
+  checkSchema(ownReceipt);
+  const r = ownReceipt as unknown as Receipt;
 
   // Step 3: receipt kind and pairing
-  const hasAction = "action" in receipt;
-  const hasEvent = "event" in receipt;
+  const hasAction = Object.hasOwn(ownReceipt, "action");
+  const hasEvent = Object.hasOwn(ownReceipt, "event");
 
   if (hasAction && hasEvent) {
     throw new VerificationError(
@@ -270,7 +332,7 @@ export async function verifyReceipt(
   }
 
   if (hasEvent) {
-    const event = (receipt as Record<string, unknown>).event;
+    const event = ownReceipt.event;
     if (typeof event !== "string") {
       throw new VerificationError("event must be a string");
     }
@@ -296,11 +358,11 @@ export async function verifyReceipt(
         `authorization lifecycle receipt with event=${JSON.stringify(event)} must have null resource`,
       );
     }
-    if ("policy_eval" in receipt) {
+    if (Object.hasOwn(ownReceipt, "policy_eval")) {
       throw new VerificationError("policy_eval must be absent on event receipts");
     }
   } else {
-    const action = (receipt as Record<string, unknown>).action;
+    const action = ownReceipt.action;
     if (typeof action !== "string") {
       throw new VerificationError("action must be a string");
     }
@@ -325,9 +387,9 @@ export async function verifyReceipt(
 
   // Step 5: timestamp sanity
   const issuedAt = parseRFC3339(r.issued_at);
-  if (issuedAt.getTime() > now.getTime() + MAX_FUTURE_SKEW_MS) {
+  if (issuedAt.getTime() > nowMs + MAX_FUTURE_SKEW_MS) {
     throw new VerificationError(
-      `receipt issued in the future: ${issuedAt.toISOString()} > ${now.toISOString()}`,
+      `receipt issued in the future: ${issuedAt.toISOString()} > ${new Date(nowMs).toISOString()}`,
     );
   }
 
@@ -336,7 +398,16 @@ export async function verifyReceipt(
   const canonical = canonicalize(payload);
 
   // Step 7: signature verification
-  const key = findKey(publicKeys, r.key_id, issuedAt);
+  const key = findKey(keySnapshots, r.key_id, issuedAt);
+  const fingerprint = publicKeyFingerprint(key);
+  if (
+    opts.trustedKeyFingerprints !== undefined &&
+    !opts.trustedKeyFingerprints.has(fingerprint)
+  ) {
+    throw new VerificationError(
+      `public key fingerprint is not trusted: ${fingerprint}`,
+    );
+  }
   const sigBytes = b64urlDecode(r.signature);  // length already validated in schema check
 
   const cryptoKey = await webcrypto.subtle.importKey(
@@ -360,7 +431,7 @@ function checkSchema(receipt: Record<string, unknown>): void {
   if (extra.length) {
     throw new VerificationError(`unknown top-level fields: ${JSON.stringify(extra.sort())}`);
   }
-  const missing = [...REQUIRED_FIELDS].filter((k) => !(k in receipt));
+  const missing = [...REQUIRED_FIELDS].filter((k) => !Object.hasOwn(receipt, k));
   if (missing.length) {
     throw new VerificationError(`missing top-level fields: ${JSON.stringify(missing.sort())}`);
   }
@@ -411,7 +482,7 @@ function checkSchema(receipt: Record<string, unknown>): void {
     );
   }
 
-  if ("policy_eval" in receipt) {
+  if (Object.hasOwn(receipt, "policy_eval")) {
     checkPolicyEval(receipt.policy_eval);
   }
 }
@@ -439,7 +510,7 @@ function checkExactKeys(
 ): void {
   const expectedSet = new Set(expected);
   const extra = Object.keys(obj).filter((key) => !expectedSet.has(key));
-  const missing = expected.filter((key) => !(key in obj));
+  const missing = expected.filter((key) => !Object.hasOwn(obj, key));
   if (extra.length) {
     throw new VerificationError(`${prefix} has unknown fields: ${JSON.stringify(extra.sort())}`);
   }
@@ -499,14 +570,41 @@ function parseRFC3339(s: string): Date {
 
 function findKey(keys: PublicKey[], keyId: string, issuedAt: Date): PublicKey {
   for (const k of keys) {
+    if (typeof k !== "object" || k === null) {
+      throw new VerificationError("publicKeys entries must be objects");
+    }
     if (k.keyId !== keyId) continue;
+    if (k.alg !== "Ed25519") {
+      throw new VerificationError(`unsupported public key alg: ${JSON.stringify(k.alg)}`);
+    }
+    if (!(k.publicKeyBytes instanceof Uint8Array) || k.publicKeyBytes.length !== 32) {
+      throw new VerificationError("selected Ed25519 public key must contain 32 raw bytes");
+    }
+    if (!(k.activeFrom instanceof Date) || !Number.isFinite(k.activeFrom.getTime())) {
+      throw new VerificationError("selected public key activeFrom must be a valid Date");
+    }
+    if (
+      k.activeUntil !== null &&
+      (!(k.activeUntil instanceof Date) || !Number.isFinite(k.activeUntil.getTime()))
+    ) {
+      throw new VerificationError("selected public key activeUntil must be a valid Date or null");
+    }
+    if (k.activeUntil !== null && k.activeUntil <= k.activeFrom) {
+      throw new VerificationError("selected public key active window is empty");
+    }
     if (issuedAt < k.activeFrom) {
       throw new VerificationError(`key ${JSON.stringify(keyId)} not yet active at issued_at`);
     }
     if (k.activeUntil !== null && issuedAt >= k.activeUntil) {
       throw new VerificationError(`key ${JSON.stringify(keyId)} retired before issued_at`);
     }
-    return k;
+    return {
+      keyId: k.keyId,
+      alg: k.alg,
+      publicKeyBytes: new Uint8Array(k.publicKeyBytes),
+      activeFrom: new Date(k.activeFrom.getTime()),
+      activeUntil: k.activeUntil === null ? null : new Date(k.activeUntil.getTime()),
+    };
   }
   throw new VerificationError(`no public key found for key_id=${JSON.stringify(keyId)}`);
 }
@@ -521,6 +619,7 @@ export interface KeyDocument {
     key_id: string;
     alg: string;
     public_key: string;
+    public_key_fingerprint?: string;
     active_from: string;
     active_until: string | null;
   }>;
@@ -531,8 +630,18 @@ export function loadKeysFromJson(doc: KeyDocument): PublicKey[] {
   // and rejects duplicate key ids and duplicate public keys so key lookup is
   // unambiguous and one public key cannot carry conflicting active windows
   // (spec §10.1).
-  if (typeof doc !== "object" || doc === null || !Array.isArray((doc as KeyDocument).keys)) {
-    throw new VerificationError("keys document must be an object with a 'keys' array");
+  if (
+    typeof doc !== "object" ||
+    doc === null ||
+    !Object.hasOwn(doc, "workspace_id") ||
+    typeof doc.workspace_id !== "string" ||
+    doc.workspace_id.length === 0 ||
+    !Object.hasOwn(doc, "keys") ||
+    !Array.isArray(doc.keys)
+  ) {
+    throw new VerificationError(
+      "keys document must be an object with a non-empty 'workspace_id' and a 'keys' array",
+    );
   }
   const seenIds = new Set<string>();
   const seenPubs = new Set<string>();
@@ -541,11 +650,14 @@ export function loadKeysFromJson(doc: KeyDocument): PublicKey[] {
       throw new VerificationError(`keys[${i}] must be an object`);
     }
     for (const field of ["key_id", "alg", "public_key", "active_from"] as const) {
-      if (typeof k[field] !== "string") {
+      if (!Object.hasOwn(k, field) || typeof k[field] !== "string") {
         throw new VerificationError(`keys[${i}].${field} must be a string`);
       }
     }
-    if (!("active_until" in k) || (k.active_until !== null && typeof k.active_until !== "string")) {
+    if (k.alg !== "Ed25519") {
+      throw new VerificationError(`keys[${i}].alg must be "Ed25519"`);
+    }
+    if (!Object.hasOwn(k, "active_until") || (k.active_until !== null && typeof k.active_until !== "string")) {
       throw new VerificationError(`keys[${i}].active_until must be a string or null`);
     }
     if (seenIds.has(k.key_id)) {
@@ -560,13 +672,22 @@ export function loadKeysFromJson(doc: KeyDocument): PublicKey[] {
     if (pub.length !== 32) {
       throw new VerificationError(`keys[${i}].public_key must decode to 32 bytes, got ${pub.length}`);
     }
-    return {
+    const key = {
       keyId: k.key_id,
       alg: "Ed25519" as const,
       publicKeyBytes: pub,
       activeFrom: parseRFC3339(k.active_from),
       activeUntil: k.active_until === null ? null : parseRFC3339(k.active_until),
     };
+    if (
+      Object.hasOwn(k, "public_key_fingerprint") &&
+      k.public_key_fingerprint !== publicKeyFingerprint(key)
+    ) {
+      throw new VerificationError(
+        `keys[${i}].public_key_fingerprint does not match public_key`,
+      );
+    }
+    return key;
   });
 }
 

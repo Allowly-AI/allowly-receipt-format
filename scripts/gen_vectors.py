@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import base64
 import copy
+import hashlib
 import json
 import sys
 from pathlib import Path
@@ -42,6 +43,10 @@ second_pub_bytes = second_priv.public_key().public_bytes(
 
 def b64url(b: bytes) -> str:
     return base64.urlsafe_b64encode(b).decode().rstrip("=")
+
+
+def fingerprint(b: bytes) -> str:
+    return "sha256:" + hashlib.sha256(b).hexdigest()
 
 
 def make_receipt(
@@ -734,6 +739,12 @@ key_not_yet_active = signed_receipt(
     key_id=SECOND_KEY_ID,
     signing_key=second_priv,
 )
+rotated_key = signed_receipt(
+    "rcp_01HXZROTATEDKEY000000000",
+    issued_at="2026-04-15T00:00:00.000Z",
+    key_id=SECOND_KEY_ID,
+    signing_key=second_priv,
+)
 key_retired = signed_receipt(
     "rcp_01HXZKEYRETIRED000000000",
     issued_at="2026-05-01T00:00:00.000Z",
@@ -750,6 +761,7 @@ keys_doc = {
             "key_id": KEY_ID,
             "alg": "Ed25519",
             "public_key": b64url(pub_bytes),
+            "public_key_fingerprint": fingerprint(pub_bytes),
             "active_from": "0001-01-01T00:00:00.000Z",
             "active_until": None,
         },
@@ -757,6 +769,7 @@ keys_doc = {
             "key_id": SECOND_KEY_ID,
             "alg": "Ed25519",
             "public_key": b64url(second_pub_bytes),
+            "public_key_fingerprint": fingerprint(second_pub_bytes),
             "active_from": "2026-04-01T00:00:00.000Z",
             "active_until": "2026-05-01T00:00:00.000Z",
         }
@@ -783,6 +796,7 @@ should_verify = [
     ("escalation_resolve_rejected", "event", "escalation.resolve receipt with rejected decision and resource", escalation_resolve_rejected),
     ("action_control_chars_context", "action", "context string with control characters (tests \\uXXXX escaping, rule 5)", control_chars_context),
     ("action_non_bmp_context_key", "action", "context with a supplementary-plane key (tests UTF-16 key sort, rule 3)", non_bmp_key_context),
+    ("action_rotated_key", "action", "receipt signed by a rotated key inside its active window", rotated_key),
 ]
 
 should_reject = [

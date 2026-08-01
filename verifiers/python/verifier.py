@@ -3,7 +3,8 @@
 Prefer importing from ``allowly_receipt_format`` in application code.
 This file remains so existing local commands keep working:
 
-    python verifier.py path/to/receipt.json path/to/keys.json
+    python verifier.py --workspace-id WORKSPACE \
+        --trusted-key-fingerprint sha256:HEX receipt.json keys.json
 """
 
 from __future__ import annotations

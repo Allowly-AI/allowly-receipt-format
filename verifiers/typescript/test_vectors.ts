@@ -5,7 +5,14 @@
  *   or after build: node dist/test_vectors.js ../../test-vectors.json
  */
 import { readFileSync } from "node:fs";
-import { canonicalize, verifyReceipt, loadKeysFromJson, VerificationError } from "./verifier.js";
+import { generateKeyPairSync, sign as signBytes } from "node:crypto";
+import {
+  canonicalize,
+  verifyReceipt,
+  loadKeysFromJson,
+  publicKeyFingerprint,
+  VerificationError,
+} from "./verifier.js";
 
 // Hand-written expected canonical form for the spec §4.3 reference example.
 // Deliberately NOT produced by the reference canonicalizer: if canonicalization
@@ -60,6 +67,84 @@ async function main(vectorsPath: string): Promise<number> {
 
   let failures = 0;
 
+  try {
+    await verifyReceipt(vectors.should_verify[0].receipt, keys, { now: new Date(Number.NaN) });
+    console.log("  FAIL  invalid_now: invalid clock was accepted");
+    failures++;
+  } catch (e) {
+    if (e instanceof VerificationError && e.message.includes("now must be a valid Date")) {
+      console.log(`  OK    invalid_now (${e.message})`);
+    } else {
+      console.log(`  FAIL  invalid_now: unexpected error: ${e}`);
+      failures++;
+    }
+  }
+
+  console.log("Testing own-property receipt validation...");
+  const { privateKey, publicKey } = generateKeyPairSync("ed25519");
+  const inheritedFields = structuredClone(vectors.should_verify[0].receipt);
+  inheritedFields.key_id = "prototype-key";
+  inheritedFields.signature = signBytes(null, Buffer.from("{}"), privateKey).toString("base64url");
+  const publicKeyDer = publicKey.export({ type: "spki", format: "der" });
+  try {
+    await verifyReceipt(Object.create(inheritedFields), [{
+      keyId: "prototype-key",
+      alg: "Ed25519",
+      publicKeyBytes: new Uint8Array(publicKeyDer.subarray(-32)),
+      activeFrom: new Date("0001-01-01T00:00:00.000Z"),
+      activeUntil: null,
+    }], { now });
+    console.log("  FAIL  prototype_only_receipt: signature over {} was accepted");
+    failures++;
+  } catch (e) {
+    if (e instanceof VerificationError) {
+      console.log(`  OK    prototype_only_receipt (${e.message})`);
+    } else {
+      console.log(`  FAIL  prototype_only_receipt: unexpected error: ${e}`);
+      failures++;
+    }
+  }
+  const inheritedContext = structuredClone(vectors.should_verify[0].receipt);
+  inheritedContext.context = Object.create({ unsigned_claim: true });
+  try {
+    await verifyReceipt(inheritedContext, keys, { now });
+    console.log("  FAIL  prototype_context: inherited context claim was accepted");
+    failures++;
+  } catch (e) {
+    if (e instanceof VerificationError && e.message.includes("plain JSON object")) {
+      console.log(`  OK    prototype_context (${e.message})`);
+    } else {
+      console.log(`  FAIL  prototype_context: unexpected error: ${e}`);
+      failures++;
+    }
+  }
+  const proxyContext = structuredClone(vectors.should_verify[0].receipt);
+  proxyContext.context = new Proxy(proxyContext.context, {});
+  try {
+    await verifyReceipt(proxyContext, keys, { now });
+    console.log("  FAIL  proxy_context: nested Proxy was accepted");
+    failures++;
+  } catch (e) {
+    if (e instanceof VerificationError && e.message.includes("structured-cloneable JSON data")) {
+      console.log(`  OK    proxy_context (${e.message})`);
+    } else {
+      console.log(`  FAIL  proxy_context: unexpected error: ${e}`);
+      failures++;
+    }
+  }
+  try {
+    canonicalize({ sparse: new Array(1) });
+    console.log("  FAIL  sparse_array: sparse array was accepted");
+    failures++;
+  } catch (e) {
+    if (e instanceof VerificationError && e.message.includes("dense JSON arrays")) {
+      console.log(`  OK    sparse_array (${e.message})`);
+    } else {
+      console.log(`  FAIL  sparse_array: unexpected error: ${e}`);
+      failures++;
+    }
+  }
+
   console.log("Testing golden canonical bytes (spec §4.3)...");
   const got = new TextDecoder().decode(canonicalize(GOLDEN_PAYLOAD));
   if (got === GOLDEN_CANONICAL) {
@@ -78,9 +163,21 @@ async function main(vectorsPath: string): Promise<number> {
   };
   const missingActiveUntil = structuredClone(vectors.public_keys);
   delete missingActiveUntil.keys[0].active_until;
+  const missingWorkspace = structuredClone(vectors.public_keys);
+  delete missingWorkspace.workspace_id;
+  const emptyWorkspace = structuredClone(vectors.public_keys);
+  emptyWorkspace.workspace_id = "";
+  const wrongAlg = structuredClone(vectors.public_keys);
+  wrongAlg.keys[0].alg = "RSA";
+  const wrongFingerprint = structuredClone(vectors.public_keys);
+  wrongFingerprint.keys[0].public_key_fingerprint = "sha256:" + "0".repeat(64);
   const invalidKeyDocs = [
     ["duplicate_keys", dupDoc],
     ["missing_keys_array", {}],
+    ["missing_workspace_id", missingWorkspace],
+    ["empty_workspace_id", emptyWorkspace],
+    ["wrong_algorithm", wrongAlg],
+    ["wrong_public_key_fingerprint", wrongFingerprint],
     ["active_from_missing_millis", badKeyDoc("active_from", "2026-01-01T00:00:00Z")],
     ["active_from_microseconds", badKeyDoc("active_from", "2026-01-01T00:00:00.123456Z")],
     ["active_from_nanoseconds", badKeyDoc("active_from", "2026-01-01T00:00:00.123456789Z")],
@@ -108,6 +205,85 @@ async function main(vectorsPath: string): Promise<number> {
     console.log("  OK    active_from_year_0001");
   } else {
     console.log(`  FAIL  active_from_year_0001: got ${keys[0].activeFrom.toISOString()}`);
+    failures++;
+  }
+  if (vectors.public_keys.keys[0].public_key_fingerprint === publicKeyFingerprint(keys[0])) {
+    console.log("  OK    public_key_fingerprint");
+  } else {
+    console.log("  FAIL  public_key_fingerprint: fixed vector does not match decoded key");
+    failures++;
+  }
+  try {
+    await verifyReceipt(vectors.should_verify[0].receipt, [
+      { ...keys[0], alg: "RSA" as never },
+      ...keys.slice(1),
+    ], { now });
+    console.log("  FAIL  public_key_algorithm: non-Ed25519 key object was accepted");
+    failures++;
+  } catch (e) {
+    if (e instanceof VerificationError && e.message.includes("public key alg")) {
+      console.log(`  OK    public_key_algorithm (${e.message})`);
+    } else {
+      console.log(`  FAIL  public_key_algorithm: unexpected error: ${e}`);
+      failures++;
+    }
+  }
+  try {
+    await verifyReceipt(vectors.should_verify[0].receipt, [
+      new Proxy(keys[0], {}),
+      ...keys.slice(1),
+    ], { now });
+    console.log("  FAIL  public_key_proxy: proxied key was accepted");
+    failures++;
+  } catch (e) {
+    if (e instanceof VerificationError && e.message.includes("publicKeys must be structured-cloneable")) {
+      console.log(`  OK    public_key_proxy (${e.message})`);
+    } else {
+      console.log(`  FAIL  public_key_proxy: unexpected error: ${e}`);
+      failures++;
+    }
+  }
+  try {
+    await verifyReceipt(vectors.should_verify[0].receipt, [
+      { ...keys[0], activeFrom: new Date(Number.NaN) },
+      ...keys.slice(1),
+    ], { now });
+    console.log("  FAIL  public_key_invalid_date: invalid key date was accepted");
+    failures++;
+  } catch (e) {
+    if (e instanceof VerificationError && e.message.includes("activeFrom must be a valid Date")) {
+      console.log(`  OK    public_key_invalid_date (${e.message})`);
+    } else {
+      console.log(`  FAIL  public_key_invalid_date: unexpected error: ${e}`);
+      failures++;
+    }
+  }
+  const rotatedReceipt = vectors.should_verify.find(
+    (v: { name: string }) => v.name === "action_rotated_key",
+  ).receipt;
+  try {
+    await verifyReceipt(rotatedReceipt, keys, {
+      now,
+      trustedKeyFingerprints: new Set([publicKeyFingerprint(keys[0])]),
+    });
+    console.log("  FAIL  selected_key_fingerprint_pin: untrusted rotation key was accepted");
+    failures++;
+  } catch (e) {
+    if (e instanceof VerificationError && e.message.includes("fingerprint is not trusted")) {
+      console.log(`  OK    selected_key_fingerprint_pin (${e.message})`);
+    } else {
+      console.log(`  FAIL  selected_key_fingerprint_pin: unexpected error: ${e}`);
+      failures++;
+    }
+  }
+  try {
+    await verifyReceipt(rotatedReceipt, keys, {
+      now,
+      trustedKeyFingerprints: new Set(keys.map(publicKeyFingerprint)),
+    });
+    console.log("  OK    selected_key_fingerprint_rotation");
+  } catch (e) {
+    console.log(`  FAIL  selected_key_fingerprint_rotation: ${e}`);
     failures++;
   }
 
