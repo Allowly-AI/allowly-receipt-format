@@ -15,7 +15,7 @@ from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "verifiers" / "python"))
-from verifier import canonicalize  # noqa: E402
+from verifier import canonicalize, checkpoint_merkle_root  # noqa: E402
 
 
 SEED = bytes(32)
@@ -62,7 +62,7 @@ def make_receipt(
     policy_eval: Any = _MISSING,
 ) -> dict[str, Any]:
     receipt: dict[str, Any] = {
-        "schema_version": "3",
+        "schema_version": "4",
         "receipt_id": receipt_id,
         "workspace_id": WORKSPACE_ID,
         "issued_at": issued_at,
@@ -398,6 +398,52 @@ budget_settle = signed_receipt(
     authorization_id="auth_budget",
 )
 
+checkpoint_members = [minimal_allow, deny_null_authorization]
+checkpoint_root = checkpoint_merkle_root(checkpoint_members)
+previous_checkpoint_root = checkpoint_merkle_root([])
+assert checkpoint_root == "sha256:af44bf9860a3d0683129eee278e81a7574adcdb90f753ab04bbf438a014123a5"
+assert previous_checkpoint_root == "sha256:dbc1b4c900ffe48d575b5da5c638040125f65db0fe3e24494b76ea986457d986"
+previous_checkpoint = signed_receipt(
+    "rcp_01HXZCHECKPOINTPREVIOUS000",
+    issued_at="2026-04-21T00:05:00.000Z",
+    decision="receipt_set_committed",
+    reason="signed_receipt_set_checkpointed",
+    user_id="",
+    agent_id="allowly.checkpoint",
+    action=None,
+    event="receipt.checkpoint",
+    resource=None,
+    context={
+        "period_start": "2026-04-20T00:00:00.000Z",
+        "period_end": "2026-04-21T00:00:00.000Z",
+        "receipt_count": 0,
+        "merkle_root": previous_checkpoint_root,
+        "previous_checkpoint_id": None,
+        "previous_merkle_root": None,
+    },
+    authorization_id=None,
+)
+daily_checkpoint = signed_receipt(
+    "rcp_01HXZCHECKPOINTDAILY00000",
+    issued_at="2026-04-22T00:05:00.000Z",
+    decision="receipt_set_committed",
+    reason="signed_receipt_set_checkpointed",
+    user_id="",
+    agent_id="allowly.checkpoint",
+    action=None,
+    event="receipt.checkpoint",
+    resource=None,
+    context={
+        "period_start": "2026-04-21T00:00:00.000Z",
+        "period_end": "2026-04-22T00:00:00.000Z",
+        "receipt_count": len(checkpoint_members),
+        "merkle_root": checkpoint_root,
+        "previous_checkpoint_id": previous_checkpoint["receipt_id"],
+        "previous_merkle_root": previous_checkpoint_root,
+    },
+    authorization_id=None,
+)
+
 # Control characters in a context string value: canonicalization rule 5 requires
 # the lowercase backslash-uXXXX form for U+0000..U+001F, not short escapes. A
 # verifier that emits short escapes produces different canonical bytes and fails.
@@ -454,7 +500,28 @@ key_id_swapped = copy.deepcopy(minimal_allow)
 key_id_swapped["key_id"] = SECOND_KEY_ID
 
 future_receipt = copy.deepcopy(minimal_allow)
-future_receipt["schema_version"] = "4"
+future_receipt["schema_version"] = "5"
+
+checkpoint_negative_count = signed_receipt(
+    "rcp_01HXZCHECKPOINTBADCOUNT00",
+    issued_at="2026-04-22T00:05:00.000Z",
+    decision="receipt_set_committed",
+    reason="signed_receipt_set_checkpointed",
+    user_id="",
+    agent_id="allowly.checkpoint",
+    action=None,
+    event="receipt.checkpoint",
+    resource=None,
+    context={
+        "period_start": "2026-04-21T00:00:00.000Z",
+        "period_end": "2026-04-22T00:00:00.000Z",
+        "receipt_count": -1,
+        "merkle_root": checkpoint_root,
+        "previous_checkpoint_id": None,
+        "previous_merkle_root": None,
+    },
+    authorization_id=None,
+)
 
 unknown_field = copy.deepcopy(minimal_allow)
 unknown_field["extra_field"] = "should_be_rejected"
@@ -781,6 +848,8 @@ should_verify = [
     ("budget_settle", "event", "budget.settle receipt with exact post-execution cost", budget_settle),
     ("escalation_resolve_approved", "event", "escalation.resolve receipt with approved decision and resource", escalation_resolve_approved),
     ("escalation_resolve_rejected", "event", "escalation.resolve receipt with rejected decision and resource", escalation_resolve_rejected),
+    ("receipt_checkpoint_previous", "checkpoint", "empty daily receipt.checkpoint", previous_checkpoint),
+    ("receipt_checkpoint_daily", "checkpoint", "daily receipt.checkpoint with prior linkage", daily_checkpoint),
     ("action_control_chars_context", "action", "context string with control characters (tests \\uXXXX escaping, rule 5)", control_chars_context),
     ("action_non_bmp_context_key", "action", "context with a supplementary-plane key (tests UTF-16 key sort, rule 3)", non_bmp_key_context),
 ]
@@ -794,7 +863,8 @@ should_reject = [
     ("forged_signature", "signature bytes replaced with zeros", "signature verification failed", forged),
     ("unknown_key_id", "key_id not in published keys", "no public key found", unknown_key),
     ("key_id_swapped", "signed key_id changed to another published key", "signature verification failed", key_id_swapped),
-    ("future_version", "schema_version 4 receipt", "unsupported schema_version", future_receipt),
+    ("future_version", "schema_version 5 receipt", "unsupported schema_version", future_receipt),
+    ("checkpoint_negative_count", "receipt.checkpoint with negative receipt_count", "non-negative integer", checkpoint_negative_count),
     ("unknown_top_level_field", "extra field not in spec", "unknown top-level fields", unknown_field),
     ("missing_required_field", "authorization_id field missing", "missing top-level fields", missing_field),
     ("bad_decision_value", "decision is not allow/deny/confirm/escalate", "action receipt must have decision in", bad_decision),
@@ -827,10 +897,19 @@ should_reject = [
 ]
 
 vectors = {
-    "spec_version": "3",
+    "spec_version": "4",
     "public_keys": keys_doc,
     "should_verify": [ok(*row) for row in should_verify],
     "should_reject": [bad(*row) for row in should_reject],
+    "checkpoint_cases": [
+        {
+            "name": "daily_two_receipts_with_prior",
+            "checkpoint": daily_checkpoint,
+            "receipts": checkpoint_members,
+            "previous_checkpoint": previous_checkpoint,
+            "expected_merkle_root": checkpoint_root,
+        }
+    ],
 }
 
 out_path = Path(__file__).parent.parent / "test-vectors.json"

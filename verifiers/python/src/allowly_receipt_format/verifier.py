@@ -1,7 +1,7 @@
 """
 Allowly Receipt Verifier (Python reference implementation).
 
-Verifies Allowly receipts per receipt-format.md wire version 3.
+Verifies Allowly receipts per receipt-format.md wire version 4.
 
 Usage (library):
     from allowly_receipt_format import verify_receipt, VerificationError, load_keys_from_json
@@ -34,13 +34,14 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 from cryptography.exceptions import InvalidSignature
 
 
-SPEC_VERSION = "3"
+SPEC_VERSION = "4"
 ACTION_DECISIONS = {"allow", "deny", "confirm", "escalate"}
 EVENT_DECISIONS = {
     "authorization.create": {"authorization_granted"},
     "authorization.revoke": {"authorization_revoked"},
     "budget.settle": {"budget_settled"},
     "escalation.resolve": {"escalation_approved", "escalation_rejected"},
+    "receipt.checkpoint": {"receipt_set_committed"},
 }
 AUTHORIZATION_LIFECYCLE_EVENTS = {"authorization.create", "authorization.revoke"}
 EVENT_ONLY_DECISIONS = {decision for decisions in EVENT_DECISIONS.values() for decision in decisions}
@@ -77,10 +78,12 @@ __all__ = [
     "UnknownKeyError",
     "VerificationError",
     "canonicalize",
+    "checkpoint_merkle_root",
     "load_keys_from_json",
     "main",
     "matches_ref",
     "verify_receipt",
+    "verify_checkpoint",
 ]
 
 
@@ -102,6 +105,17 @@ class KeyOutsideActiveWindowError(VerificationError):
 
 class SignatureMismatchError(VerificationError):
     """Raised when the Ed25519 signature does not match the canonical payload."""
+
+
+_CHECKPOINT_ROOT_RE = re.compile(r"^sha256:[0-9a-f]{64}$")
+_CHECKPOINT_CONTEXT_FIELDS = {
+    "period_start",
+    "period_end",
+    "receipt_count",
+    "merkle_root",
+    "previous_checkpoint_id",
+    "previous_merkle_root",
+}
 
 
 @dataclass
@@ -191,6 +205,30 @@ def canonicalize(payload: dict[str, Any]) -> bytes:
     """
     _validate_tree(payload)
     return _encode_value(payload).encode("utf-8")
+
+
+def checkpoint_merkle_root(receipts: list[dict[str, Any]]) -> str:
+    """Commit to an unordered signed-receipt set using spec §3.7."""
+    leaves: list[bytes] = []
+    seen_ids: set[str] = set()
+    for receipt in receipts:
+        if not isinstance(receipt, dict) or not isinstance(receipt.get("receipt_id"), str):
+            raise SchemaError("checkpoint member must be a receipt object with receipt_id")
+        if receipt["receipt_id"] in seen_ids:
+            raise SchemaError(f"duplicate checkpoint member receipt_id: {receipt['receipt_id']!r}")
+        seen_ids.add(receipt["receipt_id"])
+        leaves.append(hashlib.sha256(b"\x00" + canonicalize(receipt)).digest())
+    leaves.sort()
+    if not leaves:
+        return "sha256:" + hashlib.sha256(b"\x02").hexdigest()
+    while len(leaves) > 1:
+        if len(leaves) % 2:
+            leaves.append(leaves[-1])
+        leaves = [
+            hashlib.sha256(b"\x01" + leaves[i] + leaves[i + 1]).digest()
+            for i in range(0, len(leaves), 2)
+        ]
+    return f"sha256:{leaves[0].hex()}"
 
 
 def _validate_tree(payload: Any) -> None:
@@ -354,7 +392,13 @@ def verify_receipt(
                 f"event receipt with event={event!r} must have "
                 f"decision in {sorted(expected_decisions)}, got {decision!r}"
             )
-        if authorization_id is None:
+        if event == "receipt.checkpoint":
+            if authorization_id is not None:
+                raise SchemaError("receipt.checkpoint must have null authorization_id")
+            if resource is not None:
+                raise SchemaError("receipt.checkpoint must have null resource")
+            _check_checkpoint_context(receipt["context"], issued_at=receipt["issued_at"])
+        elif authorization_id is None:
             raise SchemaError(
                 f"event receipt with event={event!r} must have non-null authorization_id"
             )
@@ -504,6 +548,106 @@ def _check_policy_eval(value: Any) -> None:
         raise SchemaError("policy_eval.field_value must be string, integer, boolean, or null")
 
 
+def _check_checkpoint_context(value: Any, *, issued_at: str) -> None:
+    if not isinstance(value, dict):
+        raise SchemaError("receipt.checkpoint context must be an object")
+    _check_exact_keys(value, _CHECKPOINT_CONTEXT_FIELDS, "receipt.checkpoint context")
+    period_start = _parse_rfc3339(value["period_start"])
+    period_end = _parse_rfc3339(value["period_end"])
+    checkpoint_at = _parse_rfc3339(issued_at)
+    if period_end <= period_start:
+        raise SchemaError("receipt.checkpoint period_end must be after period_start")
+    if (
+        period_start.hour
+        or period_start.minute
+        or period_start.second
+        or period_start.microsecond
+        or period_end - period_start != timedelta(days=1)
+    ):
+        raise SchemaError("receipt.checkpoint period must be one UTC calendar day")
+    if checkpoint_at < period_end:
+        raise SchemaError("receipt.checkpoint issued_at must be at or after period_end")
+    count = value["receipt_count"]
+    if not isinstance(count, int) or isinstance(count, bool) or count < 0:
+        raise SchemaError("receipt.checkpoint receipt_count must be a non-negative integer")
+    if not isinstance(value["merkle_root"], str) or not _CHECKPOINT_ROOT_RE.fullmatch(
+        value["merkle_root"]
+    ):
+        raise SchemaError("receipt.checkpoint merkle_root must be sha256:<64 lowercase hex>")
+    previous_id = value["previous_checkpoint_id"]
+    previous_root = value["previous_merkle_root"]
+    if (previous_id is None) != (previous_root is None):
+        raise SchemaError("receipt.checkpoint previous id and root must both be null or strings")
+    if previous_id is not None and not isinstance(previous_id, str):
+        raise SchemaError("receipt.checkpoint previous_checkpoint_id must be string or null")
+    if previous_root is not None and (
+        not isinstance(previous_root, str) or not _CHECKPOINT_ROOT_RE.fullmatch(previous_root)
+    ):
+        raise SchemaError("receipt.checkpoint previous_merkle_root must be sha256:<64 lowercase hex> or null")
+
+
+def verify_checkpoint(
+    checkpoint: dict[str, Any],
+    receipts: list[dict[str, Any]],
+    public_keys: list[PublicKey],
+    *,
+    expected_workspace_id: str,
+    previous_checkpoint: dict[str, Any] | None = None,
+    now: datetime | None = None,
+) -> None:
+    """Verify a signed checkpoint and recompute its exact presented member set."""
+    verify_receipt(
+        checkpoint,
+        public_keys,
+        now=now,
+        expected_workspace_id=expected_workspace_id,
+    )
+    if checkpoint.get("event") != "receipt.checkpoint":
+        raise SchemaError("checkpoint receipt must have event='receipt.checkpoint'")
+    context = checkpoint["context"]
+    period_start = _parse_rfc3339(context["period_start"])
+    period_end = _parse_rfc3339(context["period_end"])
+    for receipt in receipts:
+        verify_receipt(
+            receipt,
+            public_keys,
+            now=now,
+            expected_workspace_id=expected_workspace_id,
+        )
+        if receipt.get("event") == "receipt.checkpoint":
+            raise SchemaError("receipt.checkpoint cannot be a checkpoint member")
+        issued_at = _parse_rfc3339(receipt["issued_at"])
+        if not period_start <= issued_at < period_end:
+            raise SchemaError(
+                f"checkpoint member {receipt['receipt_id']!r} falls outside checkpoint period"
+            )
+    if context["receipt_count"] != len(receipts):
+        raise VerificationError(
+            f"checkpoint receipt_count mismatch: committed {context['receipt_count']}, got {len(receipts)}"
+        )
+    root = checkpoint_merkle_root(receipts)
+    if not hmac.compare_digest(context["merkle_root"], root):
+        raise VerificationError(
+            f"checkpoint merkle_root mismatch: committed {context['merkle_root']}, got {root}"
+        )
+    if previous_checkpoint is not None:
+        verify_receipt(
+            previous_checkpoint,
+            public_keys,
+            now=now,
+            expected_workspace_id=expected_workspace_id,
+        )
+        if previous_checkpoint.get("event") != "receipt.checkpoint":
+            raise SchemaError("previous checkpoint must have event='receipt.checkpoint'")
+        previous_context = previous_checkpoint["context"]
+        if context["previous_checkpoint_id"] != previous_checkpoint["receipt_id"]:
+            raise VerificationError("checkpoint previous_checkpoint_id mismatch")
+        if context["previous_merkle_root"] != previous_context["merkle_root"]:
+            raise VerificationError("checkpoint previous_merkle_root mismatch")
+        if previous_context["period_end"] > context["period_start"]:
+            raise VerificationError("checkpoint periods overlap or are out of order")
+
+
 def _find_key(
     keys: list[PublicKey], key_id: str, issued_at: datetime
 ) -> PublicKey:
@@ -589,11 +733,13 @@ def _verify_export(
     keys: list[PublicKey],
     expected_workspace_id: str | None,
     authorization_id: str | None,
+    checkpoint_evidence_path: str | None,
 ) -> int:
     import sys
 
     ok = failed = skipped = total = 0
     chain: list[dict[str, Any]] = []
+    verified_by_id: dict[str, dict[str, Any]] = {}
 
     with _open_maybe_gzip(path) as f:
         for lineno, raw in enumerate(f, 1):
@@ -619,10 +765,13 @@ def _verify_export(
             rid = receipt.get("receipt_id", f"line {lineno}")
             try:
                 verify_receipt(receipt, keys, expected_workspace_id=expected_workspace_id)
+                if receipt["receipt_id"] in verified_by_id:
+                    raise SchemaError(f"duplicate receipt_id in export: {receipt['receipt_id']!r}")
                 label = receipt.get("action") or receipt.get("event") or "?"
                 print(f"OK  {rid}  {label}  {receipt.get('decision')}")
                 ok += 1
                 chain.append(receipt)
+                verified_by_id[receipt["receipt_id"]] = receipt
             except VerificationError as e:
                 print(f"INVALID  {rid}  {e}", file=sys.stderr)
                 failed += 1
@@ -633,15 +782,94 @@ def _verify_export(
     summary += f"  ({total} checked)"
     print(summary)
 
-    if total == 0:
-        print("No matching receipts found.", file=sys.stderr)
-        return 1
-
     chain_rc = 0
     if authorization_id is not None:
         chain_rc = _check_chain_invariants(chain, authorization_id)
 
-    return 0 if failed == 0 and chain_rc == 0 else 1
+    checkpoint_rc = 0
+    checkpoint_count = 0
+    if checkpoint_evidence_path is not None:
+        checkpoint_rc, checkpoint_count = _verify_checkpoint_evidence(
+            checkpoint_evidence_path,
+            verified_by_id,
+            keys,
+            expected_workspace_id,
+        )
+
+    if total == 0 and checkpoint_count == 0:
+        print("No matching receipts or checkpoints found.", file=sys.stderr)
+        return 1
+    return 0 if failed == 0 and chain_rc == 0 and checkpoint_rc == 0 else 1
+
+
+def _verify_checkpoint_evidence(
+    path: str,
+    verified_by_id: dict[str, dict[str, Any]],
+    keys: list[PublicKey],
+    expected_workspace_id: str | None,
+) -> tuple[int, int]:
+    import sys
+
+    if expected_workspace_id is None:
+        print("INVALID checkpoint evidence: keys document has no workspace_id", file=sys.stderr)
+        return 1, 0
+    try:
+        with open(path, encoding="utf-8") as f:
+            evidence = json.load(f)
+        if not isinstance(evidence, dict) or evidence.get("version") != "receipt_checkpoint_evidence.v1":
+            raise SchemaError("unsupported checkpoint evidence document")
+        entries = evidence.get("checkpoints")
+        if not isinstance(entries, list):
+            raise SchemaError("checkpoint evidence checkpoints must be an array")
+
+        checkpoints: dict[str, dict[str, Any]] = {}
+        for entry in entries:
+            if not isinstance(entry, dict) or set(entry) != {"checkpoint", "member_receipt_ids"}:
+                raise SchemaError("checkpoint evidence entry has wrong fields")
+            checkpoint = entry["checkpoint"]
+            if not isinstance(checkpoint, dict) or not isinstance(checkpoint.get("receipt_id"), str):
+                raise SchemaError("checkpoint evidence checkpoint must be a receipt object")
+            if checkpoint["receipt_id"] in checkpoints:
+                raise SchemaError("duplicate checkpoint receipt_id in evidence")
+            checkpoints[checkpoint["receipt_id"]] = checkpoint
+
+        for entry in entries:
+            checkpoint = entry["checkpoint"]
+            member_ids = entry["member_receipt_ids"]
+            if (
+                not isinstance(member_ids, list)
+                or any(not isinstance(receipt_id, str) for receipt_id in member_ids)
+                or len(set(member_ids)) != len(member_ids)
+            ):
+                raise SchemaError("checkpoint evidence member_receipt_ids must be unique strings")
+            missing = [receipt_id for receipt_id in member_ids if receipt_id not in verified_by_id]
+            if missing:
+                raise VerificationError(
+                    f"checkpoint evidence omits member receipt(s): {', '.join(missing[:5])}"
+                )
+            checkpoint_context = checkpoint.get("context")
+            previous_id = (
+                checkpoint_context.get("previous_checkpoint_id")
+                if isinstance(checkpoint_context, dict)
+                else None
+            )
+            verify_checkpoint(
+                checkpoint,
+                [verified_by_id[receipt_id] for receipt_id in member_ids],
+                keys,
+                expected_workspace_id=expected_workspace_id,
+                previous_checkpoint=checkpoints.get(previous_id),
+            )
+            print(
+                f"CHECKPOINT OK  {checkpoint['receipt_id']}  "
+                f"{checkpoint['context']['period_start']}  {len(member_ids)} receipt(s)"
+            )
+    except (OSError, json.JSONDecodeError, VerificationError, RecursionError) as exc:
+        print(f"INVALID checkpoint evidence: {exc}", file=sys.stderr)
+        return 1, 0
+
+    print(f"{len(entries)} checkpoint(s) recomputed from supplied signed receipts")
+    return 0, len(entries)
 
 
 def _check_chain_invariants(chain: list[dict[str, Any]], authorization_id: str) -> int:
@@ -703,6 +931,11 @@ def main(argv: list[str] | None = None) -> int:
         metavar="ID",
         help="with --export: verify only this authorization's chain and check chain invariants",
     )
+    p.add_argument(
+        "--checkpoint-evidence",
+        metavar="FILE",
+        help="with --export: recompute checkpoint entries in checkpoint_evidence.json",
+    )
     args = p.parse_args(argv)
 
     # The keys document is published per workspace; bind receipts to it so a
@@ -710,6 +943,8 @@ def main(argv: list[str] | None = None) -> int:
     if args.export:
         if len(args.paths) != 1:
             p.error("with --export, provide exactly one positional argument: the keys JSON file")
+        if args.authorization_id and args.checkpoint_evidence:
+            p.error("--checkpoint-evidence cannot be used with an authorization-scoped export")
         with open(args.paths[0]) as f:
             keys_doc = json.load(f)
         keys = load_keys_from_json(keys_doc)
@@ -718,10 +953,13 @@ def main(argv: list[str] | None = None) -> int:
             keys,
             keys_doc.get("workspace_id"),
             args.authorization_id,
+            args.checkpoint_evidence,
         )
 
     if args.authorization_id:
         p.error("--authorization-id requires --export")
+    if args.checkpoint_evidence:
+        p.error("--checkpoint-evidence requires --export")
     if len(args.paths) != 2:
         p.error("provide <receipt.json> <keys.json>, or use --export <file> <keys.json>")
 

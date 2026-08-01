@@ -129,6 +129,85 @@ def main(vectors_path: str) -> int:
         assert rc == 1
         assert "(2 checked)" in stdout.getvalue()
 
+        checkpoint_case = vectors["checkpoint_cases"][0]
+        export_path.write_text(
+            "".join(json.dumps(receipt) + "\n" for receipt in checkpoint_case["receipts"]),
+            encoding="utf-8",
+        )
+        evidence_path = tmp_path / "checkpoint_evidence.json"
+        evidence = {
+            "version": "receipt_checkpoint_evidence.v1",
+            "claim": "issuer-signed set commitment only",
+            "checkpoints": [
+                {
+                    "checkpoint": checkpoint_case["checkpoint"],
+                    "member_receipt_ids": [
+                        receipt["receipt_id"] for receipt in checkpoint_case["receipts"]
+                    ],
+                }
+            ],
+        }
+        evidence_path.write_text(json.dumps(evidence), encoding="utf-8")
+        with redirect_stdout(io.StringIO()), redirect_stderr(io.StringIO()):
+            rc = verifier_main(
+                [
+                    "--export",
+                    str(export_path),
+                    "--checkpoint-evidence",
+                    str(evidence_path),
+                    str(keys_path),
+                ]
+            )
+        assert rc == 0
+
+        empty_checkpoint = next(
+            item["receipt"]
+            for item in vectors["should_verify"]
+            if item["name"] == "receipt_checkpoint_previous"
+        )
+        export_path.write_text("", encoding="utf-8")
+        evidence["checkpoints"] = [{
+            "checkpoint": empty_checkpoint,
+            "member_receipt_ids": [],
+        }]
+        evidence_path.write_text(json.dumps(evidence), encoding="utf-8")
+        with redirect_stdout(io.StringIO()), redirect_stderr(io.StringIO()):
+            rc = verifier_main([
+                "--export",
+                str(export_path),
+                "--checkpoint-evidence",
+                str(evidence_path),
+                str(keys_path),
+            ])
+        assert rc == 0
+
+        export_path.write_text(
+            "".join(json.dumps(receipt) + "\n" for receipt in checkpoint_case["receipts"]),
+            encoding="utf-8",
+        )
+        evidence["checkpoints"] = [{
+            "checkpoint": checkpoint_case["checkpoint"],
+            "member_receipt_ids": [
+                receipt["receipt_id"] for receipt in checkpoint_case["receipts"]
+            ],
+        }]
+
+        evidence["checkpoints"][0]["member_receipt_ids"] = evidence["checkpoints"][0][
+            "member_receipt_ids"
+        ][:-1]
+        evidence_path.write_text(json.dumps(evidence), encoding="utf-8")
+        with redirect_stdout(io.StringIO()), redirect_stderr(io.StringIO()):
+            rc = verifier_main(
+                [
+                    "--export",
+                    str(export_path),
+                    "--checkpoint-evidence",
+                    str(evidence_path),
+                    str(keys_path),
+                ]
+            )
+        assert rc == 1
+
     print("Exception taxonomy passes.")
     return 0
 

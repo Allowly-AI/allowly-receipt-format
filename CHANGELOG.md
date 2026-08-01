@@ -2,6 +2,21 @@
 
 ## Unreleased
 
+## v4.0.0 — 2026-08-01
+
+- **Receipt wire format 4.** Added the `receipt.checkpoint` event and paired
+  `receipt_set_committed` decision for daily workspace receipt-set commitments.
+- This is a breaking wire/package-major release because strict wire-3
+  verifiers reject the new event. Publish both verifiers before deploying an
+  issuer that emits wire 4.
+- Defined deterministic SHA-256 Merkle roots over full canonical signed receipt
+  bytes: domain-separated leaves/nodes, sorted leaves, duplicate-last odd
+  levels, and a separate empty-set root.
+- Added exact UTC-day period/count fields, prior checkpoint id/root linkage,
+  shared cross-language vectors, and Python/TypeScript recomputation helpers.
+- Checkpoints prove equality to the signed set commitment, not real-world or
+  issuer-registry completeness. No external anchoring is defined.
+
 ## v3.0.0 — 2026-07-22
 
 - **Receipt wire format 3.** Renamed the receipt `version` field to

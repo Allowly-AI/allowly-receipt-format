@@ -4,7 +4,7 @@ An open format for **cryptographically signed, third-party-verifiable receipts**
 
 A receipt is a signed record of one decision: *at time T, issuer W decided that agent A may (or may not) perform action X on resource R for user U under authorization C.* Anyone holding the receipt and the issuer's Ed25519 public key can verify it offline, without contacting the issuer.
 
-Action receipts can include `policy_eval`, a small record of which immutable authorization condition routed a decision to `deny`, `confirm`, or `escalate`. The current wire format is `"3"` (wire versions are plain integer strings); it signs the algorithm and key identifier so the trust-anchor selector cannot be swapped after issue.
+Action receipts can include `policy_eval`, a small record of which immutable authorization condition routed a decision to `deny`, `confirm`, or `escalate`. Daily `receipt.checkpoint` events commit to the issuer's registered signed receipt set for one UTC day. The current wire format is `"4"` (wire versions are plain integer strings).
 
 Specification Appendix A also defines an optional `hmac-v1` convention for
 customer-recomputable pseudonymous values inside `context`; it does not change
@@ -86,7 +86,11 @@ try {
 
 ## Status
 
-**Verifier packages 3.x implement receipt wire format 3.** Wire versions are plain integers and the package major always equals the wire version it verifies, so default caret ranges (`^3.0.0`) can never cross a wire boundary. Receipts carry `schema_version: "3"` and sign top-level `alg` and `key_id`; `signature` is the base64url signature string. Reference verifiers accept only receipt wire format 3, enforce byte-identical canonicalization across Python and TypeScript, and reject malformed Unicode, unsafe integers, and non-canonical signature encodings.
+**Verifier packages 4.x implement receipt wire format 4.** Wire versions are plain integers and the package major always equals the wire version it verifies, so default caret ranges (`^4.0.0`) can never cross a wire boundary. Receipts carry `schema_version: "4"` and sign top-level `alg` and `key_id`; `signature` is the base64url signature string. Reference verifiers accept only receipt wire format 4 and recompute checkpoint Merkle roots in both languages. A checkpoint proves equality to its signed set commitment, not that the issuer registered every real-world event or externally anchored the checkpoint.
+
+There is intentionally no wire-3 compatibility path. Cut over only with an
+empty receipt registry and no active wire-3 writers; rollback across this wire
+boundary is unsupported.
 
 ## Licensing
 

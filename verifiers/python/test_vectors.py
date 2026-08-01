@@ -8,13 +8,20 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-from allowly_receipt_format import canonicalize, verify_receipt, load_keys_from_json, VerificationError
+from allowly_receipt_format import (
+    VerificationError,
+    canonicalize,
+    checkpoint_merkle_root,
+    load_keys_from_json,
+    verify_checkpoint,
+    verify_receipt,
+)
 
 # Hand-written expected canonical form for the spec §4.3 reference example.
 # Deliberately NOT produced by the reference canonicalizer: if canonicalization
 # regresses, generated vectors would regress with it and tests would still pass.
 GOLDEN_PAYLOAD = {
-    "schema_version": "3",
+    "schema_version": "4",
     "receipt_id": "rcp_01HXZ2B3QW4N5M6P7R8S9T0V1W",
     "workspace_id": "ws_01HXA1B2C3D4E5F6G7H8J9K0L1",
     "issued_at": "2026-04-21T14:32:17.482Z",
@@ -50,7 +57,7 @@ GOLDEN_CANONICAL = (
     '"key_id":"projects/allowly-prod/locations/global/keyRings/allowly-signing/cryptoKeys/ws_01HXA1/cryptoKeyVersions/3",'
     '"reason":"authorization_granted_action_active",'
     '"receipt_id":"rcp_01HXZ2B3QW4N5M6P7R8S9T0V1W",'
-    '"resource":"edge:emp_8821:conn_9f2a","schema_version":"3","user_id":"emp_8821",'
+    '"resource":"edge:emp_8821:conn_9f2a","schema_version":"4","user_id":"emp_8821",'
     '"workspace_id":"ws_01HXA1B2C3D4E5F6G7H8J9K0L1"}'
 )
 
@@ -97,6 +104,39 @@ def main(vectors_path: str) -> int:
                 print(f"        expected: {expected}")
                 print(f"        got:      {e}")
                 failures += 1
+
+    print(f"\nTesting {len(vectors['checkpoint_cases'])} checkpoint vectors...")
+    for case in vectors["checkpoint_cases"]:
+        try:
+            root = checkpoint_merkle_root(case["receipts"])
+            if root != case["expected_merkle_root"]:
+                raise VerificationError(
+                    f"cross-language root mismatch: expected {case['expected_merkle_root']}, got {root}"
+                )
+            verify_checkpoint(
+                case["checkpoint"],
+                case["receipts"],
+                keys,
+                expected_workspace_id=vectors["public_keys"]["workspace_id"],
+                previous_checkpoint=case["previous_checkpoint"],
+                now=now,
+            )
+            try:
+                verify_checkpoint(
+                    case["checkpoint"],
+                    case["receipts"][:-1],
+                    keys,
+                    expected_workspace_id=vectors["public_keys"]["workspace_id"],
+                    now=now,
+                )
+                raise VerificationError("checkpoint accepted an omitted member")
+            except VerificationError as exc:
+                if "receipt_count mismatch" not in str(exc):
+                    raise
+            print(f"  OK    {case['name']}")
+        except VerificationError as e:
+            print(f"  FAIL  {case['name']}: {e}")
+            failures += 1
 
     print()
     if failures:

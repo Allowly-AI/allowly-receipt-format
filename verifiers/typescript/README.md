@@ -1,6 +1,6 @@
 # @allowly/verifier
 
-TypeScript reference verifier for [Allowly Receipt Format wire version 3](https://github.com/Allowly-AI/allowly-receipt-format).
+TypeScript reference verifier for [Allowly Receipt Format wire version 4](https://github.com/Allowly-AI/allowly-receipt-format).
 
 Zero runtime dependencies. Uses Node.js's built-in WebCrypto for Ed25519 verification.
 
@@ -67,6 +67,14 @@ Verifies a receipt. Resolves on success, throws `VerificationError` on any failu
 ### `canonicalize(payload)`
 
 Produces the canonical JSON byte sequence per spec §4. Exposed for implementers building signers in TypeScript.
+
+### `verifyCheckpoint(checkpoint, receipts, publicKeys, opts)`
+
+Verifies the checkpoint and member signatures, exact UTC-day period, count,
+Merkle root, and optional prior checkpoint linkage. `opts.expectedWorkspaceId`
+is required and must come from caller-trusted configuration. Success proves the
+supplied set matches the signed commitment; without external anchoring it does
+not prove issuer-registry or real-world completeness.
 
 ### `loadKeysFromJson(doc)`
 

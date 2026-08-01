@@ -6,10 +6,12 @@ from .verifier import (
     UnknownKeyError,
     VerificationError,
     canonicalize,
+    checkpoint_merkle_root,
     load_keys_from_json,
     main,
     matches_ref,
     verify_receipt,
+    verify_checkpoint,
 )
 
 __all__ = [
@@ -20,8 +22,10 @@ __all__ = [
     "UnknownKeyError",
     "VerificationError",
     "canonicalize",
+    "checkpoint_merkle_root",
     "load_keys_from_json",
     "main",
     "matches_ref",
     "verify_receipt",
+    "verify_checkpoint",
 ]

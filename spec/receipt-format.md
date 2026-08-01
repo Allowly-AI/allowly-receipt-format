@@ -1,6 +1,6 @@
 # Allowly Receipt Format Specification
 
-**Version:** 3
+**Version:** 4
 **Status:** Stable
 **License:** This specification is published under CC-BY 4.0. Reference implementations are Apache 2.0.
 
@@ -8,21 +8,21 @@
 
 ## 1. Purpose
 
-A *receipt* is a signed, immutable record of a single authorization event — either an authorization decision made by an authorization-check service at the moment an agent or human acted, or an event tied to the authorization itself (creation, revocation, post-execution budget settlement, third-party escalation resolution). This document specifies the canonical format, signature scheme, and verification algorithm so that any party holding a receipt and the issuer's public key can verify the receipt offline, without contacting the issuer.
+A *receipt* is a signed, tamper-evident record of a single authorization event — either an authorization decision made by an authorization-check service, an event tied to an authorization, or a daily checkpoint committing to a set of signed receipts. This document specifies the canonical format, signature scheme, and verification algorithm so that any party holding a receipt and the issuer's public key can verify the receipt offline, without contacting the issuer.
 
 Two kinds of receipts share the same format:
 
-- **Action receipts** record a single authorization decision: *at time T, the issuer decided that action A by agent G on behalf of user U was allowed, denied, required confirmation, or required escalation, under authorization C.* These are produced by the issuer's `/check` endpoint.
-- **Event receipts** record events tied to the authorization itself: *at time T, user U authorized agent G with actions A,* *at time T, that authorization was revoked,* *at time T, estimated spend was settled to the exact post-execution amount,* or *at time T, a third-party escalation was approved or rejected.*
+- **Action receipts** record a single authorization decision: *at time T, the issuer decided that a request for action A by agent G on behalf of user U was allowed, denied, required confirmation, or required escalation, under authorization C.* These are produced by the issuer's `/check` endpoint and do not prove the action occurred.
+- **Event receipts** record authorization lifecycle events and workspace receipt checkpoints: creation, revocation, budget settlement, client-reported escalation resolution, or a daily commitment to a signed receipt set.
 
-Both kinds of receipts use the same JSON structure, the same canonicalization, the same signature scheme, and the same verifier. They differ only in the values of a few fields (§3.3). An auditor presented with a dispute typically needs both: event receipts prove *what was authorized, how estimated spend was settled, and who approved later escalation*, while action receipts prove *what happened under that authorization*.
+Both kinds of receipts use the same JSON structure, the same canonicalization, the same signature scheme, and the same verifier. They differ only in the values of a few fields (§3.3). An auditor presented with a dispute typically needs both: event receipts show *what the issuer recorded as authorized, how client-reported spend was settled, and what escalation resolution the client reported*, while action receipts show *the decisions returned for requests under that authorization*.
 
 The goals of this format are, in order:
 
 1. **Third-party verifiability.** An auditor, regulator, or end-user can verify a receipt without trusting the issuer's continued cooperation or uptime.
 2. **Tamper evidence.** Any modification to the receipt content after signing is detectable.
-3. **Portability.** Receipts remain verifiable if the issuer goes out of business, the customer switches vendors, or the verifier is written in a different language.
-4. **Simplicity.** The verification algorithm is short enough to reimplement in any language in under 200 lines.
+3. **Portability.** A retained receipt and trusted public key remain verifiable if the issuer goes out of business, the customer switches vendors, or the verifier is written in a different language.
+4. **Simplicity.** The verification rules are explicit and dependency-light enough to implement consistently across languages.
 
 Non-goals: this spec does not define the *decision logic* that produced the receipt, the *policy language* used to describe permissions, or the *transport* used to deliver receipts. It defines only the signed artifact and how to verify it.
 
@@ -31,11 +31,12 @@ Non-goals: this spec does not define the *decision logic* that produced the rece
 The key words **MUST**, **MUST NOT**, **SHOULD**, **SHOULD NOT**, and **MAY** in this document are to be interpreted as described in RFC 2119 and RFC 8174.
 
 - **Receipt** — a JSON object conforming to §3 plus its signature. Either an action receipt or an event receipt. A receipt always carries a real Ed25519 signature; an in-flight pending state is a transport-layer concept the issuer surfaces separately (§5.3).
-- **Action receipt** — a receipt recording a single authorization decision at the moment of an action. See §3.3.
-- **Event receipt** — a receipt recording an authorization-related event (creation, revocation, budget settlement, or escalation resolution). See §3.3.
+- **Action receipt** — a receipt recording a single authorization decision for an action request. See §3.3.
+- **Event receipt** — a receipt recording an authorization-related event (creation, revocation, budget settlement, escalation resolution, or receipt checkpoint). See §3.3.
 - **Issuer** — the entity that produced and signed the receipt. Identified by `workspace_id`.
-- **Subject** — the end-user on whose behalf an agent acted, or who granted the authorization. Identified by `user_id`.
+- **Subject** — the end-user whom the receipt identifies as the agent's principal, or who granted the authorization. Identified by `user_id`; the receipt does not independently prove that relationship.
 - **Verifier** — any party validating a receipt.
+- **Checkpoint receipt** — a `receipt.checkpoint` event receipt whose signed context commits to one UTC day's registered signed non-checkpoint receipt set (§3.7).
 - **Canonical form** — the byte sequence produced by applying the canonicalization rules in §4 to a receipt's payload.
 
 ## 3. Receipt structure
@@ -44,7 +45,7 @@ A receipt is a JSON object with the following top-level fields. All fields are r
 
 ```json
 {
-  "schema_version": "3",
+  "schema_version": "4",
   "receipt_id": "rcp_01HXZ2B3QW4N5M6P7R8S9T0V1W",
   "workspace_id": "ws_01HXA1B2C3D4E5F6G7H8J9K0L1",
   "issued_at": "2026-04-21T14:32:17.482Z",
@@ -71,7 +72,7 @@ A receipt is a JSON object with the following top-level fields. All fields are r
 
 | Field | Type | Required | Notes |
 |---|---|---|---|
-| `schema_version` | string | yes | Receipt wire-format version. MUST be exactly `"3"`. Wire versions are plain integers; each distinct wire format has exactly one identity. |
+| `schema_version` | string | yes | Receipt wire-format version. MUST be exactly `"4"`. Wire versions are plain integers; each distinct wire format has exactly one identity. |
 | `receipt_id` | string | yes | ULID. Monotonic within a workspace. |
 | `workspace_id` | string | yes | Issuer identifier. Used to look up the verification key. |
 | `issued_at` | string | yes | RFC 3339 timestamp in the exact `YYYY-MM-DDTHH:MM:SS.sssZ` UTC millisecond profile. |
@@ -80,10 +81,10 @@ A receipt is a JSON object with the following top-level fields. All fields are r
 | `user_id` | string | yes | Opaque identifier of the end-user. Customer-defined; issuers and verifiers MUST NOT assume any particular structure. SHOULD NOT contain personally identifiable information (§10.6). |
 | `agent_id` | string | yes | Opaque identifier of the agent or acting principal. Customer-defined. For human-initiated actions, this identifies the actor's role (e.g. `controller`, `dba`). |
 | `action` | string \| absent | conditional | Present on action receipts. The action name being checked (e.g. `email.send`, `contact.enrich`). Format is issuer-defined but conventionally dotted. **MUST be absent on event receipts.** |
-| `event` | string \| absent | conditional | Present on event receipts. One of `"authorization.create"`, `"authorization.revoke"`, `"budget.settle"`, or `"escalation.resolve"`. **MUST be absent on action receipts.** |
+| `event` | string \| absent | conditional | Present on event receipts. One of `"authorization.create"`, `"authorization.revoke"`, `"budget.settle"`, `"escalation.resolve"`, or `"receipt.checkpoint"`. **MUST be absent on action receipts.** |
 | `resource` | string \| null | yes | An identifier for the target of the action, or `null`. Always `null` for authorization create/revoke receipts. For `budget.settle` and `escalation.resolve`, this MAY carry the resource the event was bound to. Issuers MUST NOT include the resource's contents, only an identifier. |
 | `context` | object | yes | An opaque object of additional facts the issuer considered. Contents are issuer-defined. Verifiers MUST canonicalize the object by the same §4 rules as the rest of the payload and MUST NOT alter its values, drop or add keys, or reorder arrays; nested object keys are re-sorted per rule 3 like any other object. MAY be empty (`{}`). |
-| `authorization_id` | string \| null | yes | The authorization record this receipt relates to. For action receipts: the authorization that authorized the decision, or `null` if no authorization matched. For event receipts: the related `authorization_id` (never `null`). |
+| `authorization_id` | string \| null | yes | The authorization record this receipt relates to. For action receipts: the authorization that authorized the decision, or `null` if no authorization matched. For authorization-related event receipts: the related `authorization_id`. For workspace-wide `receipt.checkpoint`, MUST be `null`. |
 | `engine_version` | string | yes | Version of the issuer's decision logic at time of issue. Format is issuer-defined. |
 | `policy_eval` | object \| absent | optional | Action receipts only; **MUST be absent on event receipts.** Records the outcome of per-action condition evaluation: which condition (if any) routed the decision, and the evaluated context value. The rules in force are pinned by `authorization_id` (§3.3). See §3.6. |
 | `alg` | string | yes | MUST be `"Ed25519"`. This field is part of the signed payload. |
@@ -92,13 +93,13 @@ A receipt is a JSON object with the following top-level fields. All fields are r
 
 ### 3.2 Extensibility
 
-Verifiers implementing this specification accept only `"3"` and **MUST** reject every other value. Future incompatible receipt shapes require a new wire version and matching verifier release. Issuers **MUST NOT** emit fields under a version that does not define them.
+Verifiers implementing this specification accept only `"4"` and **MUST** reject every other value. Future incompatible receipt shapes require a new wire version and matching verifier release. Issuers **MUST NOT** emit fields or event values under a version that does not define them.
 
 ### 3.3 Receipt kinds
 
 Receipts come in two kinds, distinguished by which of two mutually exclusive fields is present:
 
-**Action receipts** record a single authorization decision at the moment of an action. They are produced by the issuer's decisioning endpoint (conventionally `POST /v1/check`).
+**Action receipts** record a single authorization decision for an action request. They are produced by the issuer's decisioning endpoint (conventionally `POST /v1/check`) and do not prove that the requested action occurred.
 
 - `action` — present, set to the action name being checked. Conventionally dotted (`email.send`, `contact.enrich`, `payment.approve`).
 - `event` — **MUST be absent.**
@@ -106,13 +107,14 @@ Receipts come in two kinds, distinguished by which of two mutually exclusive fie
 - `authorization_id` — the matching authorization, or `null` if no authorization matched.
 - `resource` — an identifier for the action's target, or `null`.
 
-**Event receipts** record an authorization-related event. They are produced when an authorization is created/revoked, estimated spend is settled after execution, or a third-party escalation is resolved.
+**Event receipts** record an authorization-related event or a workspace-wide receipt checkpoint.
 
 - `event` — present, one of:
   - `"authorization.create"` — the customer recorded that a user approved a set of actions for an agent.
   - `"authorization.revoke"` — the authorization was revoked (by the user, by the customer, or automatically on expiry).
   - `"budget.settle"` — an estimated action cost was reconciled to the exact post-execution cost.
   - `"escalation.resolve"` — a third-party approver approved or rejected a pending escalation.
+  - `"receipt.checkpoint"` — the issuer committed to one UTC day's registered signed non-checkpoint receipt set (§3.7).
 - `action` — **MUST be absent.**
 - `decision` — one of:
   - `"authorization_granted"` — paired with `event: "authorization.create"`.
@@ -120,7 +122,8 @@ Receipts come in two kinds, distinguished by which of two mutually exclusive fie
   - `"budget_settled"` — paired with `event: "budget.settle"`.
   - `"escalation_approved"` — paired with `event: "escalation.resolve"` when the approver approved.
   - `"escalation_rejected"` — paired with `event: "escalation.resolve"` when the approver rejected.
-- `authorization_id` — the authorization being created, revoked, settled, or escalated. **MUST NOT** be `null` on an event receipt.
+  - `"receipt_set_committed"` — paired with `event: "receipt.checkpoint"`.
+- `authorization_id` — the authorization being created, revoked, settled, or escalated. **MUST NOT** be `null` on those event receipts. It **MUST** be `null` on `receipt.checkpoint`.
 - `resource` — **MUST** be `null` for authorization create/revoke receipts. For `budget.settle` and `escalation.resolve`, this MAY carry the resource the event was bound to.
 - `context` — conventionally carries lifecycle metadata: the full action set at creation, `expires_at`, `requires_confirm_for`, `requires_escalation_for`, the creation source (`csv_upload`, `onboarding_modal`), an optional `csv_hash` or similar integrity identifier, an optional `replaces` field (see below); for revocations a `revoked_by` field (`user`, `admin`, `expired`, `tombstone`, or `superseded` when the revocation is part of a rule change) and, when `revoked_by` is `superseded`, an optional `superseded_by: "<authorization_id of the successor>"` forward pointer (see below); for budget settlements the originating check receipt id and estimated/actual cost evidence; and for escalation resolution an `escalation` object containing the escalation id, action, approver label, resolution status, and approver identity.
 
@@ -138,7 +141,7 @@ Emitting the successor id on the revoke receipt requires the successor's `author
 Verifiers **MUST** enforce the following:
 
 - Exactly one of `action` and `event` is present. Receipts with both fields, or with neither, are rejected.
-- If `event` is present, it MUST be one of `"authorization.create"`, `"authorization.revoke"`, `"budget.settle"`, or `"escalation.resolve"`. The corresponding `decision` MUST be valid for that event. `authorization_id` MUST NOT be `null`. `resource` MUST be `null` for authorization create/revoke receipts. `policy_eval` MUST be absent.
+- If `event` is present, it MUST be one of `"authorization.create"`, `"authorization.revoke"`, `"budget.settle"`, `"escalation.resolve"`, or `"receipt.checkpoint"`. The corresponding `decision` MUST be valid for that event. `authorization_id` MUST NOT be `null` except on `receipt.checkpoint`, where it MUST be `null`. `resource` MUST be `null` for authorization create/revoke and checkpoint receipts. `policy_eval` MUST be absent. Checkpoint context MUST conform to §3.7.
 - If `action` is present, `decision` MUST be one of `"allow"`, `"deny"`, `"confirm"`, or `"escalate"`. The reserved event-only decisions (`authorization_granted`, `authorization_revoked`, `budget_settled`, `escalation_approved`, `escalation_rejected`) MUST NOT appear on action receipts. If `policy_eval` is present, it MUST conform to §3.6.
 
 The two-field discriminator design (rather than a single overloaded field) makes the receipt kind explicit at the schema level. A field's presence tells you what kind of receipt it is; pairing rules become trivial to enforce.
@@ -147,7 +150,7 @@ The two-field discriminator design (rather than a single overloaded field) makes
 
 ```json
 {
-  "schema_version": "3",
+  "schema_version": "4",
   "receipt_id": "rcp_01HXZAUTHORIZATIONCREATE0000000",
   "workspace_id": "ws_01HXA1B2C3D4E5F6G7H8J9K0L1",
   "issued_at": "2026-04-21T14:30:00.000Z",
@@ -188,7 +191,7 @@ The two-field discriminator design (rather than a single overloaded field) makes
 
 ### 3.5 The authorization chain
 
-An auditor can reconstruct the full story of an authorization by querying all receipts with a given `authorization_id`. The chain consists of:
+An auditor can reconstruct a presented authorization timeline by querying receipts with a given `authorization_id`. The chain consists of:
 
 1. Exactly one `authorization.create` receipt (the authorization grant itself).
 2. Zero or more action receipts (each check that matched this authorization). The rules in force for every one of them are exactly those recorded in the creation receipt — authorizations are immutable (§3.3), so `authorization_id` alone pins the rule set.
@@ -208,7 +211,7 @@ Issuers that route action decisions through per-action conditions MAY record the
 
 ```json
 {
-  "schema_version": "3",
+  "schema_version": "4",
   "receipt_id": "rcp_01J0Z7Q4BORDERLINE0CONFIRM",
   "workspace_id": "ws_01HXA1B2C3D4E5F6G7H8J9K0L1",
   "issued_at": "2026-06-09T17:04:09.114Z",
@@ -260,6 +263,39 @@ If a condition references a context field that is absent from the request, issue
 
 Like `context` (§7.1), the evaluated values originate from the customer's system. `policy_eval` attests that the issuer evaluated the stated condition against the stated value and routed accordingly — not that the value was true in the world.
 
+### 3.7 Daily receipt checkpoints
+
+A checkpoint is a workspace-wide event receipt with `event: "receipt.checkpoint"`, `decision: "receipt_set_committed"`, `authorization_id: null`, and `resource: null`. Its `context` MUST contain exactly:
+
+| Member | Type | Notes |
+|---|---|---|
+| `period_start` | string | Inclusive UTC midnight in the exact timestamp profile. |
+| `period_end` | string | Exclusive UTC midnight exactly one day after `period_start`. |
+| `receipt_count` | non-negative integer | Number of committed member receipts. |
+| `merkle_root` | string | `sha256:` followed by 64 lowercase hex characters, computed below. |
+| `previous_checkpoint_id` | string \| null | Receipt id of the immediately preceding daily checkpoint, or null for the first checkpoint. |
+| `previous_merkle_root` | string \| null | That checkpoint's `merkle_root`, or null for the first checkpoint. Both previous fields MUST be null or both non-null. |
+
+The checkpoint `issued_at` MUST be at or after `period_end`. At construction time the issuer MUST define the member set as every signed, non-checkpoint receipt registered in that workspace whose signed `issued_at` lies in the half-open interval `[period_start, period_end)`. Member `receipt_id` values MUST be unique. Checkpoint receipts are excluded to avoid self-reference. A verifier recomputes the commitment from the exact member receipts it was given and rejects a count or root mismatch.
+
+#### 3.7.1 Merkle root
+
+The commitment uses SHA-256 with one-byte domain separation and no dependency on presentation order:
+
+1. For each full signed member receipt `R`, including its `signature`, serialize the entire object using §4.2 without applying §4.1's signature removal, then compute `leaf = SHA256(0x00 || full_canonical_bytes)`.
+2. Sort the 32-byte leaf hashes in ascending unsigned byte order.
+3. For each adjacent pair compute `SHA256(0x01 || left || right)`. If a level has an odd count, duplicate its final hash and pair it with itself. Repeat until one hash remains.
+4. For an empty member set, the root bytes are `SHA256(0x02)`.
+5. Encode the root as `sha256:` plus lowercase hexadecimal.
+
+Sorting leaf hashes makes the commitment a deterministic set commitment; array or export order is irrelevant. Including the full signed receipt bytes binds both the issuer signature and every signed field. Verifiers reject duplicate receipt ids, and `receipt_count` makes omissions explicit before root comparison.
+
+#### 3.7.2 Prior linkage and limits
+
+Except for the first checkpoint, `previous_checkpoint_id` and `previous_merkle_root` SHOULD identify the most recent earlier checkpoint. When that prior receipt is available, verifiers SHOULD verify its signature, root equality, id equality, and that its period ends no later than the current period begins. A gap remains visible in the signed periods instead of making later checkpoints unverifiable.
+
+A verified checkpoint proves that the presented member set exactly matches the signed count and Merkle root. It does **not** prove that the issuer registered every real-world event, retained every receipt before constructing the checkpoint, or published the checkpoint to an immutable external system. Prior links are signed issuer statements, not external timestamps. External anchoring is outside this specification.
+
 ## 4. Canonical serialization
 
 To produce a byte sequence suitable for signing and verification, a verifier **MUST** canonicalize the receipt payload as follows.
@@ -292,7 +328,7 @@ The payload for the example in §3 canonicalizes to (linebreaks for display only
 "decision":"allow","engine_version":"2026-04-17.1","issued_at":
 "2026-04-21T14:32:17.482Z","key_id":"projects/allowly-prod/locations/global/keyRings/allowly-signing/cryptoKeys/ws_01HXA1/cryptoKeyVersions/3","reason":"authorization_granted_action_active",
 "receipt_id":"rcp_01HXZ2B3QW4N5M6P7R8S9T0V1W","resource":
-"edge:emp_8821:conn_9f2a","schema_version":"3","user_id":"emp_8821",
+"edge:emp_8821:conn_9f2a","schema_version":"4","user_id":"emp_8821",
 "workspace_id":"ws_01HXA1B2C3D4E5F6G7H8J9K0L1"}
 ```
 
@@ -313,7 +349,7 @@ Verifiers **MUST** use standard RFC 8032 Ed25519 verification over the raw canon
 
 ### 5.2 Protected algorithm and key identifier
 
-Format 3 places `alg` and `key_id` at the top level. Removing only the
+Format 4 places `alg` and `key_id` at the top level. Removing only the
 `signature` field for canonicalization leaves both fields in the signed bytes,
 so neither the algorithm nor trust-anchor selector can be changed after issue.
 The `signature` field contains only the canonical unpadded base64url signature
@@ -392,22 +428,23 @@ Verifiers **SHOULD** cache this document; issuers **SHOULD** set `Cache-Control:
 
 A verifier given a receipt `R` and the issuer's public keys **MUST** perform all of the following steps in order, and **MUST** reject the receipt if any step fails.
 
-1. **Version check.** Assert `R.schema_version` is exactly `"3"`.
+1. **Version check.** Assert `R.schema_version` is exactly `"4"`.
 2. **Schema check.** Assert all required fields are present with the correct types and no unknown top-level fields are present. Assert top-level `alg` and `key_id` are strings and `signature` is a non-empty string. The signature text MUST be canonical unpadded base64url and decode to exactly 64 bytes; verifiers MUST reject non-zero unused pad bits by decoding and re-encoding before comparison. If `R.policy_eval` is present, assert it conforms to §3.6.1: an object with exactly `matched_condition` (an object with exactly the members `field`, `op`, `value` — or null; `value` may be a scalar or an array of scalars) and `field_value` (string, integer, boolean, or null), and no other members.
 3. **Receipt kind and pairing check.** Determine the receipt kind from which discriminator field is present, and enforce the corresponding constraints:
    - Exactly one of `action` and `event` MUST be present. Reject if both are present, or if neither is present.
    - **If `event` is present** (event receipt):
-     - `event` MUST be one of `"authorization.create"`, `"authorization.revoke"`, `"budget.settle"`, or `"escalation.resolve"`.
+     - `event` MUST be one of `"authorization.create"`, `"authorization.revoke"`, `"budget.settle"`, `"escalation.resolve"`, or `"receipt.checkpoint"`.
      - If `event == "authorization.create"`: `decision` MUST equal `"authorization_granted"`.
      - If `event == "authorization.revoke"`: `decision` MUST equal `"authorization_revoked"`.
      - If `event == "budget.settle"`: `decision` MUST equal `"budget_settled"`.
      - If `event == "escalation.resolve"`: `decision` MUST be one of `"escalation_approved"` or `"escalation_rejected"`.
-     - `authorization_id` MUST NOT be `null`.
-     - `resource` MUST be `null` for authorization create/revoke receipts.
+     - If `event == "receipt.checkpoint"`: `decision` MUST equal `"receipt_set_committed"` and context MUST conform to §3.7.
+     - `authorization_id` MUST NOT be `null`, except it MUST be `null` for `receipt.checkpoint`.
+     - `resource` MUST be `null` for authorization create/revoke and checkpoint receipts.
      - `policy_eval` MUST be absent.
    - **If `action` is present** (action receipt):
      - `decision` MUST be one of `"allow"`, `"deny"`, `"confirm"`, or `"escalate"`.
-     - The reserved event-only decisions (`authorization_granted`, `authorization_revoked`, `budget_settled`, `escalation_approved`, `escalation_rejected`) MUST NOT appear.
+     - The reserved event-only decisions (`authorization_granted`, `authorization_revoked`, `budget_settled`, `escalation_approved`, `escalation_rejected`, `receipt_set_committed`) MUST NOT appear.
 4. **Algorithm check.** Assert `R.alg` equals `"Ed25519"`.
 5. **Timestamp sanity.** Parse `R.issued_at` using the exact `YYYY-MM-DDTHH:MM:SS.sssZ` profile. Assert it is a real calendar instant, is not in the future (allowing a small skew, e.g. 5 minutes), and is not absurdly far in the past (spec does not mandate a cutoff; verifier policy).
 6. **Canonicalize.** Produce the canonical payload bytes per §4.
@@ -422,7 +459,7 @@ A verifier given a receipt `R` and the issuer's public keys **MUST** perform all
 
 A valid action receipt attests that: *at `issued_at`, the issuer identified by `workspace_id` made `decision` about `action` by `agent_id` on behalf of `user_id`, under `authorization_id`, with engine version `engine_version`.*
 
-A valid event receipt attests that: *at `issued_at`, the issuer identified by `workspace_id` recorded an authorization-related event (`event`) for `authorization_id`, with `user_id` and `agent_id` as the parties, and context detailing the relevant actions, metadata, budget settlement, or escalation resolution.*
+A valid event receipt attests that: *at `issued_at`, the issuer identified by `workspace_id` recorded the signed event bytes.* Authorization events use `authorization_id`; a checkpoint instead attests to its signed daily set commitment (§3.7).
 
 ### 7.1 What verification does NOT prove
 
@@ -432,7 +469,7 @@ Verifiers and users of verified receipts **MUST NOT** assume the following:
 2. **That the user's approval was informed.** An `authorization.create` receipt records that the customer told the issuer the user approved. It does not prove the customer's approval UI was clear, the user read it, or the user understood what they approved. The quality of the approval UX is the customer's responsibility, not the receipt's.
 3. **That the context is true.** Fields like `initiated_by` and `origin` reflect what the customer's system reported at the time. The issuer does not independently verify them.
 4. **That `user_id` corresponds to any particular real-world person.** It is an opaque identifier the customer controls.
-5. **That a presented set of receipts is complete.** Signatures prove each receipt is genuine; nothing in the format proves no other receipt exists for the same `authorization_id` (§3.5).
+5. **That the issuer's registry or real-world history was complete.** Without a checkpoint, signatures prove only each presented receipt. A verified checkpoint proves equality to its signed member-set commitment, but without external anchoring it cannot prove the issuer registered or retained every receipt before constructing that commitment (§3.7.2).
 6. **That a receipt was signed at `issued_at`.** The timestamp is a signed claim, not a proof of signing time; a compromised key can produce receipts bearing any `issued_at` (§10.1).
 
 These limits are intentional. The receipt attests to what the issuer observed and recorded, not to ground truth about the world.
@@ -472,6 +509,7 @@ Vectors include:
 - A `authorization.revoke` receipt with `revoked_by: "superseded"` and a `superseded_by` forward pointer (§3.3 lineage convention).
 - A `budget.settle` receipt with estimated and exact post-execution cost evidence.
 - `escalation.resolve` receipts with approved and rejected resolutions and resource bindings.
+- Linked `receipt.checkpoint` receipts, including an empty day and a two-member Merkle commitment.
 
 *Receipts that MUST be rejected:*
 - A non-object top-level receipt (`null`, array, string, or number).
@@ -479,7 +517,8 @@ Vectors include:
 - A receipt with a forged signature (zero bytes).
 - A receipt with an unknown `key_id`.
 - A receipt whose signed `key_id` was changed to another published key.
-- A receipt with `schema_version: "4"`.
+- A receipt with `schema_version: "5"`.
+- A `receipt.checkpoint` with a negative `receipt_count`.
 - A receipt with an unknown top-level field.
 - A receipt with a required field missing.
 - A receipt with `decision: "maybe"` (invalid decision value).
@@ -507,7 +546,7 @@ Vectors include:
 
 If an issuer's Ed25519 private key is compromised, all receipts signed under that key are untrustworthy from the moment of compromise until rotation. Issuers **SHOULD** rotate keys at least annually. Verifiers **SHOULD** consult the key document's `active_until` field when verifying old receipts; a key retired for compromise should have `active_until` set to the compromise time. Note the limit of this mitigation: the window check compares `active_until` against the receipt's *claimed* `issued_at`, and an attacker holding the key controls that claim — a receipt backdated to before the compromise time still verifies (§7 item 6). Retiring a key bounds honest use; it does not detect backdated forgeries. Detecting those requires evidence outside this format, such as an external timestamp or the issuer's own receipt log.
 
-Format 3 signs `alg` and `key_id`, so changing either one invalidates the
+Format 4 signs `alg` and `key_id`, so changing either one invalidates the
 signature.
 
 ### 10.2 Canonicalization fragility
@@ -629,6 +668,11 @@ oracle; customers can use the key and the reference verifier locally.
 
 ## 11. Changelog
 
+- **4 (2026-08-01)** — Daily signed receipt-set checkpoints.
+  - Added `receipt.checkpoint` / `receipt_set_committed` workspace event receipts.
+  - Defined a deterministic SHA-256 Merkle commitment over full canonical signed receipt bytes, using byte-domain-separated leaves/nodes, sorted leaf hashes, duplicate-last odd levels, and a distinct empty root.
+  - Added exact UTC-day periods, member counts, and prior checkpoint id/root linkage.
+  - Added Python and TypeScript checkpoint recomputation against shared vectors. A verified checkpoint proves equality to the signed set commitment, not real-world or issuer-registry completeness; external anchoring remains out of scope.
 - **3 (2026-07-22)** — Self-describing version field; integer wire identities.
   - **Renamed `version` to `schema_version`.** The field's canonical sort
     position moves (it now sorts before `user_id`), so wire-2.0.0 and wire-3

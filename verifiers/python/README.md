@@ -1,6 +1,6 @@
 # Python Reference Verifier
 
-Packaged Python verifier for Allowly Receipt Format wire version 3.
+Packaged Python verifier for Allowly Receipt Format wire version 4.
 
 ## Install
 
@@ -24,6 +24,14 @@ Verify a whole export or audit-package chain in one go (`.jsonl` or `.jsonl.gz`)
 # Each line is either a bare receipt (audit-package chain.jsonl) or a
 # {"receipt_id", ..., "receipt": {...}} export wrapper — both are handled.
 allowly-receipt-verify --export chain.jsonl keys.json
+```
+
+If the export includes checkpoint evidence, recompute every listed checkpoint
+from the already verified receipt lines:
+
+```bash
+allowly-receipt-verify --export chain.jsonl \
+  --checkpoint-evidence checkpoint_evidence.json keys.json
 ```
 
 Verify only one authorization's chain and check its structure (exactly one
@@ -88,6 +96,28 @@ The package exposes typed verifier exceptions:
 - `SignatureMismatchError`
 
 All inherit from `VerificationError`.
+
+### Verify a daily checkpoint
+
+`verify_checkpoint` verifies the checkpoint and member signatures, period,
+count, Merkle root, and optional prior linkage. The workspace id must come from
+caller-trusted configuration:
+
+```python
+from allowly_receipt_format import verify_checkpoint
+
+verify_checkpoint(
+    checkpoint,
+    member_receipts,
+    keys,
+    expected_workspace_id=configured_workspace_id,
+    previous_checkpoint=previous_checkpoint,
+)
+```
+
+Success proves the supplied set matches the signed commitment. Without an
+external anchor it does not prove the issuer registered or retained every
+receipt before constructing the checkpoint.
 
 ### Match a keyed pseudonym reference
 

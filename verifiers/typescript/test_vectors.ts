@@ -5,13 +5,20 @@
  *   or after build: node dist/test_vectors.js ../../test-vectors.json
  */
 import { readFileSync } from "node:fs";
-import { canonicalize, verifyReceipt, loadKeysFromJson, VerificationError } from "./verifier.js";
+import {
+  VerificationError,
+  canonicalize,
+  checkpointMerkleRoot,
+  loadKeysFromJson,
+  verifyCheckpoint,
+  verifyReceipt,
+} from "./verifier.js";
 
 // Hand-written expected canonical form for the spec §4.3 reference example.
 // Deliberately NOT produced by the reference canonicalizer: if canonicalization
 // regresses, generated vectors would regress with it and tests would still pass.
 const GOLDEN_PAYLOAD = {
-  schema_version: "3",
+  schema_version: "4",
   receipt_id: "rcp_01HXZ2B3QW4N5M6P7R8S9T0V1W",
   workspace_id: "ws_01HXA1B2C3D4E5F6G7H8J9K0L1",
   issued_at: "2026-04-21T14:32:17.482Z",
@@ -47,7 +54,7 @@ const GOLDEN_CANONICAL =
   '"key_id":"projects/allowly-prod/locations/global/keyRings/allowly-signing/cryptoKeys/ws_01HXA1/cryptoKeyVersions/3",' +
   '"reason":"authorization_granted_action_active",' +
   '"receipt_id":"rcp_01HXZ2B3QW4N5M6P7R8S9T0V1W",' +
-  '"resource":"edge:emp_8821:conn_9f2a","schema_version":"3","user_id":"emp_8821",' +
+  '"resource":"edge:emp_8821:conn_9f2a","schema_version":"4","user_id":"emp_8821",' +
   '"workspace_id":"ws_01HXA1B2C3D4E5F6G7H8J9K0L1"}';
 
 async function main(vectorsPath: string): Promise<number> {
@@ -147,6 +154,45 @@ async function main(vectorsPath: string): Promise<number> {
         console.log(`        got:      ${e.message}`);
         failures++;
       }
+    }
+  }
+
+  console.log(`\nTesting ${vectors.checkpoint_cases.length} checkpoint vectors...`);
+  for (const checkpointCase of vectors.checkpoint_cases) {
+    try {
+      const root = await checkpointMerkleRoot(checkpointCase.receipts);
+      if (root !== checkpointCase.expected_merkle_root) {
+        throw new VerificationError(
+          `cross-language root mismatch: expected ${checkpointCase.expected_merkle_root}, got ${root}`,
+        );
+      }
+      await verifyCheckpoint(
+        checkpointCase.checkpoint,
+        checkpointCase.receipts,
+        keys,
+        {
+          expectedWorkspaceId: vectors.public_keys.workspace_id,
+          previousCheckpoint: checkpointCase.previous_checkpoint,
+          now,
+        },
+      );
+      try {
+        await verifyCheckpoint(
+          checkpointCase.checkpoint,
+          checkpointCase.receipts.slice(0, -1),
+          keys,
+          { expectedWorkspaceId: vectors.public_keys.workspace_id, now },
+        );
+        throw new VerificationError("checkpoint accepted an omitted member");
+      } catch (e) {
+        if (!(e instanceof VerificationError) || !e.message.includes("receipt_count mismatch")) {
+          throw e;
+        }
+      }
+      console.log(`  OK    ${checkpointCase.name}`);
+    } catch (e) {
+      console.log(`  FAIL  ${checkpointCase.name}: ${e}`);
+      failures++;
     }
   }
 

@@ -1,7 +1,7 @@
 /**
  * Allowly Receipt Verifier (TypeScript reference implementation).
  *
- * Verifies Allowly receipts per receipt-format.md wire version 3.
+ * Verifies Allowly receipts per receipt-format.md wire version 4.
  *
  * Dependencies: Node.js 20+ (uses built-in node:crypto and the WebCrypto API).
  * No external runtime dependencies.
@@ -23,13 +23,14 @@
 
 import { createHmac, timingSafeEqual, webcrypto } from "node:crypto";
 
-const SPEC_VERSION = "3";
+const SPEC_VERSION = "4";
 const ACTION_DECISIONS = new Set(["allow", "deny", "confirm", "escalate"]);
 const EVENT_DECISIONS: Record<string, Set<string>> = {
   "authorization.create": new Set(["authorization_granted"]),
   "authorization.revoke": new Set(["authorization_revoked"]),
   "budget.settle": new Set(["budget_settled"]),
   "escalation.resolve": new Set(["escalation_approved", "escalation_rejected"]),
+  "receipt.checkpoint": new Set(["receipt_set_committed"]),
 };
 const AUTHORIZATION_LIFECYCLE_EVENTS = new Set(["authorization.create", "authorization.revoke"]);
 const EVENT_ONLY_DECISIONS = new Set(Object.values(EVENT_DECISIONS).flatMap((decisions) => [...decisions]));
@@ -87,7 +88,7 @@ interface ReceiptBase {
 }
 
 export interface Receipt extends ReceiptBase {
-  schema_version: "3";
+  schema_version: "4";
   alg: string;
   key_id: string;
   signature: string;
@@ -128,6 +129,55 @@ export function canonicalize(payload: unknown): Uint8Array {
   validateTree(payload);
   const s = stringify(payload);
   return new TextEncoder().encode(s);
+}
+
+async function sha256(...parts: Uint8Array[]): Promise<Uint8Array> {
+  const length = parts.reduce((total, part) => total + part.length, 0);
+  const input = new Uint8Array(length);
+  let offset = 0;
+  for (const part of parts) {
+    input.set(part, offset);
+    offset += part.length;
+  }
+  return new Uint8Array(await webcrypto.subtle.digest("SHA-256", input));
+}
+
+function compareBytes(left: Uint8Array, right: Uint8Array): number {
+  for (let i = 0; i < left.length; i++) {
+    if (left[i] !== right[i]) return left[i] - right[i];
+  }
+  return left.length - right.length;
+}
+
+function hex(bytes: Uint8Array): string {
+  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+export async function checkpointMerkleRoot(receipts: Array<Record<string, unknown>>): Promise<string> {
+  const seenIds = new Set<string>();
+  let level = await Promise.all(receipts.map(async (receipt) => {
+    if (typeof receipt !== "object" || receipt === null || typeof receipt.receipt_id !== "string") {
+      throw new VerificationError("checkpoint member must be a receipt object with receipt_id");
+    }
+    if (seenIds.has(receipt.receipt_id)) {
+      throw new VerificationError(`duplicate checkpoint member receipt_id: ${JSON.stringify(receipt.receipt_id)}`);
+    }
+    seenIds.add(receipt.receipt_id);
+    return sha256(new Uint8Array([0x00]), canonicalize(receipt));
+  }));
+  level.sort(compareBytes);
+  if (level.length === 0) {
+    return "sha256:" + hex(await sha256(new Uint8Array([0x02])));
+  }
+  while (level.length > 1) {
+    if (level.length % 2 === 1) level.push(level[level.length - 1]);
+    const next: Uint8Array[] = [];
+    for (let i = 0; i < level.length; i += 2) {
+      next.push(await sha256(new Uint8Array([0x01]), level[i], level[i + 1]));
+    }
+    level = next;
+  }
+  return "sha256:" + hex(level[0]);
 }
 
 function validateTree(payload: unknown): void {
@@ -276,7 +326,7 @@ export async function verifyReceipt(
     }
     if (!Object.hasOwn(EVENT_DECISIONS, event)) {
       throw new VerificationError(
-        `event must be one of ["authorization.create","authorization.revoke","budget.settle","escalation.resolve"], got ${JSON.stringify(event)}`,
+        `event must be one of ["authorization.create","authorization.revoke","budget.settle","escalation.resolve","receipt.checkpoint"], got ${JSON.stringify(event)}`,
       );
     }
     const expectedDecisions = EVENT_DECISIONS[event];
@@ -286,7 +336,15 @@ export async function verifyReceipt(
           `decision in ${JSON.stringify([...expectedDecisions].sort())}, got ${JSON.stringify(r.decision)}`,
       );
     }
-    if (r.authorization_id === null) {
+    if (event === "receipt.checkpoint") {
+      if (r.authorization_id !== null) {
+        throw new VerificationError("receipt.checkpoint must have null authorization_id");
+      }
+      if (r.resource !== null) {
+        throw new VerificationError("receipt.checkpoint must have null resource");
+      }
+      checkCheckpointContext(r.context, r.issued_at);
+    } else if (r.authorization_id === null) {
       throw new VerificationError(
         `event receipt with event=${JSON.stringify(event)} must have non-null authorization_id`,
       );
@@ -477,6 +535,125 @@ function checkPolicyEval(value: unknown): void {
 
   if (!isPolicyScalar(policyEval.field_value)) {
     throw new VerificationError("policy_eval.field_value must be string, integer, boolean, or null");
+  }
+}
+
+const CHECKPOINT_ROOT_RE = /^sha256:[0-9a-f]{64}$/;
+const CHECKPOINT_CONTEXT_FIELDS = [
+  "period_start",
+  "period_end",
+  "receipt_count",
+  "merkle_root",
+  "previous_checkpoint_id",
+  "previous_merkle_root",
+];
+
+function checkCheckpointContext(value: unknown, issuedAt: string): void {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    throw new VerificationError("receipt.checkpoint context must be an object");
+  }
+  const context = value as Record<string, unknown>;
+  checkExactKeys(context, CHECKPOINT_CONTEXT_FIELDS, "receipt.checkpoint context");
+  const periodStart = parseRFC3339(context.period_start as string);
+  const periodEnd = parseRFC3339(context.period_end as string);
+  const checkpointAt = parseRFC3339(issuedAt);
+  if (periodEnd <= periodStart) {
+    throw new VerificationError("receipt.checkpoint period_end must be after period_start");
+  }
+  if (
+    !String(context.period_start).endsWith("T00:00:00.000Z") ||
+    periodEnd.getTime() - periodStart.getTime() !== 24 * 60 * 60 * 1000
+  ) {
+    throw new VerificationError("receipt.checkpoint period must be one UTC calendar day");
+  }
+  if (checkpointAt < periodEnd) {
+    throw new VerificationError("receipt.checkpoint issued_at must be at or after period_end");
+  }
+  if (!Number.isSafeInteger(context.receipt_count) || (context.receipt_count as number) < 0) {
+    throw new VerificationError("receipt.checkpoint receipt_count must be a non-negative integer");
+  }
+  if (typeof context.merkle_root !== "string" || !CHECKPOINT_ROOT_RE.test(context.merkle_root)) {
+    throw new VerificationError("receipt.checkpoint merkle_root must be sha256:<64 lowercase hex>");
+  }
+  const previousId = context.previous_checkpoint_id;
+  const previousRoot = context.previous_merkle_root;
+  if ((previousId === null) !== (previousRoot === null)) {
+    throw new VerificationError("receipt.checkpoint previous id and root must both be null or strings");
+  }
+  if (previousId !== null && typeof previousId !== "string") {
+    throw new VerificationError("receipt.checkpoint previous_checkpoint_id must be string or null");
+  }
+  if (previousRoot !== null && (typeof previousRoot !== "string" || !CHECKPOINT_ROOT_RE.test(previousRoot))) {
+    throw new VerificationError(
+      "receipt.checkpoint previous_merkle_root must be sha256:<64 lowercase hex> or null",
+    );
+  }
+}
+
+export async function verifyCheckpoint(
+  checkpoint: Record<string, unknown>,
+  receipts: Array<Record<string, unknown>>,
+  publicKeys: PublicKey[],
+  opts: {
+    expectedWorkspaceId: string;
+    previousCheckpoint?: Record<string, unknown>;
+    now?: Date;
+  },
+): Promise<void> {
+  await verifyReceipt(checkpoint, publicKeys, {
+    now: opts.now,
+    expectedWorkspaceId: opts.expectedWorkspaceId,
+  });
+  if (checkpoint.event !== "receipt.checkpoint") {
+    throw new VerificationError("checkpoint receipt must have event='receipt.checkpoint'");
+  }
+  const context = checkpoint.context as Record<string, unknown>;
+  const periodStart = parseRFC3339(context.period_start as string);
+  const periodEnd = parseRFC3339(context.period_end as string);
+  for (const receipt of receipts) {
+    await verifyReceipt(receipt, publicKeys, {
+      now: opts.now,
+      expectedWorkspaceId: opts.expectedWorkspaceId,
+    });
+    if (receipt.event === "receipt.checkpoint") {
+      throw new VerificationError("receipt.checkpoint cannot be a checkpoint member");
+    }
+    const issuedAt = parseRFC3339(receipt.issued_at as string);
+    if (issuedAt < periodStart || issuedAt >= periodEnd) {
+      throw new VerificationError(
+        `checkpoint member ${JSON.stringify(receipt.receipt_id)} falls outside checkpoint period`,
+      );
+    }
+  }
+  if (context.receipt_count !== receipts.length) {
+    throw new VerificationError(
+      `checkpoint receipt_count mismatch: committed ${context.receipt_count}, got ${receipts.length}`,
+    );
+  }
+  const root = await checkpointMerkleRoot(receipts);
+  if (context.merkle_root !== root) {
+    throw new VerificationError(
+      `checkpoint merkle_root mismatch: committed ${context.merkle_root}, got ${root}`,
+    );
+  }
+  if (opts.previousCheckpoint !== undefined) {
+    await verifyReceipt(opts.previousCheckpoint, publicKeys, {
+      now: opts.now,
+      expectedWorkspaceId: opts.expectedWorkspaceId,
+    });
+    if (opts.previousCheckpoint.event !== "receipt.checkpoint") {
+      throw new VerificationError("previous checkpoint must have event='receipt.checkpoint'");
+    }
+    const previousContext = opts.previousCheckpoint.context as Record<string, unknown>;
+    if (context.previous_checkpoint_id !== opts.previousCheckpoint.receipt_id) {
+      throw new VerificationError("checkpoint previous_checkpoint_id mismatch");
+    }
+    if (context.previous_merkle_root !== previousContext.merkle_root) {
+      throw new VerificationError("checkpoint previous_merkle_root mismatch");
+    }
+    if (String(previousContext.period_end) > String(context.period_start)) {
+      throw new VerificationError("checkpoint periods overlap or are out of order");
+    }
   }
 }
 
