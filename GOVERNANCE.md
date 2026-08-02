@@ -4,7 +4,7 @@ This document describes how decisions about the Allowly Receipt Format specifica
 
 ## Current state
 
-The specification is maintained by Allowly. The current stable receipt wire format is `"3"`, implemented by verifier packages 3.x. Final decisions on the spec text and verifier behavior rest with Allowly's maintainers while Allowly is the only serious implementer.
+The specification is maintained by Allowly. The current stable receipt wire format is `"4"`, implemented by verifier packages 4.x. Final decisions on the spec text and verifier behavior rest with Allowly's maintainers while Allowly is the only serious implementer.
 
 ## Change process
 
@@ -26,7 +26,7 @@ New optional fields, new non-normative appendices, new test vectors covering exi
 
 Any change that would cause a verifier for the current wire format to reject a previously valid receipt, or accept a previously invalid receipt. Examples: new required fields, changes to canonicalization rules, signature algorithm changes.
 
-Breaking changes require a wire-version and verifier-major bump (for example, wire `"3"` / verifier 3.x to wire `"4"` / verifier 4.x) and go through an RFC process:
+Breaking changes require a wire-version and verifier-major bump (for example, wire `"4"` / verifier 4.x to wire `"5"` / verifier 5.x) and go through an RFC process:
 
 1. Open a GitHub Discussion titled `RFC: <short name>` with a written proposal: problem, proposed change, migration story, reference to affected spec sections.
 2. **14-day minimum comment window.** Longer if discussion is active.
