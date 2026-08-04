@@ -1,5 +1,9 @@
 # Changelog
 
+## v4.0.1 — 2026-08-04
+
+- Fix TypeScript checkpoint verification to snapshot receipts and key documents before asynchronous verification, preventing caller mutations from changing verified inputs. Python advances in lockstep; receipt schema, canonicalization, and wire version remain unchanged. Clarify fingerprint verification scope, active wire-version references, and key-endpoint cache directives.
+
 ## Unreleased
 
 ## v4.0.0 — 2026-08-01
