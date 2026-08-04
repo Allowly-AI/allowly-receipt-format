@@ -425,7 +425,9 @@ Issuers **SHOULD** include `public_key_fingerprint` as `sha256:` followed by the
 
 Keys **MUST** remain published even after rotation so historical receipts remain verifiable. `active_until` being non-null indicates the key is retired but receipts signed during its active window remain valid.
 
-Verifiers **SHOULD** cache this document; issuers **SHOULD** set `Cache-Control: max-age=3600` or similar.
+Verifiers **SHOULD** honor this document's `Cache-Control` directive. Issuers
+**SHOULD** set `Cache-Control: max-age=3600` or similar when cached key state is
+acceptable; otherwise they may send `no-store`.
 
 ## 7. Verification algorithm
 
