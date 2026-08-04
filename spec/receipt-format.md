@@ -365,7 +365,7 @@ This separation is deliberate. Pending is a transport-layer concern, not a recei
 - Customers cannot accidentally serialize a pending response as audit evidence. The pending response and the signed receipt have different shapes; passing the wrong one to a verifier or a long-term store fails immediately, not silently.
 - The receipt format spec stays focused on a single artifact: the signed receipt.
 
-Issuers **MUST NOT** emit any object claiming to be a format-3 receipt with `signature` set to a non-signature value (e.g. a placeholder string). Verifiers **MUST** reject any such object on the schema check.
+Issuers **MUST NOT** emit any object claiming to be a format-4 receipt with `signature` set to a non-signature value (e.g. a placeholder string). Verifiers **MUST** reject any such object on the schema check.
 
 ### 5.4 Implementation notes on signing (non-normative)
 
@@ -603,7 +603,7 @@ The format cannot police the semantics of what customers evaluate; this guidance
 This appendix defines an optional application convention for pseudonymous
 strings carried inside an existing receipt `context`. It adds no receipt field,
 does not change canonicalization or signing, and does not change wire version
-`3`. Verifiers that do not use this convention continue to verify the same
+`4`. Verifiers that do not use this convention continue to verify the same
 receipt bytes.
 
 ### A.1 Key and field separation
