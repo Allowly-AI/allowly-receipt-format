@@ -19,7 +19,7 @@ Both kinds of receipts use the same JSON structure, the same canonicalization, t
 
 The goals of this format are, in order:
 
-1. **Third-party verifiability.** An auditor, regulator, or end-user who retained an authenticated issuer key or fingerprint can verify a receipt without the issuer's continued cooperation or uptime.
+1. **Third-party verifiability.** An auditor, regulator, or end-user who retained an issuer public key authenticated directly or against a retained fingerprint can verify a receipt without the issuer's continued cooperation or uptime.
 2. **Tamper evidence.** Any modification to the receipt content after signing is detectable.
 3. **Portability.** A retained receipt and trusted public key remain verifiable if the issuer goes out of business, the customer switches vendors, or the verifier is written in a different language.
 4. **Simplicity.** The verification rules are explicit and dependency-light enough to implement consistently across languages.
