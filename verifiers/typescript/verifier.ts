@@ -672,23 +672,45 @@ export async function verifyCheckpoint(
     trustedKeyFingerprints?: ReadonlySet<string>;
   },
 ): Promise<void> {
-  await verifyReceipt(checkpoint, publicKeys, {
-    now: opts.now,
+  const ownCheckpoint = snapshotJson(checkpoint, "checkpoint", false) as Record<string, unknown>;
+  const ownReceipts = snapshotJson(receipts, "receipts", false) as Array<Record<string, unknown>>;
+  const ownPreviousCheckpoint = opts.previousCheckpoint === undefined
+    ? undefined
+    : snapshotJson(opts.previousCheckpoint, "previous checkpoint", false) as Record<string, unknown>;
+  let ownPublicKeys: PublicKey[];
+  try {
+    ownPublicKeys = structuredClone(publicKeys);
+  } catch {
+    throw new VerificationError("publicKeys must be structured-cloneable data");
+  }
+  if (ownPublicKeys.some((key) => key?.publicKeyBytes?.buffer instanceof SharedArrayBuffer)) {
+    throw new VerificationError("publicKeyBytes must not use SharedArrayBuffer");
+  }
+  let ownNow = opts.now;
+  if (ownNow !== undefined) {
+    try {
+      ownNow = new Date(Date.prototype.getTime.call(ownNow));
+    } catch {
+      throw new VerificationError("now must be a valid Date");
+    }
+  }
+  const receiptOptions = {
+    now: ownNow,
     expectedWorkspaceId: opts.expectedWorkspaceId,
-    trustedKeyFingerprints: opts.trustedKeyFingerprints,
-  });
-  if (checkpoint.event !== "receipt.checkpoint") {
+    trustedKeyFingerprints: opts.trustedKeyFingerprints === undefined
+      ? undefined
+      : new Set(opts.trustedKeyFingerprints),
+  };
+
+  await verifyReceipt(ownCheckpoint, ownPublicKeys, receiptOptions);
+  if (ownCheckpoint.event !== "receipt.checkpoint") {
     throw new VerificationError("checkpoint receipt must have event='receipt.checkpoint'");
   }
-  const context = checkpoint.context as Record<string, unknown>;
+  const context = ownCheckpoint.context as Record<string, unknown>;
   const periodStart = parseRFC3339(context.period_start as string);
   const periodEnd = parseRFC3339(context.period_end as string);
-  for (const receipt of receipts) {
-    await verifyReceipt(receipt, publicKeys, {
-      now: opts.now,
-      expectedWorkspaceId: opts.expectedWorkspaceId,
-      trustedKeyFingerprints: opts.trustedKeyFingerprints,
-    });
+  for (const receipt of ownReceipts) {
+    await verifyReceipt(receipt, ownPublicKeys, receiptOptions);
     if (receipt.event === "receipt.checkpoint") {
       throw new VerificationError("receipt.checkpoint cannot be a checkpoint member");
     }
@@ -699,28 +721,24 @@ export async function verifyCheckpoint(
       );
     }
   }
-  if (context.receipt_count !== receipts.length) {
+  if (context.receipt_count !== ownReceipts.length) {
     throw new VerificationError(
-      `checkpoint receipt_count mismatch: committed ${context.receipt_count}, got ${receipts.length}`,
+      `checkpoint receipt_count mismatch: committed ${context.receipt_count}, got ${ownReceipts.length}`,
     );
   }
-  const root = await checkpointMerkleRoot(receipts);
+  const root = await checkpointMerkleRoot(ownReceipts);
   if (context.merkle_root !== root) {
     throw new VerificationError(
       `checkpoint merkle_root mismatch: committed ${context.merkle_root}, got ${root}`,
     );
   }
-  if (opts.previousCheckpoint !== undefined) {
-    await verifyReceipt(opts.previousCheckpoint, publicKeys, {
-      now: opts.now,
-      expectedWorkspaceId: opts.expectedWorkspaceId,
-      trustedKeyFingerprints: opts.trustedKeyFingerprints,
-    });
-    if (opts.previousCheckpoint.event !== "receipt.checkpoint") {
+  if (ownPreviousCheckpoint !== undefined) {
+    await verifyReceipt(ownPreviousCheckpoint, ownPublicKeys, receiptOptions);
+    if (ownPreviousCheckpoint.event !== "receipt.checkpoint") {
       throw new VerificationError("previous checkpoint must have event='receipt.checkpoint'");
     }
-    const previousContext = opts.previousCheckpoint.context as Record<string, unknown>;
-    if (context.previous_checkpoint_id !== opts.previousCheckpoint.receipt_id) {
+    const previousContext = ownPreviousCheckpoint.context as Record<string, unknown>;
+    if (context.previous_checkpoint_id !== ownPreviousCheckpoint.receipt_id) {
       throw new VerificationError("checkpoint previous_checkpoint_id mismatch");
     }
     if (context.previous_merkle_root !== previousContext.merkle_root) {
