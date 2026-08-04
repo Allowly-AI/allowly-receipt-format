@@ -56,7 +56,9 @@ if (keysDoc.workspace_id !== configuredWorkspaceId) {
 const keys = loadKeysFromJson(keysDoc);
 ```
 
-Key documents are cacheable (issuers set `Cache-Control`); cache them in production.
+Honor the issuer's `Cache-Control` header. Allowly currently returns `no-store`,
+so do not HTTP-cache the response; retain trusted key material separately for
+offline audits.
 
 ## API
 

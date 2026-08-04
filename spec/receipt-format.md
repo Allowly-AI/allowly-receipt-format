@@ -19,7 +19,7 @@ Both kinds of receipts use the same JSON structure, the same canonicalization, t
 
 The goals of this format are, in order:
 
-1. **Third-party verifiability.** An auditor, regulator, or end-user who retained an authenticated issuer key or fingerprint can verify a receipt without the issuer's continued cooperation or uptime.
+1. **Third-party verifiability.** An auditor, regulator, or end-user who retained an issuer public key authenticated directly or against a retained fingerprint can verify a receipt without the issuer's continued cooperation or uptime.
 2. **Tamper evidence.** Any modification to the receipt content after signing is detectable.
 3. **Portability.** A retained receipt and trusted public key remain verifiable if the issuer goes out of business, the customer switches vendors, or the verifier is written in a different language.
 4. **Simplicity.** The verification rules are explicit and dependency-light enough to implement consistently across languages.
@@ -365,7 +365,7 @@ This separation is deliberate. Pending is a transport-layer concern, not a recei
 - Customers cannot accidentally serialize a pending response as audit evidence. The pending response and the signed receipt have different shapes; passing the wrong one to a verifier or a long-term store fails immediately, not silently.
 - The receipt format spec stays focused on a single artifact: the signed receipt.
 
-Issuers **MUST NOT** emit any object claiming to be a format-3 receipt with `signature` set to a non-signature value (e.g. a placeholder string). Verifiers **MUST** reject any such object on the schema check.
+Issuers **MUST NOT** emit any object claiming to be a format-4 receipt with `signature` set to a non-signature value (e.g. a placeholder string). Verifiers **MUST** reject any such object on the schema check.
 
 ### 5.4 Implementation notes on signing (non-normative)
 
@@ -425,7 +425,9 @@ Issuers **SHOULD** include `public_key_fingerprint` as `sha256:` followed by the
 
 Keys **MUST** remain published even after rotation so historical receipts remain verifiable. `active_until` being non-null indicates the key is retired but receipts signed during its active window remain valid.
 
-Verifiers **SHOULD** cache this document; issuers **SHOULD** set `Cache-Control: max-age=3600` or similar.
+Verifiers **SHOULD** honor this document's `Cache-Control` directive. Issuers
+**SHOULD** set `Cache-Control: max-age=3600` or similar when cached key state is
+acceptable; otherwise they may send `no-store`.
 
 ## 7. Verification algorithm
 
@@ -603,7 +605,7 @@ The format cannot police the semantics of what customers evaluate; this guidance
 This appendix defines an optional application convention for pseudonymous
 strings carried inside an existing receipt `context`. It adds no receipt field,
 does not change canonicalization or signing, and does not change wire version
-`3`. Verifiers that do not use this convention continue to verify the same
+`4`. Verifiers that do not use this convention continue to verify the same
 receipt bytes.
 
 ### A.1 Key and field separation

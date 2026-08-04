@@ -378,6 +378,42 @@ async function main(vectorsPath: string): Promise<number> {
           throw e;
         }
       }
+      const sharedKeyBytes = new Uint8Array(
+        new SharedArrayBuffer(keys[0].publicKeyBytes.length),
+      );
+      sharedKeyBytes.set(keys[0].publicKeyBytes);
+      try {
+        await verifyCheckpoint(checkpointCase.checkpoint, checkpointCase.receipts, [
+          { ...keys[0], publicKeyBytes: sharedKeyBytes },
+          ...keys.slice(1),
+        ], {
+          expectedWorkspaceId: vectors.public_keys.workspace_id,
+          now,
+        });
+        throw new VerificationError("checkpoint accepted shared key bytes");
+      } catch (e) {
+        if (!(e instanceof VerificationError) || !e.message.includes("SharedArrayBuffer")) {
+          throw e;
+        }
+      }
+      const mutableCheckpoint = structuredClone(checkpointCase.checkpoint);
+      const incompleteMembers = checkpointCase.receipts.slice(0, -1);
+      const incompleteRoot = await checkpointMerkleRoot(incompleteMembers);
+      queueMicrotask(() => {
+        mutableCheckpoint.context.receipt_count = incompleteMembers.length;
+        mutableCheckpoint.context.merkle_root = incompleteRoot;
+      });
+      try {
+        await verifyCheckpoint(mutableCheckpoint, incompleteMembers, keys, {
+          expectedWorkspaceId: vectors.public_keys.workspace_id,
+          now,
+        });
+        throw new VerificationError("checkpoint accepted inputs mutated during verification");
+      } catch (e) {
+        if (!(e instanceof VerificationError) || !e.message.includes("receipt_count mismatch")) {
+          throw e;
+        }
+      }
       console.log(`  OK    ${checkpointCase.name}`);
     } catch (e) {
       console.log(`  FAIL  ${checkpointCase.name}: ${e}`);

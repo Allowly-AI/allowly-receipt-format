@@ -2,7 +2,7 @@
 
 An open format for **cryptographically signed, third-party-verifiable receipts** of AI agent authorization decisions.
 
-A receipt is a signed record of one decision: *at time T, issuer W decided that agent A may (or may not) perform action X on resource R for user U under authorization C.* Anyone holding the receipt and an authenticated copy of the issuer's Ed25519 public key or fingerprint can verify it offline, without contacting the issuer.
+A receipt is a signed record of one decision: *at time T, issuer W decided that agent A may (or may not) perform action X on resource R for user U under authorization C.* Anyone holding the receipt and the issuer's Ed25519 public key, authenticated directly or against a retained fingerprint, can verify it offline without contacting the issuer.
 
 Action receipts can include `policy_eval`, a small record of which immutable authorization condition routed a decision to `deny`, `confirm`, or `escalate`. Daily `receipt.checkpoint` events commit to the issuer's registered signed receipt set for one UTC day. The current wire format is `"4"` (wire versions are plain integer strings).
 
