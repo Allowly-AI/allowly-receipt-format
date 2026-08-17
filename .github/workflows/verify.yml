@@ -85,3 +85,26 @@ jobs:
           node dist/test_vectors.js ../../test-vectors.json
       - name: Fail if vectors drift without being committed
         run: git diff --exit-code test-vectors.json
+
+  mutation:
+    name: Changed critical verifier mutation gate
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    needs: [python, typescript]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Install Python verifier and mutation runner
+        run: python -m pip install -e verifiers/python 'mutmut<3'
+      - name: Install TypeScript verifier dependencies
+        working-directory: verifiers/typescript
+        run: npm ci
+      - name: Run mutation gate
+        run: python scripts/mutation_gate.py
