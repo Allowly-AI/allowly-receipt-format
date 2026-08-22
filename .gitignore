@@ -3,12 +3,16 @@ __pycache__/
 *.pyc
 *.pyo
 .pytest_cache/
+.mutmut-cache
 *.egg-info/
 verifiers/python/build/
 
 # Node
 node_modules/
 dist/
+.stryker-tmp/
+reports/mutation/
+verifiers/typescript/reports/mutation/
 *.tsbuildinfo
 
 # Editor
