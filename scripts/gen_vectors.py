@@ -976,6 +976,11 @@ seal_hash_cases = [
         '{"__proto__":{"x":1},"constructor":2}',
     ),
     seal_hash_case(
+        "same_keys_in_separate_objects",
+        '{"id":3,"a":[{"id":1},{"id":2}]}',
+        '{"a":[{"id":1},{"id":2}],"id":3}',
+    ),
+    seal_hash_case(
         "finite_decimals",
         "[333333333.3333333,1E-7,4.50,2e-3,0.000000000000000000000000001]",
         "[333333333.3333333,1e-7,4.5,0.002,1e-27]",
@@ -1036,6 +1041,21 @@ for name, generator in [
 
 seal_rejections = [
     {
+        "name": "duplicate_decoded_key_equal_value",
+        "raw_json": r'{"a":1,"\u0061":1}',
+        "expected_code": "duplicate_key",
+    },
+    {
+        "name": "duplicate_prototype_key_equal_object",
+        "raw_json": r'{"__proto__":{"x":1},"\u005f_proto__":{"x":1}}',
+        "expected_code": "duplicate_key",
+    },
+    {
+        "name": "duplicate_nested_key_equal_array",
+        "raw_json": '{"outer":{"a":[1,true,null],"a":[1,true,null]}}',
+        "expected_code": "duplicate_key",
+    },
+    {
         "name": "duplicate_decoded_key",
         "raw_json": r'{"a":1,"\u0061":2}',
         "expected_code": "duplicate_key",
@@ -1064,6 +1084,16 @@ seal_rejections = [
         "name": "invalid_utf8",
         "raw_utf8_base64": b64url(b'{"value":"\xff"}'),
         "expected_code": "invalid_utf8",
+    },
+    {
+        "name": "utf8_bom_bytes",
+        "raw_utf8_base64": b64url(b'\xef\xbb\xbf{}'),
+        "expected_code": "invalid_json",
+    },
+    {
+        "name": "utf8_bom_text",
+        "raw_json": '\ufeff{}',
+        "expected_code": "invalid_json",
     },
     {
         "name": "number_overflow",

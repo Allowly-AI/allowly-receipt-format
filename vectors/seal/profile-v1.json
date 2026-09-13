@@ -18,6 +18,12 @@
       "record_sha256": "e60a56211596fcee44c6b87d771fd1c3d2ebdb176e14f1d67a0f4ce5a90a5fd5"
     },
     {
+      "name": "same_keys_in_separate_objects",
+      "raw_json": "{\"id\":3,\"a\":[{\"id\":1},{\"id\":2}]}",
+      "canonical_json": "{\"a\":[{\"id\":1},{\"id\":2}],\"id\":3}",
+      "record_sha256": "b798ee8b57d383593a0dbd61963f115620cc5600837035012e59e31073e61374"
+    },
+    {
       "name": "finite_decimals",
       "raw_json": "[333333333.3333333,1E-7,4.50,2e-3,0.000000000000000000000000001]",
       "canonical_json": "[333333333.3333333,1e-7,4.5,0.002,1e-27]",
@@ -98,6 +104,21 @@
   ],
   "should_reject": [
     {
+      "name": "duplicate_decoded_key_equal_value",
+      "raw_json": "{\"a\":1,\"\\u0061\":1}",
+      "expected_code": "duplicate_key"
+    },
+    {
+      "name": "duplicate_prototype_key_equal_object",
+      "raw_json": "{\"__proto__\":{\"x\":1},\"\\u005f_proto__\":{\"x\":1}}",
+      "expected_code": "duplicate_key"
+    },
+    {
+      "name": "duplicate_nested_key_equal_array",
+      "raw_json": "{\"outer\":{\"a\":[1,true,null],\"a\":[1,true,null]}}",
+      "expected_code": "duplicate_key"
+    },
+    {
       "name": "duplicate_decoded_key",
       "raw_json": "{\"a\":1,\"\\u0061\":2}",
       "expected_code": "duplicate_key"
@@ -126,6 +147,16 @@
       "name": "invalid_utf8",
       "raw_utf8_base64": "eyJ2YWx1ZSI6Iv8ifQ",
       "expected_code": "invalid_utf8"
+    },
+    {
+      "name": "utf8_bom_bytes",
+      "raw_utf8_base64": "77u_e30",
+      "expected_code": "invalid_json"
+    },
+    {
+      "name": "utf8_bom_text",
+      "raw_json": "﻿{}",
+      "expected_code": "invalid_json"
     },
     {
       "name": "number_overflow",
