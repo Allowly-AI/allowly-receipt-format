@@ -971,6 +971,11 @@ def seal_hash_case(name: str, raw_json: str, canonical_json: str) -> dict[str, A
 seal_hash_cases = [
     seal_hash_case("negative_zero", '{"value":-0}', '{"value":0}'),
     seal_hash_case(
+        "prototype_named_keys",
+        '{"__proto__":{"x":1},"constructor":2}',
+        '{"__proto__":{"x":1},"constructor":2}',
+    ),
+    seal_hash_case(
         "finite_decimals",
         "[333333333.3333333,1E-7,4.50,2e-3,0.000000000000000000000000001]",
         "[333333333.3333333,1e-7,4.5,0.002,1e-27]",
@@ -1028,6 +1033,11 @@ seal_rejections = [
     {
         "name": "duplicate_decoded_non_bmp_key",
         "raw_json": r'{"😀":1,"\ud83d\ude00":2}',
+        "expected_code": "duplicate_key",
+    },
+    {
+        "name": "duplicate_decoded_prototype_key",
+        "raw_json": r'{"__proto__":1,"\u005f_proto__":2}',
         "expected_code": "duplicate_key",
     },
     {

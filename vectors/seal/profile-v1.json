@@ -12,6 +12,12 @@
       "record_sha256": "23d7b286bd429460b92a2a1c21b6afc34110446c5034c17363fda363aa0a7c5d"
     },
     {
+      "name": "prototype_named_keys",
+      "raw_json": "{\"__proto__\":{\"x\":1},\"constructor\":2}",
+      "canonical_json": "{\"__proto__\":{\"x\":1},\"constructor\":2}",
+      "record_sha256": "e60a56211596fcee44c6b87d771fd1c3d2ebdb176e14f1d67a0f4ce5a90a5fd5"
+    },
+    {
       "name": "finite_decimals",
       "raw_json": "[333333333.3333333,1E-7,4.50,2e-3,0.000000000000000000000000001]",
       "canonical_json": "[333333333.3333333,1e-7,4.5,0.002,1e-27]",
@@ -88,6 +94,11 @@
     {
       "name": "duplicate_decoded_non_bmp_key",
       "raw_json": "{\"😀\":1,\"\\ud83d\\ude00\":2}",
+      "expected_code": "duplicate_key"
+    },
+    {
+      "name": "duplicate_decoded_prototype_key",
+      "raw_json": "{\"__proto__\":1,\"\\u005f_proto__\":2}",
       "expected_code": "duplicate_key"
     },
     {

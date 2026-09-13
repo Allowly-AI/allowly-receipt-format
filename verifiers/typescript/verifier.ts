@@ -548,17 +548,67 @@ export function hashSealJson(rawJson: string | Uint8Array): string {
 
   let record: unknown;
   try {
-    record = parseLosslessJson(text, undefined, {
+    // lossless-json assigns object members through ordinary property writes,
+    // so a decoded "__proto__" key would mutate its temporary object's
+    // prototype instead of remaining data. Prefix every decoded object key in
+    // the validation copy: the mapping is injective, duplicate detection is
+    // preserved, and no customer key can invoke that legacy setter. Native
+    // JSON.parse then builds the actual value with "__proto__" as an own data
+    // property, as required by JSON semantics.
+    parseLosslessJson(namespaceObjectKeysForValidation(text), undefined, {
       parseNumber: parseSealNumber,
       onDuplicateKey: ({ key }) => {
-        throw new SealInputError("duplicate_key", `duplicate decoded object key: ${JSON.stringify(key)}`);
+        throw new SealInputError(
+          "duplicate_key",
+          `duplicate decoded object key: ${JSON.stringify(key.slice(1))}`,
+        );
       },
     });
+    record = JSON.parse(text);
   } catch (error) {
     if (error instanceof SealInputError) throw error;
     throw new SealInputError("invalid_json", "record must be valid JSON");
   }
   return hashSealSnapshot(record);
+}
+
+function namespaceObjectKeysForValidation(text: string): string {
+  const chunks: string[] = [];
+  let chunkStart = 0;
+  let index = 0;
+  while (index < text.length) {
+    if (text[index] !== '"') {
+      index += 1;
+      continue;
+    }
+    const tokenStart = index;
+    index += 1;
+    let escaped = false;
+    while (index < text.length) {
+      const char = text[index];
+      if (escaped) escaped = false;
+      else if (char === "\\") escaped = true;
+      else if (char === '"') break;
+      index += 1;
+    }
+    if (index >= text.length) break;
+    const tokenEnd = index + 1;
+    let next = tokenEnd;
+    while (next < text.length && /\s/u.test(text[next])) next += 1;
+    if (text[next] === ":") {
+      try {
+        const key = JSON.parse(text.slice(tokenStart, tokenEnd));
+        chunks.push(text.slice(chunkStart, tokenStart), JSON.stringify(`\0${key}`));
+        chunkStart = tokenEnd;
+      } catch {
+        // The strict parser below reports malformed string tokens uniformly.
+      }
+    }
+    index = tokenEnd;
+  }
+  if (chunks.length === 0) return text;
+  chunks.push(text.slice(chunkStart));
+  return chunks.join("");
 }
 
 /**
