@@ -1001,7 +1001,12 @@ for name, raw_jsons, canonical_json in [
     ),
     (
         "zero_with_extreme_exponents",
-        ['{"value":0e1000000}', '{"value":-0e-1000000}', '{"value":0}'],
+        [
+            '{"value":0e1000000}',
+            '{"value":-0e-1000000}',
+            '{"value":0e9999999999999999999}',
+            '{"value":0}',
+        ],
         '{"value":0}',
     ),
 ]:

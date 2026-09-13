@@ -254,13 +254,18 @@ def _parse_float(token: str) -> float:
     value = float(token)
     if not math.isfinite(value):
         raise SealInputError("number_overflow", "record contains a number outside binary64 range")
+    significand = token.split("e", 1)[0].split("E", 1)[0]
+    if value == 0:
+        if any(digit in significand for digit in "123456789"):
+            raise SealInputError("number_underflow", "record number underflows binary64 to zero")
+        # Decimal imposes an implementation exponent bound even for exact zero,
+        # while the SEAL binary64 model maps every zero spelling to JSON 0.
+        return value
     try:
         exact = Decimal(token)
         represented = Decimal(repr(value))
     except InvalidOperation as exc:  # pragma: no cover - JSON grammar gates this first
         raise SealInputError("invalid_json", "record contains an invalid number") from exc
-    if value == 0 and exact != 0:
-        raise SealInputError("number_underflow", "record number underflows binary64 to zero")
     if value.is_integer() and abs(value) > _MAX_SAFE_INTEGER:
         raise SealInputError("unsafe_integer", "record contains an integer outside ±(2^53-1)")
     if exact != represented:
