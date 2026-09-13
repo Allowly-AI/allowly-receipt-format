@@ -91,6 +91,19 @@ async function main(profilePath: string, verificationPath: string): Promise<void
     ) throw new Error(`${testCase.name}: verification result mismatch`);
   }
 
+  const matching = verification.should_verify[0];
+  const missingWorkspace = await verifySealJson(
+    matching.raw_json,
+    matching.receipt,
+    keys,
+    undefined as never,
+  );
+  if (
+    missingWorkspace.signatureVerified
+    || missingWorkspace.recordMatches
+    || missingWorkspace.failureReason !== "receipt_verification_failed"
+  ) throw new Error("missing expected workspace must fail closed");
+
   console.log("SEAL TypeScript vectors passed");
 }
 

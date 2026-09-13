@@ -666,6 +666,13 @@ async function verifySeal(
     now?: Date;
   },
 ): Promise<SealVerificationResult> {
+  if (
+    !opts
+    || typeof opts.expectedWorkspaceId !== "string"
+    || opts.expectedWorkspaceId.length === 0
+  ) {
+    return sealResult(false, false, "receipt_verification_failed");
+  }
   let ownReceipt: Record<string, unknown>;
   try {
     ownReceipt = snapshotJson(receipt, "receipt", false) as Record<string, unknown>;

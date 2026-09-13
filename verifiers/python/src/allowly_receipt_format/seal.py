@@ -159,6 +159,8 @@ def _verify_seal(
     trusted_key_fingerprints: set[str] | frozenset[str] | None,
     now: Any,
 ) -> SealVerificationResult:
+    if not isinstance(expected_workspace_id, str) or not expected_workspace_id:
+        return SealVerificationResult(False, False, "receipt_verification_failed")
     try:
         verify_receipt(
             receipt,
@@ -244,7 +246,16 @@ def _unique_object(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
 
 
 def _parse_integer(token: str) -> int:
-    value = int(token)
+    digits = token.removeprefix("-")
+    if len(digits) > len(str(_MAX_SAFE_INTEGER)):
+        raise SealInputError("unsafe_integer", "record contains an integer outside ±(2^53-1)")
+    try:
+        value = int(token)
+    except ValueError as exc:
+        raise SealInputError(
+            "unsafe_integer",
+            "record contains an integer outside the supported binary64 range",
+        ) from exc
     if abs(value) > _MAX_SAFE_INTEGER:
         raise SealInputError("unsafe_integer", "record contains an integer outside ±(2^53-1)")
     return value

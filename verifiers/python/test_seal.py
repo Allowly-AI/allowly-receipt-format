@@ -83,6 +83,26 @@ def main(profile_path: str, verification_path: str) -> int:
         result = verify_seal_json(case["raw_json"], case["receipt"], keys, **options)
         assert asdict(result) == case["expected"], case["name"]
 
+    matching = verification["should_verify"][0]
+    missing_workspace = verify_seal_json(
+        matching["raw_json"],
+        matching["receipt"],
+        keys,
+        expected_workspace_id=None,  # type: ignore[arg-type]
+    )
+    assert asdict(missing_workspace) == {
+        "signature_verified": False,
+        "record_matches": False,
+        "failure_reason": "receipt_verification_failed",
+    }
+
+    try:
+        hash_seal_json('{"value":' + "9" * 5000 + "}")
+    except SealInputError as exc:
+        assert exc.code == "unsafe_integer"
+    else:
+        raise AssertionError("very long integer should have been rejected")
+
     print("SEAL Python vectors passed")
     return 0
 
