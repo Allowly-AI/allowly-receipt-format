@@ -67,6 +67,16 @@
       ],
       "canonical_json": "{\"value\":1}",
       "record_sha256": "48208f9428d64634bd8e28ff345bf0eab60d53c18fa2fbdb0b9bc1e84df2b5f6"
+    },
+    {
+      "name": "zero_with_extreme_exponents",
+      "raw_jsons": [
+        "{\"value\":0e1000000}",
+        "{\"value\":-0e-1000000}",
+        "{\"value\":0}"
+      ],
+      "canonical_json": "{\"value\":0}",
+      "record_sha256": "23d7b286bd429460b92a2a1c21b6afc34110446c5034c17363fda363aa0a7c5d"
     }
   ],
   "should_differ": [

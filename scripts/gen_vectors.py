@@ -999,6 +999,11 @@ for name, raw_jsons, canonical_json in [
         ['{"value":1}', '{"value":1.0}', '{"value":1e0}'],
         '{"value":1}',
     ),
+    (
+        "zero_with_extreme_exponents",
+        ['{"value":0e1000000}', '{"value":-0e-1000000}', '{"value":0}'],
+        '{"value":0}',
+    ),
 ]:
     expected = hashlib.sha256(canonical_json.encode("utf-8")).hexdigest()
     assert all(hash_seal_json(raw) == expected for raw in raw_jsons)
