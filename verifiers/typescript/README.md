@@ -159,6 +159,15 @@ receipt text is untrusted (spec §4.2).
 
 A valid receipt proves that the selected private key signed the exact recorded decision and timestamp for the recorded subject/action. It does **not** independently prove when signing happened, that the action actually happened, that the user's authorization was informed, or that the `user_id` corresponds to any real-world person. See spec §7.1.
 
+## Browser builds for the dashboard and website
+
+`browser/sealJson.ts` owns their shared strict JSON parsing and hashing.
+`npm test` checks it against the same SEAL vectors as the Node verifier.
+After building this directory, run `python3 scripts/refresh-verifier.py` in
+each consumer repo. Those wrappers use `scripts/build-browser.py` here to
+generate the self-hosted receipt verifier and JSON helper; edit these sources
+instead of the generated consumer files.
+
 ## License
 
 Apache 2.0. Contributions welcome — see [CONTRIBUTING.md](https://github.com/Allowly-AI/allowly-receipt-format/blob/main/CONTRIBUTING.md).

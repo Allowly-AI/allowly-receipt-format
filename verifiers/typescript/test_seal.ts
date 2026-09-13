@@ -1,4 +1,6 @@
 import { readFileSync } from "node:fs";
+import assert from "node:assert/strict";
+import { fingerprintJson, SealJsonError } from "./browser/sealJson.js";
 import {
   SEAL_MAX_DEPTH,
   SEAL_MAX_UTF8_BYTES,
@@ -46,20 +48,34 @@ async function main(profilePath: string, verificationPath: string): Promise<void
     if (hashSealJson(vectorInput(testCase)) !== testCase.record_sha256) {
       throw new Error(`${testCase.name}: digest mismatch`);
     }
+    const browser = await fingerprintJson(vectorInput(testCase) as string);
+    assert.equal(browser.recordSha256, testCase.record_sha256, testCase.name);
+    if (testCase.canonical_json !== undefined) {
+      assert.equal(browser.canonical, testCase.canonical_json, testCase.name);
+    }
   }
   for (const testCase of profile.equivalent) {
+    for (const raw of testCase.raw_jsons) {
+      assert.deepEqual(await fingerprintJson(raw), {
+        canonical: testCase.canonical_json,
+        recordSha256: testCase.record_sha256,
+      }, testCase.name);
+    }
     const digests = new Set(testCase.raw_jsons.map(hashSealJson));
     if (digests.size !== 1 || !digests.has(testCase.record_sha256)) {
       throw new Error(`${testCase.name}: inputs were not equivalent`);
     }
   }
   for (const testCase of profile.should_differ) {
+    const browser = await Promise.all(testCase.raw_jsons.map(fingerprintJson));
+    assert.equal(new Set(browser.map(result => result.recordSha256)).size, testCase.raw_jsons.length, testCase.name);
     const digests = new Set(testCase.raw_jsons.map(hashSealJson));
     if (digests.size !== testCase.raw_jsons.length) {
       throw new Error(`${testCase.name}: distinct inputs collided`);
     }
   }
   for (const testCase of profile.should_reject) {
+    await assert.rejects(() => fingerprintJson(vectorInput(testCase) as string), SealJsonError, testCase.name);
     try {
       hashSealJson(vectorInput(testCase));
       throw new Error(`${testCase.name}: should have been rejected`);
