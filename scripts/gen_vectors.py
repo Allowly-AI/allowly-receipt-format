@@ -15,8 +15,18 @@ from typing import Any
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
-sys.path.insert(0, str(Path(__file__).parent.parent / "verifiers" / "python"))
-from verifier import canonicalize, checkpoint_merkle_root  # noqa: E402
+sys.path.insert(0, str(Path(__file__).parent.parent / "verifiers" / "python" / "src"))
+from allowly_receipt_format import (  # noqa: E402
+    SEAL_ACTION,
+    SEAL_AGENT_ID,
+    SEAL_MAX_DEPTH,
+    SEAL_MAX_UTF8_BYTES,
+    SEAL_PROFILE,
+    SEAL_USER_ID,
+    canonicalize,
+    checkpoint_merkle_root,
+    hash_seal_json,
+)
 
 
 SEED = bytes(32)
@@ -934,6 +944,322 @@ out = json.dumps(vectors, indent=2, ensure_ascii=False)
 out = out.replace("\ud800", "\\ud800")
 with open(out_path, "w") as f:
     f.write(out)
+
+
+def generated_seal_json(generator: dict[str, Any]) -> str:
+    if generator["kind"] == "string_value_total_utf8_bytes":
+        byte_count = generator["utf8_bytes"]
+        prefix, suffix = '{"v":"', '"}'
+        return prefix + "a" * (byte_count - len(prefix) - len(suffix)) + suffix
+    if generator["kind"] == "nested_arrays":
+        depth = generator["depth"]
+        return "[" * (depth - 1) + "0" + "]" * (depth - 1)
+    raise ValueError(f"unknown SEAL generator: {generator!r}")
+
+
+def seal_hash_case(name: str, raw_json: str, canonical_json: str) -> dict[str, Any]:
+    expected = hashlib.sha256(canonical_json.encode("utf-8")).hexdigest()
+    assert hash_seal_json(raw_json) == expected
+    return {
+        "name": name,
+        "raw_json": raw_json,
+        "canonical_json": canonical_json,
+        "record_sha256": expected,
+    }
+
+
+seal_hash_cases = [
+    seal_hash_case("negative_zero", '{"value":-0}', '{"value":0}'),
+    seal_hash_case(
+        "finite_decimals",
+        "[333333333.3333333,1E-7,4.50,2e-3,0.000000000000000000000000001]",
+        "[333333333.3333333,1e-7,4.5,0.002,1e-27]",
+    ),
+    seal_hash_case(
+        "non_bmp_strings_and_keys",
+        '{"｡":2,"😀":1,"text":"���😀"}',
+        '{"text":"���😀","😀":1,"｡":2}',
+    ),
+]
+
+seal_equivalence_cases = []
+for name, raw_jsons, canonical_json in [
+    (
+        "formatting_and_object_key_order",
+        ['{"b":2,"a":1}', '{\n  "a": 1,\n  "b": 2\n}'],
+        '{"a":1,"b":2}',
+    ),
+    (
+        "alternate_number_spellings",
+        ['{"value":1}', '{"value":1.0}', '{"value":1e0}'],
+        '{"value":1}',
+    ),
+]:
+    expected = hashlib.sha256(canonical_json.encode("utf-8")).hexdigest()
+    assert all(hash_seal_json(raw) == expected for raw in raw_jsons)
+    seal_equivalence_cases.append({
+        "name": name,
+        "raw_jsons": raw_jsons,
+        "canonical_json": canonical_json,
+        "record_sha256": expected,
+    })
+
+seal_generated_hash_cases = []
+for name, generator in [
+    (
+        "max_utf8_size",
+        {"kind": "string_value_total_utf8_bytes", "utf8_bytes": SEAL_MAX_UTF8_BYTES},
+    ),
+    ("max_depth", {"kind": "nested_arrays", "depth": SEAL_MAX_DEPTH}),
+]:
+    raw = generated_seal_json(generator)
+    seal_generated_hash_cases.append({
+        "name": name,
+        "generator": generator,
+        "record_sha256": hash_seal_json(raw),
+    })
+
+seal_rejections = [
+    {
+        "name": "duplicate_decoded_key",
+        "raw_json": r'{"a":1,"\u0061":2}',
+        "expected_code": "duplicate_key",
+    },
+    {
+        "name": "duplicate_decoded_non_bmp_key",
+        "raw_json": r'{"😀":1,"\ud83d\ude00":2}',
+        "expected_code": "duplicate_key",
+    },
+    {
+        "name": "unpaired_high_surrogate",
+        "raw_json": r'{"value":"\ud800"}',
+        "expected_code": "invalid_unicode",
+    },
+    {
+        "name": "unpaired_low_surrogate",
+        "raw_json": r'{"value":"\udc00"}',
+        "expected_code": "invalid_unicode",
+    },
+    {
+        "name": "invalid_utf8",
+        "raw_utf8_base64": b64url(b'{"value":"\xff"}'),
+        "expected_code": "invalid_utf8",
+    },
+    {
+        "name": "number_overflow",
+        "raw_json": '{"value":1e400}',
+        "expected_code": "number_overflow",
+    },
+    {
+        "name": "number_underflow",
+        "raw_json": '{"value":1e-4000}',
+        "expected_code": "number_underflow",
+    },
+    {
+        "name": "unsafe_integer",
+        "raw_json": '{"value":9007199254740992}',
+        "expected_code": "unsafe_integer",
+    },
+    {
+        "name": "significant_digit_loss",
+        "raw_json": '{"value":333333333.33333329}',
+        "expected_code": "number_precision",
+    },
+    {
+        "name": "trailing_json_value",
+        "raw_json": '{}{}',
+        "expected_code": "invalid_json",
+    },
+    {
+        "name": "over_utf8_size",
+        "generator": {
+            "kind": "string_value_total_utf8_bytes",
+            "utf8_bytes": SEAL_MAX_UTF8_BYTES + 1,
+        },
+        "expected_code": "size_limit",
+    },
+    {
+        "name": "over_max_depth",
+        "generator": {"kind": "nested_arrays", "depth": SEAL_MAX_DEPTH + 1},
+        "expected_code": "depth_limit",
+    },
+]
+
+seal_hash_vectors = {
+    "profile": SEAL_PROFILE,
+    "limits": {
+        "max_utf8_bytes": SEAL_MAX_UTF8_BYTES,
+        "max_depth": SEAL_MAX_DEPTH,
+    },
+    "should_hash": seal_hash_cases,
+    "generated_should_hash": seal_generated_hash_cases,
+    "equivalent": seal_equivalence_cases,
+    "should_differ": [
+        {"name": "array_order", "raw_jsons": ["[1,2,3]", "[3,2,1]"]},
+        {"name": "json_types", "raw_jsons": ['{"v":1}', '{"v":"1"}']},
+    ],
+    "should_reject": seal_rejections,
+}
+
+seal_record_json = '{"customer_id":"cus_123","status":"paid","amount":42.5}'
+seal_record_sha256 = hash_seal_json(seal_record_json)
+
+
+def seal_receipt(receipt_id: str, **overrides: Any) -> dict[str, Any]:
+    context = overrides.pop("context", {
+        "seal_profile": SEAL_PROFILE,
+        "record_sha256": seal_record_sha256,
+        "seal_metadata": {"source": "public-synthetic-vector"},
+    })
+    return signed_receipt(
+        receipt_id,
+        user_id=overrides.pop("user_id", SEAL_USER_ID),
+        agent_id=overrides.pop("agent_id", SEAL_AGENT_ID),
+        action=overrides.pop("action", SEAL_ACTION),
+        resource=None,
+        context=context,
+        **overrides,
+    )
+
+
+valid_seal = seal_receipt("rcp_01SEALVALID000000000000000")
+invalid_signature_seal = copy.deepcopy(valid_seal)
+invalid_signature_seal["signature"] = "A" * 86
+
+seal_verification_vectors = {
+    "profile": SEAL_PROFILE,
+    "expected_workspace_id": WORKSPACE_ID,
+    "trusted_key_fingerprints": [keys_doc["keys"][0]["public_key_fingerprint"]],
+    "public_keys": keys_doc,
+    "now": "2026-12-31T00:00:00.000Z",
+    "should_verify": [
+        {
+            "name": "signed_matching_record",
+            "raw_json": seal_record_json,
+            "receipt": valid_seal,
+            "expected": {
+                "signature_verified": True,
+                "record_matches": True,
+                "failure_reason": None,
+            },
+        }
+    ],
+    "should_reject": [
+        {
+            "name": "invalid_signature",
+            "raw_json": seal_record_json,
+            "receipt": invalid_signature_seal,
+            "expected": {
+                "signature_verified": False,
+                "record_matches": False,
+                "failure_reason": "receipt_verification_failed",
+            },
+        },
+        {
+            "name": "record_mismatch",
+            "raw_json": '{"customer_id":"cus_123","status":"void","amount":42.5}',
+            "receipt": valid_seal,
+            "expected": {
+                "signature_verified": True,
+                "record_matches": False,
+                "failure_reason": "record_mismatch",
+            },
+        },
+        {
+            "name": "invalid_record",
+            "raw_json": '{"value":1e400}',
+            "receipt": valid_seal,
+            "expected": {
+                "signature_verified": True,
+                "record_matches": False,
+                "failure_reason": "invalid_record",
+            },
+        },
+        {
+            "name": "wrong_action",
+            "raw_json": seal_record_json,
+            "receipt": seal_receipt("rcp_01SEALWRONGACTION00000000", action="record.update"),
+            "expected": {
+                "signature_verified": True,
+                "record_matches": False,
+                "failure_reason": "not_seal_receipt",
+            },
+        },
+        {
+            "name": "deny_decision",
+            "raw_json": seal_record_json,
+            "receipt": seal_receipt(
+                "rcp_01SEALDENY000000000000000",
+                decision="deny",
+                reason="test_denied",
+            ),
+            "expected": {
+                "signature_verified": True,
+                "record_matches": False,
+                "failure_reason": "not_seal_receipt",
+            },
+        },
+        {
+            "name": "wrong_agent_identity",
+            "raw_json": seal_record_json,
+            "receipt": seal_receipt("rcp_01SEALWRONGAGENT000000000", agent_id="other"),
+            "expected": {
+                "signature_verified": True,
+                "record_matches": False,
+                "failure_reason": "seal_identity_mismatch",
+            },
+        },
+        {
+            "name": "wrong_user_identity",
+            "raw_json": seal_record_json,
+            "receipt": seal_receipt("rcp_01SEALWRONGUSER0000000000", user_id="other"),
+            "expected": {
+                "signature_verified": True,
+                "record_matches": False,
+                "failure_reason": "seal_identity_mismatch",
+            },
+        },
+        {
+            "name": "wrong_profile",
+            "raw_json": seal_record_json,
+            "receipt": seal_receipt(
+                "rcp_01SEALWRONGPROFILE0000000",
+                context={
+                    "seal_profile": "allowly.seal.unknown.v1",
+                    "record_sha256": seal_record_sha256,
+                },
+            ),
+            "expected": {
+                "signature_verified": True,
+                "record_matches": False,
+                "failure_reason": "seal_profile_mismatch",
+            },
+        },
+        {
+            "name": "malformed_record_digest",
+            "raw_json": seal_record_json,
+            "receipt": seal_receipt(
+                "rcp_01SEALBADDIGEST0000000000",
+                context={"seal_profile": SEAL_PROFILE, "record_sha256": "ABC"},
+            ),
+            "expected": {
+                "signature_verified": True,
+                "record_matches": False,
+                "failure_reason": "invalid_record_digest",
+            },
+        },
+    ],
+}
+
+seal_dir = Path(__file__).parent.parent / "vectors" / "seal"
+seal_dir.mkdir(parents=True, exist_ok=True)
+for name, document in [
+    ("profile-v1.json", seal_hash_vectors),
+    ("verification-v1.json", seal_verification_vectors),
+]:
+    path = seal_dir / name
+    path.write_text(json.dumps(document, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    print(f"wrote {path}")
 
 print(f"wrote {out_path}")
 print(f"  should_verify: {len(vectors['should_verify'])}")

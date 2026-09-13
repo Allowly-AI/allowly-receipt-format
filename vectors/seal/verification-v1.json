@@ -1,0 +1,357 @@
+{
+  "profile": "allowly.seal.jcs-sha256.v1",
+  "expected_workspace_id": "ws_test",
+  "trusted_key_fingerprints": [
+    "sha256:139e3940e64b5491722088d9a0d741628fc826e09475d341a780acde3c4b8070"
+  ],
+  "public_keys": {
+    "workspace_id": "ws_test",
+    "keys": [
+      {
+        "key_id": "test-key/v1",
+        "alg": "Ed25519",
+        "public_key": "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik",
+        "public_key_fingerprint": "sha256:139e3940e64b5491722088d9a0d741628fc826e09475d341a780acde3c4b8070",
+        "active_from": "0001-01-01T00:00:00.000Z",
+        "active_until": null
+      },
+      {
+        "key_id": "test-key/v2",
+        "alg": "Ed25519",
+        "public_key": "iojj3XQJ8ZX9UtstPLpdcspnCb8dlBIb83SIAbQPb1w",
+        "public_key_fingerprint": "sha256:34750f98bd59fcfc946da45aaabe933be154a4b5094e1c4abf42866505f3c97e",
+        "active_from": "2026-04-01T00:00:00.000Z",
+        "active_until": "2026-05-01T00:00:00.000Z"
+      }
+    ]
+  },
+  "now": "2026-12-31T00:00:00.000Z",
+  "should_verify": [
+    {
+      "name": "signed_matching_record",
+      "raw_json": "{\"customer_id\":\"cus_123\",\"status\":\"paid\",\"amount\":42.5}",
+      "receipt": {
+        "schema_version": "4",
+        "receipt_id": "rcp_01SEALVALID000000000000000",
+        "workspace_id": "ws_test",
+        "issued_at": "2026-04-21T14:32:17.482Z",
+        "decision": "allow",
+        "reason": "authorization_granted_action_active",
+        "user_id": "allowly:seal",
+        "agent_id": "allowly.seal",
+        "action": "record.seal",
+        "resource": null,
+        "context": {
+          "seal_profile": "allowly.seal.jcs-sha256.v1",
+          "record_sha256": "11d29d3e8dafe7040b4fc863b69ab5be7a2c70e1f438759c9c60cba7a6076b52",
+          "seal_metadata": {
+            "source": "public-synthetic-vector"
+          }
+        },
+        "authorization_id": "auth_01HXZ2A0K1L2M3N4P5Q6R7S8T9",
+        "engine_version": "2026-04-17.1",
+        "alg": "Ed25519",
+        "key_id": "test-key/v1",
+        "signature": "1PHVY69ZOHOOLQLR-WwYjpel348eleIJZDgsjWm1Ii2OQDjuZqdKUJ3HEuhsqNrzC13ToZ65Ew8OC7q4AYavAg"
+      },
+      "expected": {
+        "signature_verified": true,
+        "record_matches": true,
+        "failure_reason": null
+      }
+    }
+  ],
+  "should_reject": [
+    {
+      "name": "invalid_signature",
+      "raw_json": "{\"customer_id\":\"cus_123\",\"status\":\"paid\",\"amount\":42.5}",
+      "receipt": {
+        "schema_version": "4",
+        "receipt_id": "rcp_01SEALVALID000000000000000",
+        "workspace_id": "ws_test",
+        "issued_at": "2026-04-21T14:32:17.482Z",
+        "decision": "allow",
+        "reason": "authorization_granted_action_active",
+        "user_id": "allowly:seal",
+        "agent_id": "allowly.seal",
+        "action": "record.seal",
+        "resource": null,
+        "context": {
+          "seal_profile": "allowly.seal.jcs-sha256.v1",
+          "record_sha256": "11d29d3e8dafe7040b4fc863b69ab5be7a2c70e1f438759c9c60cba7a6076b52",
+          "seal_metadata": {
+            "source": "public-synthetic-vector"
+          }
+        },
+        "authorization_id": "auth_01HXZ2A0K1L2M3N4P5Q6R7S8T9",
+        "engine_version": "2026-04-17.1",
+        "alg": "Ed25519",
+        "key_id": "test-key/v1",
+        "signature": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+      },
+      "expected": {
+        "signature_verified": false,
+        "record_matches": false,
+        "failure_reason": "receipt_verification_failed"
+      }
+    },
+    {
+      "name": "record_mismatch",
+      "raw_json": "{\"customer_id\":\"cus_123\",\"status\":\"void\",\"amount\":42.5}",
+      "receipt": {
+        "schema_version": "4",
+        "receipt_id": "rcp_01SEALVALID000000000000000",
+        "workspace_id": "ws_test",
+        "issued_at": "2026-04-21T14:32:17.482Z",
+        "decision": "allow",
+        "reason": "authorization_granted_action_active",
+        "user_id": "allowly:seal",
+        "agent_id": "allowly.seal",
+        "action": "record.seal",
+        "resource": null,
+        "context": {
+          "seal_profile": "allowly.seal.jcs-sha256.v1",
+          "record_sha256": "11d29d3e8dafe7040b4fc863b69ab5be7a2c70e1f438759c9c60cba7a6076b52",
+          "seal_metadata": {
+            "source": "public-synthetic-vector"
+          }
+        },
+        "authorization_id": "auth_01HXZ2A0K1L2M3N4P5Q6R7S8T9",
+        "engine_version": "2026-04-17.1",
+        "alg": "Ed25519",
+        "key_id": "test-key/v1",
+        "signature": "1PHVY69ZOHOOLQLR-WwYjpel348eleIJZDgsjWm1Ii2OQDjuZqdKUJ3HEuhsqNrzC13ToZ65Ew8OC7q4AYavAg"
+      },
+      "expected": {
+        "signature_verified": true,
+        "record_matches": false,
+        "failure_reason": "record_mismatch"
+      }
+    },
+    {
+      "name": "invalid_record",
+      "raw_json": "{\"value\":1e400}",
+      "receipt": {
+        "schema_version": "4",
+        "receipt_id": "rcp_01SEALVALID000000000000000",
+        "workspace_id": "ws_test",
+        "issued_at": "2026-04-21T14:32:17.482Z",
+        "decision": "allow",
+        "reason": "authorization_granted_action_active",
+        "user_id": "allowly:seal",
+        "agent_id": "allowly.seal",
+        "action": "record.seal",
+        "resource": null,
+        "context": {
+          "seal_profile": "allowly.seal.jcs-sha256.v1",
+          "record_sha256": "11d29d3e8dafe7040b4fc863b69ab5be7a2c70e1f438759c9c60cba7a6076b52",
+          "seal_metadata": {
+            "source": "public-synthetic-vector"
+          }
+        },
+        "authorization_id": "auth_01HXZ2A0K1L2M3N4P5Q6R7S8T9",
+        "engine_version": "2026-04-17.1",
+        "alg": "Ed25519",
+        "key_id": "test-key/v1",
+        "signature": "1PHVY69ZOHOOLQLR-WwYjpel348eleIJZDgsjWm1Ii2OQDjuZqdKUJ3HEuhsqNrzC13ToZ65Ew8OC7q4AYavAg"
+      },
+      "expected": {
+        "signature_verified": true,
+        "record_matches": false,
+        "failure_reason": "invalid_record"
+      }
+    },
+    {
+      "name": "wrong_action",
+      "raw_json": "{\"customer_id\":\"cus_123\",\"status\":\"paid\",\"amount\":42.5}",
+      "receipt": {
+        "schema_version": "4",
+        "receipt_id": "rcp_01SEALWRONGACTION00000000",
+        "workspace_id": "ws_test",
+        "issued_at": "2026-04-21T14:32:17.482Z",
+        "decision": "allow",
+        "reason": "authorization_granted_action_active",
+        "user_id": "allowly:seal",
+        "agent_id": "allowly.seal",
+        "action": "record.update",
+        "resource": null,
+        "context": {
+          "seal_profile": "allowly.seal.jcs-sha256.v1",
+          "record_sha256": "11d29d3e8dafe7040b4fc863b69ab5be7a2c70e1f438759c9c60cba7a6076b52",
+          "seal_metadata": {
+            "source": "public-synthetic-vector"
+          }
+        },
+        "authorization_id": "auth_01HXZ2A0K1L2M3N4P5Q6R7S8T9",
+        "engine_version": "2026-04-17.1",
+        "alg": "Ed25519",
+        "key_id": "test-key/v1",
+        "signature": "FSVklgnU5DoivcsxfxZkcQPHjZls1YDsg5dCGP_XqRR2MFbMokr9L_qFEHvQ3RGvuI2d_Wn2QvCUmnI81k1WAg"
+      },
+      "expected": {
+        "signature_verified": true,
+        "record_matches": false,
+        "failure_reason": "not_seal_receipt"
+      }
+    },
+    {
+      "name": "deny_decision",
+      "raw_json": "{\"customer_id\":\"cus_123\",\"status\":\"paid\",\"amount\":42.5}",
+      "receipt": {
+        "schema_version": "4",
+        "receipt_id": "rcp_01SEALDENY000000000000000",
+        "workspace_id": "ws_test",
+        "issued_at": "2026-04-21T14:32:17.482Z",
+        "decision": "deny",
+        "reason": "test_denied",
+        "user_id": "allowly:seal",
+        "agent_id": "allowly.seal",
+        "action": "record.seal",
+        "resource": null,
+        "context": {
+          "seal_profile": "allowly.seal.jcs-sha256.v1",
+          "record_sha256": "11d29d3e8dafe7040b4fc863b69ab5be7a2c70e1f438759c9c60cba7a6076b52",
+          "seal_metadata": {
+            "source": "public-synthetic-vector"
+          }
+        },
+        "authorization_id": "auth_01HXZ2A0K1L2M3N4P5Q6R7S8T9",
+        "engine_version": "2026-04-17.1",
+        "alg": "Ed25519",
+        "key_id": "test-key/v1",
+        "signature": "DfO3GdKAWHR2SU02U_m1Q065XmCa6jPte92YgcTS-1SQ9INpijdAS9zCrtjWoJTkExE6cCQ8GS7chbcb2RScDg"
+      },
+      "expected": {
+        "signature_verified": true,
+        "record_matches": false,
+        "failure_reason": "not_seal_receipt"
+      }
+    },
+    {
+      "name": "wrong_agent_identity",
+      "raw_json": "{\"customer_id\":\"cus_123\",\"status\":\"paid\",\"amount\":42.5}",
+      "receipt": {
+        "schema_version": "4",
+        "receipt_id": "rcp_01SEALWRONGAGENT000000000",
+        "workspace_id": "ws_test",
+        "issued_at": "2026-04-21T14:32:17.482Z",
+        "decision": "allow",
+        "reason": "authorization_granted_action_active",
+        "user_id": "allowly:seal",
+        "agent_id": "other",
+        "action": "record.seal",
+        "resource": null,
+        "context": {
+          "seal_profile": "allowly.seal.jcs-sha256.v1",
+          "record_sha256": "11d29d3e8dafe7040b4fc863b69ab5be7a2c70e1f438759c9c60cba7a6076b52",
+          "seal_metadata": {
+            "source": "public-synthetic-vector"
+          }
+        },
+        "authorization_id": "auth_01HXZ2A0K1L2M3N4P5Q6R7S8T9",
+        "engine_version": "2026-04-17.1",
+        "alg": "Ed25519",
+        "key_id": "test-key/v1",
+        "signature": "YHi37_X-JyrE9EcR_T2nlo-4wQitQUdncEj1-9C2Yr8r_ScuS1WgECN_wSws9vmcfK17LLyzKrCmZzA319o9CQ"
+      },
+      "expected": {
+        "signature_verified": true,
+        "record_matches": false,
+        "failure_reason": "seal_identity_mismatch"
+      }
+    },
+    {
+      "name": "wrong_user_identity",
+      "raw_json": "{\"customer_id\":\"cus_123\",\"status\":\"paid\",\"amount\":42.5}",
+      "receipt": {
+        "schema_version": "4",
+        "receipt_id": "rcp_01SEALWRONGUSER0000000000",
+        "workspace_id": "ws_test",
+        "issued_at": "2026-04-21T14:32:17.482Z",
+        "decision": "allow",
+        "reason": "authorization_granted_action_active",
+        "user_id": "other",
+        "agent_id": "allowly.seal",
+        "action": "record.seal",
+        "resource": null,
+        "context": {
+          "seal_profile": "allowly.seal.jcs-sha256.v1",
+          "record_sha256": "11d29d3e8dafe7040b4fc863b69ab5be7a2c70e1f438759c9c60cba7a6076b52",
+          "seal_metadata": {
+            "source": "public-synthetic-vector"
+          }
+        },
+        "authorization_id": "auth_01HXZ2A0K1L2M3N4P5Q6R7S8T9",
+        "engine_version": "2026-04-17.1",
+        "alg": "Ed25519",
+        "key_id": "test-key/v1",
+        "signature": "xGUTSzTjJPLV_vyKb7-sBr-foPBH-uO_7kEcI5k2pILw33IiOYUfUMwAn0vgCZQFa_xfIA7AclyKFdMxv8-LDw"
+      },
+      "expected": {
+        "signature_verified": true,
+        "record_matches": false,
+        "failure_reason": "seal_identity_mismatch"
+      }
+    },
+    {
+      "name": "wrong_profile",
+      "raw_json": "{\"customer_id\":\"cus_123\",\"status\":\"paid\",\"amount\":42.5}",
+      "receipt": {
+        "schema_version": "4",
+        "receipt_id": "rcp_01SEALWRONGPROFILE0000000",
+        "workspace_id": "ws_test",
+        "issued_at": "2026-04-21T14:32:17.482Z",
+        "decision": "allow",
+        "reason": "authorization_granted_action_active",
+        "user_id": "allowly:seal",
+        "agent_id": "allowly.seal",
+        "action": "record.seal",
+        "resource": null,
+        "context": {
+          "seal_profile": "allowly.seal.unknown.v1",
+          "record_sha256": "11d29d3e8dafe7040b4fc863b69ab5be7a2c70e1f438759c9c60cba7a6076b52"
+        },
+        "authorization_id": "auth_01HXZ2A0K1L2M3N4P5Q6R7S8T9",
+        "engine_version": "2026-04-17.1",
+        "alg": "Ed25519",
+        "key_id": "test-key/v1",
+        "signature": "3H15kb_3tqf2bT-PsAVOwjJA0zFtXQxEQPCPteKjOlYVQPKjFWckTTOwLoPdx8f26aiSeyLiZPhlDWmyU4yXCQ"
+      },
+      "expected": {
+        "signature_verified": true,
+        "record_matches": false,
+        "failure_reason": "seal_profile_mismatch"
+      }
+    },
+    {
+      "name": "malformed_record_digest",
+      "raw_json": "{\"customer_id\":\"cus_123\",\"status\":\"paid\",\"amount\":42.5}",
+      "receipt": {
+        "schema_version": "4",
+        "receipt_id": "rcp_01SEALBADDIGEST0000000000",
+        "workspace_id": "ws_test",
+        "issued_at": "2026-04-21T14:32:17.482Z",
+        "decision": "allow",
+        "reason": "authorization_granted_action_active",
+        "user_id": "allowly:seal",
+        "agent_id": "allowly.seal",
+        "action": "record.seal",
+        "resource": null,
+        "context": {
+          "seal_profile": "allowly.seal.jcs-sha256.v1",
+          "record_sha256": "ABC"
+        },
+        "authorization_id": "auth_01HXZ2A0K1L2M3N4P5Q6R7S8T9",
+        "engine_version": "2026-04-17.1",
+        "alg": "Ed25519",
+        "key_id": "test-key/v1",
+        "signature": "z0-80HgUyZvGwqKr9NDW_NoMCTIlTeTIQYOR5gp6ePctkLRYMVghudB-PLNAnEni8hPLZzZi8rwn1bs2eNEDBg"
+      },
+      "expected": {
+        "signature_verified": true,
+        "record_matches": false,
+        "failure_reason": "invalid_record_digest"
+      }
+    }
+  ]
+}

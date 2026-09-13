@@ -14,6 +14,20 @@ from .verifier import (
     verify_receipt,
     verify_checkpoint,
 )
+from .seal import (
+    SEAL_ACTION,
+    SEAL_AGENT_ID,
+    SEAL_MAX_DEPTH,
+    SEAL_MAX_UTF8_BYTES,
+    SEAL_PROFILE,
+    SEAL_USER_ID,
+    SealInputError,
+    SealVerificationResult,
+    hash_seal_json,
+    hash_seal_value,
+    verify_seal_json,
+    verify_seal_value,
+)
 
 __all__ = [
     "KeyOutsideActiveWindowError",
@@ -30,4 +44,16 @@ __all__ = [
     "public_key_fingerprint",
     "verify_receipt",
     "verify_checkpoint",
+    "SEAL_ACTION",
+    "SEAL_AGENT_ID",
+    "SEAL_MAX_DEPTH",
+    "SEAL_MAX_UTF8_BYTES",
+    "SEAL_PROFILE",
+    "SEAL_USER_ID",
+    "SealInputError",
+    "SealVerificationResult",
+    "hash_seal_json",
+    "hash_seal_value",
+    "verify_seal_json",
+    "verify_seal_value",
 ]

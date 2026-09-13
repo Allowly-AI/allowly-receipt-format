@@ -3,8 +3,7 @@
  *
  * Verifies Allowly receipts per receipt-format.md wire version 4.
  *
- * Dependencies: Node.js 20+ (uses built-in node:crypto and the WebCrypto API).
- * No external runtime dependencies.
+ * Dependencies: Node.js 20+, RFC 8785 canonicalization, and strict JSON parsing.
  *
  * Usage:
  *   import { verifyReceipt, VerificationError, loadKeysFromJson } from "./verifier.js";
@@ -22,6 +21,8 @@
  */
 
 import { createHash, createHmac, timingSafeEqual, webcrypto } from "node:crypto";
+import jcsCanonicalize from "canonicalize";
+import { isSafeNumber, parse as parseLosslessJson } from "lossless-json";
 
 const SPEC_VERSION = "4";
 const ACTION_DECISIONS = new Set(["allow", "deny", "confirm", "escalate"]);
@@ -482,6 +483,338 @@ export async function verifyReceipt(
   }
 
   // Step 8: accept (implicit — no throw)
+}
+
+// ---------------------------------------------------------------------------
+// SEAL profile (RFC 8785 / JCS record hashing)
+// ---------------------------------------------------------------------------
+
+export const SEAL_PROFILE = "allowly.seal.jcs-sha256.v1";
+export const SEAL_ACTION = "record.seal";
+export const SEAL_AGENT_ID = "allowly.seal";
+export const SEAL_USER_ID = "allowly:seal";
+export const SEAL_MAX_UTF8_BYTES = 1_048_576;
+export const SEAL_MAX_DEPTH = 32;
+
+export type SealInputFailure =
+  | "invalid_type"
+  | "invalid_utf8"
+  | "size_limit"
+  | "depth_limit"
+  | "invalid_json"
+  | "duplicate_key"
+  | "invalid_unicode"
+  | "number_overflow"
+  | "number_underflow"
+  | "unsafe_integer"
+  | "number_precision"
+  | "unsupported_value"
+  | "canonicalization_failed";
+
+export class SealInputError extends Error {
+  constructor(
+    readonly code: SealInputFailure,
+    message: string,
+  ) {
+    super(message);
+    this.name = "SealInputError";
+  }
+}
+
+export type SealVerificationFailure =
+  | "receipt_verification_failed"
+  | "not_seal_receipt"
+  | "seal_identity_mismatch"
+  | "seal_profile_mismatch"
+  | "invalid_record_digest"
+  | "invalid_record"
+  | "record_mismatch";
+
+export interface SealVerificationResult {
+  signatureVerified: boolean;
+  recordMatches: boolean;
+  failureReason: SealVerificationFailure | null;
+}
+
+export function hashSealJson(rawJson: string | Uint8Array): string {
+  const { bytes, text } = decodeRawSealJson(rawJson);
+  if (bytes.byteLength > SEAL_MAX_UTF8_BYTES) {
+    throw new SealInputError(
+      "size_limit",
+      `record exceeds the ${SEAL_MAX_UTF8_BYTES}-byte SEAL limit`,
+    );
+  }
+  checkRawSealDepth(text);
+
+  let record: unknown;
+  try {
+    record = parseLosslessJson(text, undefined, {
+      parseNumber: parseSealNumber,
+      onDuplicateKey: ({ key }) => {
+        throw new SealInputError("duplicate_key", `duplicate decoded object key: ${JSON.stringify(key)}`);
+      },
+    });
+  } catch (error) {
+    if (error instanceof SealInputError) throw error;
+    throw new SealInputError("invalid_json", "record must be valid JSON");
+  }
+  return hashSealSnapshot(record);
+}
+
+/**
+ * Hash an already-parsed value. Parsing has already erased duplicate object
+ * names and original number-token spellings; prefer hashSealJson for raw input.
+ */
+export function hashSealValue(record: unknown): string {
+  return hashSealSnapshot(record);
+}
+
+export async function verifySealJson(
+  rawJson: string | Uint8Array,
+  receipt: Record<string, unknown>,
+  publicKeys: PublicKey[],
+  opts: {
+    expectedWorkspaceId: string;
+    trustedKeyFingerprints?: ReadonlySet<string>;
+    now?: Date;
+  },
+): Promise<SealVerificationResult> {
+  return verifySeal(
+    () => hashSealJson(rawJson),
+    receipt,
+    publicKeys,
+    opts,
+  );
+}
+
+/** Verify a SEAL against a parsed value, subject to the parsed-value boundary. */
+export async function verifySealValue(
+  record: unknown,
+  receipt: Record<string, unknown>,
+  publicKeys: PublicKey[],
+  opts: {
+    expectedWorkspaceId: string;
+    trustedKeyFingerprints?: ReadonlySet<string>;
+    now?: Date;
+  },
+): Promise<SealVerificationResult> {
+  return verifySeal(
+    () => hashSealValue(record),
+    receipt,
+    publicKeys,
+    opts,
+  );
+}
+
+async function verifySeal(
+  recordDigest: () => string,
+  receipt: Record<string, unknown>,
+  publicKeys: PublicKey[],
+  opts: {
+    expectedWorkspaceId: string;
+    trustedKeyFingerprints?: ReadonlySet<string>;
+    now?: Date;
+  },
+): Promise<SealVerificationResult> {
+  let ownReceipt: Record<string, unknown>;
+  try {
+    ownReceipt = snapshotJson(receipt, "receipt", false) as Record<string, unknown>;
+    await verifyReceipt(ownReceipt, publicKeys, opts);
+  } catch (error) {
+    if (error instanceof VerificationError) {
+      return sealResult(false, false, "receipt_verification_failed");
+    }
+    throw error;
+  }
+
+  if (ownReceipt.action !== SEAL_ACTION || ownReceipt.decision !== "allow") {
+    return sealResult(true, false, "not_seal_receipt");
+  }
+  if (ownReceipt.agent_id !== SEAL_AGENT_ID || ownReceipt.user_id !== SEAL_USER_ID) {
+    return sealResult(true, false, "seal_identity_mismatch");
+  }
+  const context = ownReceipt.context as Record<string, unknown>;
+  if (context.seal_profile !== SEAL_PROFILE) {
+    return sealResult(true, false, "seal_profile_mismatch");
+  }
+  const expectedDigest = context.record_sha256;
+  if (typeof expectedDigest !== "string" || !/^[0-9a-f]{64}$/.test(expectedDigest)) {
+    return sealResult(true, false, "invalid_record_digest");
+  }
+
+  let actualDigest: string;
+  try {
+    actualDigest = recordDigest();
+  } catch (error) {
+    if (error instanceof SealInputError) return sealResult(true, false, "invalid_record");
+    throw error;
+  }
+  const matches = timingSafeEqual(Buffer.from(actualDigest, "hex"), Buffer.from(expectedDigest, "hex"));
+  return matches
+    ? sealResult(true, true, null)
+    : sealResult(true, false, "record_mismatch");
+}
+
+function sealResult(
+  signatureVerified: boolean,
+  recordMatches: boolean,
+  failureReason: SealVerificationFailure | null,
+): SealVerificationResult {
+  return { signatureVerified, recordMatches, failureReason };
+}
+
+function decodeRawSealJson(rawJson: string | Uint8Array): { bytes: Uint8Array; text: string } {
+  if (typeof rawJson === "string") {
+    if (!rawJson.isWellFormed()) {
+      throw new SealInputError("invalid_unicode", "record contains an unpaired Unicode surrogate");
+    }
+    return { bytes: new TextEncoder().encode(rawJson), text: rawJson };
+  }
+  if (!(rawJson instanceof Uint8Array)) {
+    throw new SealInputError("invalid_type", "rawJson must be a string or Uint8Array");
+  }
+  const bytes = new Uint8Array(rawJson);
+  try {
+    return { bytes, text: new TextDecoder("utf-8", { fatal: true }).decode(bytes) };
+  } catch (error) {
+    throw new SealInputError("invalid_utf8", "record must be well-formed UTF-8");
+  }
+}
+
+function checkRawSealDepth(text: string): void {
+  let depth = 0;
+  let inString = false;
+  let escaped = false;
+  for (const char of text) {
+    if (inString) {
+      if (escaped) escaped = false;
+      else if (char === "\\") escaped = true;
+      else if (char === '"') inString = false;
+      continue;
+    }
+    if (char === '"') inString = true;
+    else if (char === "[" || char === "{") {
+      depth += 1;
+      if (depth > SEAL_MAX_DEPTH) {
+        throw new SealInputError(
+          "depth_limit",
+          `record nesting exceeds the SEAL max depth ${SEAL_MAX_DEPTH}`,
+        );
+      }
+    } else if (char === "]" || char === "}") depth -= 1;
+  }
+}
+
+function parseSealNumber(token: string): number {
+  const value = Number(token);
+  if (!Number.isFinite(value)) {
+    throw new SealInputError("number_overflow", "record contains a number outside binary64 range");
+  }
+  const significand = token.split(/[eE]/, 1)[0];
+  if (value === 0 && /[1-9]/.test(significand)) {
+    throw new SealInputError("number_underflow", "record number underflows binary64 to zero");
+  }
+  if (Number.isInteger(value) && !Number.isSafeInteger(value)) {
+    throw new SealInputError("unsafe_integer", "record contains an integer outside ±(2^53-1)");
+  }
+  if (value !== 0 && !isSafeNumber(token)) {
+    throw new SealInputError(
+      "number_precision",
+      "record number loses significant digits in the RFC 8785 binary64 model",
+    );
+  }
+  return value;
+}
+
+function hashSealSnapshot(record: unknown): string {
+  const snapshot = snapshotSealValue(record);
+  let canonical: string | undefined;
+  try {
+    canonical = jcsCanonicalize(snapshot);
+  } catch (error) {
+    throw new SealInputError("canonicalization_failed", "record cannot be canonicalized as RFC 8785");
+  }
+  if (canonical === undefined) {
+    throw new SealInputError("canonicalization_failed", "record cannot be canonicalized as RFC 8785");
+  }
+  const bytes = new TextEncoder().encode(canonical);
+  if (bytes.byteLength > SEAL_MAX_UTF8_BYTES) {
+    throw new SealInputError(
+      "size_limit",
+      `canonical record exceeds the ${SEAL_MAX_UTF8_BYTES}-byte SEAL limit`,
+    );
+  }
+  return createHash("sha256").update(bytes).digest("hex");
+}
+
+function snapshotSealValue(record: unknown): unknown {
+  validateSealTree(record);
+  let snapshot: unknown;
+  try {
+    snapshot = structuredClone(record);
+  } catch (error) {
+    throw new SealInputError("unsupported_value", "record must be structured-cloneable JSON data");
+  }
+  validateSealTree(snapshot);
+  return snapshot;
+}
+
+function validateSealTree(record: unknown): void {
+  const stack: Array<[unknown, number]> = [[record, 1]];
+  while (stack.length > 0) {
+    const [value, depth] = stack.pop()!;
+    if (depth > SEAL_MAX_DEPTH) {
+      throw new SealInputError(
+        "depth_limit",
+        `record nesting exceeds the SEAL max depth ${SEAL_MAX_DEPTH}`,
+      );
+    }
+    if (value === null || typeof value === "boolean") continue;
+    if (typeof value === "number") {
+      if (!Number.isFinite(value)) {
+        throw new SealInputError("number_overflow", "record contains a non-finite number");
+      }
+      if (Number.isInteger(value) && !Number.isSafeInteger(value)) {
+        throw new SealInputError("unsafe_integer", "record contains an integer outside ±(2^53-1)");
+      }
+    } else if (typeof value === "string") {
+      if (!value.isWellFormed()) {
+        throw new SealInputError("invalid_unicode", "record contains an unpaired Unicode surrogate");
+      }
+    } else if (Array.isArray(value)) {
+      const keys = Object.keys(value);
+      if (keys.length !== value.length || keys.some((key, index) => key !== String(index))) {
+        throw new SealInputError("unsupported_value", "record arrays must be dense without extra properties");
+      }
+      const descriptors = Object.getOwnPropertyDescriptors(value);
+      for (const key of keys) {
+        const descriptor = descriptors[key];
+        if (!("value" in descriptor)) {
+          throw new SealInputError("unsupported_value", "record must not contain accessors");
+        }
+        stack.push([descriptor.value, depth + 1]);
+      }
+    } else if (typeof value === "object") {
+      const prototype = Object.getPrototypeOf(value);
+      if (prototype !== Object.prototype && prototype !== null) {
+        throw new SealInputError("unsupported_value", "record objects must be plain JSON objects");
+      }
+      if (Object.getOwnPropertySymbols(value).length > 0) {
+        throw new SealInputError("unsupported_value", "record must not contain symbol keys");
+      }
+      for (const [key, descriptor] of Object.entries(Object.getOwnPropertyDescriptors(value))) {
+        if (!descriptor.enumerable || !("value" in descriptor)) {
+          throw new SealInputError("unsupported_value", "record must contain enumerable data properties only");
+        }
+        if (!key.isWellFormed()) {
+          throw new SealInputError("invalid_unicode", "record contains an unpaired Unicode surrogate");
+        }
+        stack.push([descriptor.value, depth + 1]);
+      }
+    } else {
+      throw new SealInputError("unsupported_value", `record contains non-JSON type ${typeof value}`);
+    }
+  }
 }
 
 function checkSchema(receipt: Record<string, unknown>): void {

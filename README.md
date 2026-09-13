@@ -10,6 +10,11 @@ Specification Appendix A also defines an optional `hmac-v1` convention for
 customer-recomputable pseudonymous values inside `context`; it does not change
 the receipt wire format or verification algorithm.
 
+Appendix B defines the optional `allowly.seal.jcs-sha256.v1` profile for
+strictly hashing JSON records with RFC 8785 and verifying the digest against a
+normal signed wire-4 receipt. The record stays local; only its digest needs to
+reach an issuer.
+
 ## Why this exists
 
 AI agents are being given broad access to user data, and the audit story is currently *"trust the vendor's dashboard."* That's not enough for SOC 2, the EU AI Act, or any serious procurement review. The receipt format is the artifact that moves audit from "the vendor says so" to "here's a signature anyone can verify."
@@ -22,6 +27,7 @@ The format is vendor-neutral on purpose. Any service making agent authorization 
 - `verifiers/python/` — reference Python verifier (`allowly-receipt-format` on PyPI).
 - `verifiers/typescript/` — reference TypeScript verifier (`@allowly/verifier` on npm).
 - `test-vectors.json` — shared test vectors every implementation must pass.
+- `vectors/seal/` — shared strict-hashing and signed SEAL verification vectors.
 - `GOVERNANCE.md` — how decisions about the spec get made.
 - `CONTRIBUTING.md` — how to report bugs, propose changes, and add verifiers.
 - `CHANGELOG.md` — version history.
