@@ -133,11 +133,7 @@ def typescript_gate(targets: list[str]) -> int:
 
     return run(
         [
-            "npx",
-            "--yes",
-            "--package",
-            "@stryker-mutator/core",
-            "stryker",
+            "./node_modules/.bin/stryker",
             "run",
             "stryker.conf.cjs",
         ],

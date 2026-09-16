@@ -1,16 +1,16 @@
 # Changelog
 
-## v4.0.1 — 2026-08-04
-
-- Fix TypeScript checkpoint verification to snapshot receipts and key documents before asynchronous verification, preventing caller mutations from changing verified inputs. Python advances in lockstep; receipt schema, canonicalization, and wire version remain unchanged. Clarify fingerprint verification scope, active wire-version references, and key-endpoint cache directives.
-
-## Unreleased
+## v4.1.0 — 2026-09-16
 
 - Add the optional `allowly.seal.jcs-sha256.v1` RFC 8785 JSON commitment
   profile, strict raw JSON hashing, and structured SEAL verification in both
   reference packages. Add shared profile and signed verification vectors,
   including numeric, Unicode, duplicate-name, size, and depth boundaries.
   Verifier packages advance to 4.1.0; receipt wire format remains `"4"`.
+
+## v4.0.1 — 2026-08-04
+
+- Fix TypeScript checkpoint verification to snapshot receipts and key documents before asynchronous verification, preventing caller mutations from changing verified inputs. Python advances in lockstep; receipt schema, canonicalization, and wire version remain unchanged. Clarify fingerprint verification scope, active wire-version references, and key-endpoint cache directives.
 
 ## v4.0.0 — 2026-08-01
 

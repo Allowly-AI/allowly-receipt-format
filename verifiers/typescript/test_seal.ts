@@ -92,6 +92,21 @@ async function main(profilePath: string, verificationPath: string): Promise<void
     }
   }
 
+  const assertInvalidArray = (value: unknown[], label: string) => assert.throws(
+    () => hashSealValue(value),
+    (error: unknown) => error instanceof SealInputError
+      && error.code === "unsupported_value"
+      && error.message === "record arrays must be dense without extra properties",
+    label,
+  );
+  const trailingHole = [1];
+  trailingHole.length = 2;
+  assertInvalidArray(trailingHole, "parsed arrays must not contain trailing holes");
+  const replacedIndex = [1];
+  replacedIndex.length = 2;
+  Object.defineProperty(replacedIndex, "extra", { enumerable: true, value: 2 });
+  assertInvalidArray(replacedIndex, "parsed array keys must match their indices");
+
   const keys = loadKeysFromJson(verification.public_keys);
   for (const testCase of [...verification.should_verify, ...verification.should_reject]) {
     const result = await verifySealJson(testCase.raw_json, testCase.receipt, keys, {
