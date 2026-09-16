@@ -24,6 +24,7 @@ The format is vendor-neutral on purpose. Any service making agent authorization 
 ## Repo layout
 
 - `spec/receipt-format.md` — the normative specification.
+- [INTEROP.md](./INTEROP.md) — runtime-governance responsibilities, AARM mapping, and ACTA draft comparison.
 - `verifiers/python/` — reference Python verifier (`allowly-receipt-format` on PyPI).
 - `verifiers/typescript/` — reference TypeScript verifier (`@allowly/verifier` on npm).
 - `test-vectors.json` — shared test vectors every implementation must pass.
@@ -113,7 +114,7 @@ boundary is unsupported.
 
 ## Licensing
 
-- **Specification text** (`spec/`): CC-BY 4.0. Fork it, reference it, implement it.
+- **Specification text and interoperability guide** (`spec/`, `INTEROP.md`): CC-BY 4.0. Fork it, reference it, implement it.
 - **Reference code** (`verifiers/`, test harness): Apache 2.0.
 
 ## Who maintains this
