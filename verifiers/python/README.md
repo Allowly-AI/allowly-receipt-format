@@ -8,7 +8,8 @@ Packaged Python verifier for Allowly Receipt Format wire version 4.
 pip install allowly-receipt-format
 ```
 
-Only dependency: `cryptography` for Ed25519 signature verification.
+Runtime dependencies are `cryptography` for Ed25519 verification and `rfc8785`
+for SEAL record canonicalization.
 
 ## CLI
 
@@ -139,6 +140,32 @@ The package exposes typed verifier exceptions:
 
 All inherit from `VerificationError`.
 
+### Hash and verify a SEAL record
+
+Use the raw function when JSON text comes from a file, form, or workflow. It
+can reject duplicate decoded keys and number tokens that a normal parser would
+silently change:
+
+```python
+from allowly_receipt_format import hash_seal_json, verify_seal_json
+
+record_sha256 = hash_seal_json(raw_json)
+result = verify_seal_json(
+    raw_json,
+    signed_receipt,
+    keys,
+    expected_workspace_id=configured_workspace_id,
+    trusted_key_fingerprints=trusted_fingerprints,
+)
+assert result.signature_verified and result.record_matches
+```
+
+`hash_seal_value` and `verify_seal_value` are the explicit already-parsed
+boundary. They cannot recover duplicate member names or original number-token
+spellings. `SealInputError.code` identifies strict-input failures. A SEAL
+verification result always reports signature verification separately from
+record matching.
+
 ### Verify a daily checkpoint
 
 `verify_checkpoint` verifies the checkpoint and member signatures, period,
@@ -201,6 +228,7 @@ Run against the shared test vectors:
 pip install -e .
 python test_vectors.py ../../test-vectors.json
 python test_exception_types.py ../../test-vectors.json
+python test_seal.py ../../vectors/seal/profile-v1.json ../../vectors/seal/verification-v1.json
 ```
 
 All `should_verify` vectors must pass; all `should_reject` vectors must be rejected with the expected reason.

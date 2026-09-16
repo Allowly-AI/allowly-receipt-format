@@ -6,6 +6,12 @@
 
 ## Unreleased
 
+- Add the optional `allowly.seal.jcs-sha256.v1` RFC 8785 JSON commitment
+  profile, strict raw JSON hashing, and structured SEAL verification in both
+  reference packages. Add shared profile and signed verification vectors,
+  including numeric, Unicode, duplicate-name, size, and depth boundaries.
+  Verifier packages advance to 4.1.0; receipt wire format remains `"4"`.
+
 ## v4.0.0 — 2026-08-01
 
 - **Receipt wire format 4.** Added the `receipt.checkpoint` event and paired

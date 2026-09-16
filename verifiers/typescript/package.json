@@ -1,6 +1,6 @@
 {
   "name": "@allowly/verifier",
-  "version": "4.0.1",
+  "version": "4.1.0",
   "description": "Reference verifier for the Allowly Receipt Format. Verifies signed receipts of AI agent authorization decisions.",
   "type": "module",
   "main": "./dist/verifier.js",
@@ -9,7 +9,9 @@
     ".": {
       "types": "./dist/verifier.d.ts",
       "import": "./dist/verifier.js"
-    }
+    },
+    "./vectors/seal/profile-v1.json": "./dist/vectors/seal/profile-v1.json",
+    "./vectors/seal/verification-v1.json": "./dist/vectors/seal/verification-v1.json"
   },
   "files": [
     "dist",
@@ -17,8 +19,8 @@
     "LICENSE"
   ],
   "scripts": {
-    "build": "tsc",
-    "test": "npm run build && node dist/test_vectors.js ../../test-vectors.json && node dist/test_pseudonym_refs.js",
+    "build": "tsc && node scripts/copy-seal-vectors.mjs",
+    "test": "npm run build && node dist/test_vectors.js ../../test-vectors.json && node dist/test_pseudonym_refs.js && node dist/test_seal.js ../../vectors/seal/profile-v1.json ../../vectors/seal/verification-v1.json",
     "prepublishOnly": "npm run build"
   },
   "engines": {
@@ -42,6 +44,10 @@
   },
   "bugs": {
     "url": "https://github.com/Allowly-AI/allowly-receipt-format/issues"
+  },
+  "dependencies": {
+    "canonicalize": "^3.0.0",
+    "lossless-json": "^4.0.1"
   },
   "devDependencies": {
     "typescript": "^5.4.0",

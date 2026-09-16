@@ -2,7 +2,8 @@
 
 TypeScript reference verifier for [Allowly Receipt Format wire version 4](https://github.com/Allowly-AI/allowly-receipt-format).
 
-Zero runtime dependencies. Uses Node.js's built-in WebCrypto for Ed25519 verification.
+Uses Node.js's built-in WebCrypto for Ed25519 verification, plus focused RFC
+8785 canonicalization and strict JSON parsing dependencies for SEAL records.
 
 ## Install
 
@@ -102,6 +103,33 @@ the receipts.
 Returns the canonical `sha256:<64 lowercase hex>` fingerprint over the key's
 decoded raw 32-byte Ed25519 public key.
 
+### SEAL hashing and verification
+
+`hashSealJson(rawJson)` accepts a `string` or `Uint8Array`, strictly parses the
+raw JSON, applies the `allowly.seal.jcs-sha256.v1` RFC 8785 profile, and returns
+the 64-character lowercase SHA-256 digest. Prefer it at untrusted input
+boundaries because it can reject duplicate decoded object keys and
+precision-losing number tokens. `hashSealValue(record)` is the explicit
+already-parsed boundary; parsing has already erased those details.
+
+`verifySealJson` and `verifySealValue` first verify the full wire-4 receipt,
+including a caller-supplied `expectedWorkspaceId` and optional trusted key
+fingerprints. They then require the fixed SEAL action and identities, the
+signed profile and digest, and a matching local record. The result keeps
+`signatureVerified` separate from `recordMatches` and includes a stable
+`failureReason`.
+
+The package publishes the exact shared JSON vectors at these stable subpaths:
+
+```typescript
+import profileVectors from "@allowly/verifier/vectors/seal/profile-v1.json" with { type: "json" };
+import verificationVectors from "@allowly/verifier/vectors/seal/verification-v1.json" with { type: "json" };
+```
+
+They are copied from the repository's canonical `vectors/seal/` files during
+the package build; integrations should consume these fixtures instead of
+maintaining a second source.
+
 ### `matchesRef(key, fieldName, value, ref)`
 
 Implements the optional `hmac-v1` keyed-pseudonym convention in specification
@@ -130,6 +158,15 @@ receipt text is untrusted (spec §4.2).
 ## What verification proves
 
 A valid receipt proves that the selected private key signed the exact recorded decision and timestamp for the recorded subject/action. It does **not** independently prove when signing happened, that the action actually happened, that the user's authorization was informed, or that the `user_id` corresponds to any real-world person. See spec §7.1.
+
+## Browser builds for the dashboard and website
+
+`browser/sealJson.ts` owns their shared strict JSON parsing and hashing.
+`npm test` checks it against the same SEAL vectors as the Node verifier.
+After building this directory, run `python3 scripts/refresh-verifier.py` in
+each consumer repo. Those wrappers use `scripts/build-browser.py` here to
+generate the self-hosted receipt verifier and JSON helper; edit these sources
+instead of the generated consumer files.
 
 ## License
 
