@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "allowly-receipt-format"
-version = "4.0.1"
+version = "4.1.0"
 description = "Reference Python verifier for the Allowly Receipt Format"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -25,6 +25,7 @@ classifiers = [
 ]
 dependencies = [
     "cryptography>=42.0",
+    "rfc8785>=0.1.4,<1",
 ]
 
 [project.urls]

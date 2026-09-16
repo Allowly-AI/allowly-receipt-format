@@ -203,6 +203,23 @@ async function main(vectorsPath: string): Promise<number> {
       }
     }
   }
+  const noncanonicalPublicKey = structuredClone(vectors.public_keys);
+  noncanonicalPublicKey.keys[0].public_key =
+    "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2il";
+  try {
+    loadKeysFromJson(noncanonicalPublicKey);
+    console.log("  FAIL  noncanonical_public_key: should have been rejected");
+    failures++;
+  } catch (e) {
+    const expected =
+      'non-canonical base64url: "O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2il"';
+    if (e instanceof VerificationError && e.message === expected) {
+      console.log(`  OK    noncanonical_public_key (${e.message})`);
+    } else {
+      console.log(`  FAIL  noncanonical_public_key: unexpected error: ${e}`);
+      failures++;
+    }
+  }
   if (keys[0].activeFrom.getUTCFullYear() === 1) {
     console.log("  OK    active_from_year_0001");
   } else {

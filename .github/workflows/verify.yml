@@ -28,6 +28,9 @@ jobs:
       - name: Check hmac-v1 pseudonym references
         working-directory: verifiers/python
         run: python test_pseudonym_refs.py
+      - name: Check SEAL profile and verification vectors
+        working-directory: verifiers/python
+        run: python test_seal.py ../../vectors/seal/profile-v1.json ../../vectors/seal/verification-v1.json
       - name: Build package
         working-directory: verifiers/python
         run: |
@@ -48,13 +51,16 @@ jobs:
         run: npm ci
       - name: Build
         working-directory: verifiers/typescript
-        run: npx tsc
+        run: npm run build
       - name: Run against test vectors
         working-directory: verifiers/typescript
         run: node dist/test_vectors.js ../../test-vectors.json
       - name: Check hmac-v1 pseudonym references
         working-directory: verifiers/typescript
         run: node dist/test_pseudonym_refs.js
+      - name: Check SEAL profile and verification vectors
+        working-directory: verifiers/typescript
+        run: node dist/test_seal.js ../../vectors/seal/profile-v1.json ../../vectors/seal/verification-v1.json
 
   cross-check:
     name: Regenerate vectors and verify both still pass
@@ -77,14 +83,17 @@ jobs:
         run: python scripts/gen_vectors.py
       - name: Python verifier must still pass
         working-directory: verifiers/python
-        run: python test_vectors.py ../../test-vectors.json
+        run: |
+          python test_vectors.py ../../test-vectors.json
+          python test_seal.py ../../vectors/seal/profile-v1.json ../../vectors/seal/verification-v1.json
       - name: Build and run TS verifier
         working-directory: verifiers/typescript
         run: |
           npx tsc
           node dist/test_vectors.js ../../test-vectors.json
+          node dist/test_seal.js ../../vectors/seal/profile-v1.json ../../vectors/seal/verification-v1.json
       - name: Fail if vectors drift without being committed
-        run: git diff --exit-code test-vectors.json
+        run: git diff --exit-code test-vectors.json vectors/seal/
 
   mutation:
     name: Changed critical verifier mutation gate
@@ -100,7 +109,7 @@ jobs:
           python-version: "3.12"
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "24"
       - name: Install Python verifier and mutation runner
         run: python -m pip install -e verifiers/python 'mutmut<3'
       - name: Install TypeScript verifier dependencies

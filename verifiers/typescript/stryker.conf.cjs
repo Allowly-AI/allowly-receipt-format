@@ -6,6 +6,7 @@ module.exports = {
   },
   reporters: ["clear-text"],
   coverageAnalysis: "off",
+  inPlace: true,
   thresholds: {
     break: 100,
   },

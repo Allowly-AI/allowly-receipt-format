@@ -674,8 +674,103 @@ references as sensitive data and apply the relevant retention obligations. A
 remote reference-resolution endpoint is unnecessary and creates a guessing
 oracle; customers can use the key and the reference verifier locally.
 
+## Appendix B. SEAL JSON record profile
+
+SEAL is an application profile for recording a SHA-256 commitment to a JSON
+value inside an ordinary wire-4 action receipt. It adds no receipt fields and
+does not change the receipt canonicalization or signature algorithm. The
+profile identifier is `allowly.seal.jcs-sha256.v1`.
+
+### B.1 Raw JSON input
+
+A conforming raw-input implementation **MUST**:
+
+1. Accept only well-formed UTF-8 JSON text and any JSON top-level value.
+2. Reject raw input larger than 1,048,576 UTF-8 bytes. The resulting canonical
+   JSON **MUST** also be no larger than 1,048,576 UTF-8 bytes.
+3. Reject a value tree deeper than 32 levels, where the root value is level 1.
+4. Reject duplicate object member names after JSON escape decoding. For
+   example, `"a"` and `"\u0061"` in the same object are duplicates.
+5. Reject strings or object member names containing an unpaired Unicode
+   surrogate. No Unicode normalization is performed.
+6. Use the RFC 8785 / ECMAScript binary64 number model. Accept finite numbers,
+   `-0`, ordinary decimals, and alternate spellings that denote the same
+   model value, such as `1`, `1.0`, and `1e0`. Reject integers outside
+   ±(2^53−1), overflow, a nonzero token that underflows to zero, and a token
+   whose significant decimal value would be changed by conversion to the
+   binary64 model. Implementations **MUST** use the shared vectors to make this
+   check consistently rather than relying on a parser that silently rounds.
+
+After validation, the implementation **MUST** serialize the value with RFC
+8785 JSON Canonicalization Scheme (JCS), hash the canonical UTF-8 bytes with
+SHA-256, and encode the digest as exactly 64 lowercase hexadecimal characters:
+
+```text
+record_sha256 = lowercase_hex(SHA256(UTF8(JCS(parsed_json))))
+```
+
+Object source order, insignificant whitespace, and equivalent number
+spellings therefore do not affect the digest. Array order, JSON types, string
+contents, and object member names do affect it.
+
+An API that accepts an already-parsed value **MUST** clearly label that
+boundary. Parsing has already erased duplicate names and original number-token
+spellings, so the parsed-value API cannot apply all raw-input checks above.
+
+### B.2 Signed receipt binding
+
+A SEAL receipt is a valid action receipt under the base verification algorithm
+with all of these signed values:
+
+```json
+{
+  "action": "record.seal",
+  "decision": "allow",
+  "agent_id": "allowly.seal",
+  "user_id": "allowly:seal",
+  "context": {
+    "seal_profile": "allowly.seal.jcs-sha256.v1",
+    "record_sha256": "<64 lowercase hex>"
+  }
+}
+```
+
+The context may contain other application metadata. A verifier **MUST NOT**
+bind a particular `authorization_id`; a managed SEAL authorization may renew
+without changing the profile. The caller **MUST** supply the expected workspace
+ID and public keys from an authenticated, trusted source. A workspace or key
+claim copied only from the receipt is not a trust anchor.
+
+### B.3 Verification result
+
+A conforming SEAL verifier performs base wire-4 receipt verification first,
+then checks the action, decision, fixed identities, profile, digest syntax, and
+locally computed record digest. Its structured result **MUST** keep receipt
+signature verification separate from record matching:
+
+- A base receipt or signature failure reports `signature_verified: false` and
+  `record_matches: false`.
+- A valid signature with invalid SEAL semantics, invalid record input, or a
+  different record reports `signature_verified: true` and
+  `record_matches: false`, with a machine-readable reason.
+- Success reports both values as `true` and has no failure reason.
+
+A pending transport envelope is not a signed receipt and cannot verify. A
+verified match proves that the workspace key signed a commitment to those JSON
+bytes under this profile. It does not prove the record's claims are true or
+that an external action occurred.
+
+### B.4 Test vectors
+
+The normative cross-language profile vectors are
+`vectors/seal/profile-v1.json`. Signed receipt and failure-result vectors are
+`vectors/seal/verification-v1.json`. Implementations **MUST** pass both files.
+
 ## 11. Changelog
 
+- **Verifier packages 4.1.0 (wire format unchanged at 4)** — Added Appendix
+  B's `allowly.seal.jcs-sha256.v1` JSON commitment profile, strict raw hashing,
+  structured SEAL verification, and shared Python/TypeScript vectors.
 - **4 (2026-08-01)** — Daily signed receipt-set checkpoints.
   - Added `receipt.checkpoint` / `receipt_set_committed` workspace event receipts.
   - Defined a deterministic SHA-256 Merkle commitment over full canonical signed receipt bytes, using byte-domain-separated leaves/nodes, sorted leaf hashes, duplicate-last odd levels, and a distinct empty root.

@@ -1,0 +1,203 @@
+{
+  "profile": "allowly.seal.jcs-sha256.v1",
+  "limits": {
+    "max_utf8_bytes": 1048576,
+    "max_depth": 32
+  },
+  "should_hash": [
+    {
+      "name": "negative_zero",
+      "raw_json": "{\"value\":-0}",
+      "canonical_json": "{\"value\":0}",
+      "record_sha256": "23d7b286bd429460b92a2a1c21b6afc34110446c5034c17363fda363aa0a7c5d"
+    },
+    {
+      "name": "prototype_named_keys",
+      "raw_json": "{\"__proto__\":{\"x\":1},\"constructor\":2}",
+      "canonical_json": "{\"__proto__\":{\"x\":1},\"constructor\":2}",
+      "record_sha256": "e60a56211596fcee44c6b87d771fd1c3d2ebdb176e14f1d67a0f4ce5a90a5fd5"
+    },
+    {
+      "name": "same_keys_in_separate_objects",
+      "raw_json": "{\"id\":3,\"a\":[{\"id\":1},{\"id\":2}]}",
+      "canonical_json": "{\"a\":[{\"id\":1},{\"id\":2}],\"id\":3}",
+      "record_sha256": "b798ee8b57d383593a0dbd61963f115620cc5600837035012e59e31073e61374"
+    },
+    {
+      "name": "finite_decimals",
+      "raw_json": "[333333333.3333333,1E-7,4.50,2e-3,0.000000000000000000000000001]",
+      "canonical_json": "[333333333.3333333,1e-7,4.5,0.002,1e-27]",
+      "record_sha256": "3941b022906a4791e309418b4d7fbf48c3eb2d21bb98600e65ca52b43aa6eefb"
+    },
+    {
+      "name": "non_bmp_strings_and_keys",
+      "raw_json": "{\"｡\":2,\"😀\":1,\"text\":\"���😀\"}",
+      "canonical_json": "{\"text\":\"���😀\",\"😀\":1,\"｡\":2}",
+      "record_sha256": "f43d65e5599e3215acbf24f8653deeb35a60273cef4de87e3d8e3c1557c07927"
+    }
+  ],
+  "generated_should_hash": [
+    {
+      "name": "max_utf8_size",
+      "generator": {
+        "kind": "string_value_total_utf8_bytes",
+        "utf8_bytes": 1048576
+      },
+      "record_sha256": "b90efd2e09264d7b84274440bff834b17275dba20541cb7484aed354bfd631c3"
+    },
+    {
+      "name": "max_depth",
+      "generator": {
+        "kind": "nested_arrays",
+        "depth": 32
+      },
+      "record_sha256": "aa6b4827b4b9b0503263d3a0f1b0cc38801d46f505e7899a109d8210c34fd537"
+    }
+  ],
+  "equivalent": [
+    {
+      "name": "formatting_and_object_key_order",
+      "raw_jsons": [
+        "{\"b\":2,\"a\":1}",
+        "{\n  \"a\": 1,\n  \"b\": 2\n}"
+      ],
+      "canonical_json": "{\"a\":1,\"b\":2}",
+      "record_sha256": "43258cff783fe7036d8a43033f830adfc60ec037382473548ac742b888292777"
+    },
+    {
+      "name": "alternate_number_spellings",
+      "raw_jsons": [
+        "{\"value\":1}",
+        "{\"value\":1.0}",
+        "{\"value\":1e0}"
+      ],
+      "canonical_json": "{\"value\":1}",
+      "record_sha256": "48208f9428d64634bd8e28ff345bf0eab60d53c18fa2fbdb0b9bc1e84df2b5f6"
+    },
+    {
+      "name": "zero_with_extreme_exponents",
+      "raw_jsons": [
+        "{\"value\":0e1000000}",
+        "{\"value\":-0e-1000000}",
+        "{\"value\":0e9999999999999999999}",
+        "{\"value\":0}"
+      ],
+      "canonical_json": "{\"value\":0}",
+      "record_sha256": "23d7b286bd429460b92a2a1c21b6afc34110446c5034c17363fda363aa0a7c5d"
+    }
+  ],
+  "should_differ": [
+    {
+      "name": "array_order",
+      "raw_jsons": [
+        "[1,2,3]",
+        "[3,2,1]"
+      ]
+    },
+    {
+      "name": "json_types",
+      "raw_jsons": [
+        "{\"v\":1}",
+        "{\"v\":\"1\"}"
+      ]
+    }
+  ],
+  "should_reject": [
+    {
+      "name": "duplicate_decoded_key_equal_value",
+      "raw_json": "{\"a\":1,\"\\u0061\":1}",
+      "expected_code": "duplicate_key"
+    },
+    {
+      "name": "duplicate_prototype_key_equal_object",
+      "raw_json": "{\"__proto__\":{\"x\":1},\"\\u005f_proto__\":{\"x\":1}}",
+      "expected_code": "duplicate_key"
+    },
+    {
+      "name": "duplicate_nested_key_equal_array",
+      "raw_json": "{\"outer\":{\"a\":[1,true,null],\"a\":[1,true,null]}}",
+      "expected_code": "duplicate_key"
+    },
+    {
+      "name": "duplicate_decoded_key",
+      "raw_json": "{\"a\":1,\"\\u0061\":2}",
+      "expected_code": "duplicate_key"
+    },
+    {
+      "name": "duplicate_decoded_non_bmp_key",
+      "raw_json": "{\"😀\":1,\"\\ud83d\\ude00\":2}",
+      "expected_code": "duplicate_key"
+    },
+    {
+      "name": "duplicate_decoded_prototype_key",
+      "raw_json": "{\"__proto__\":1,\"\\u005f_proto__\":2}",
+      "expected_code": "duplicate_key"
+    },
+    {
+      "name": "unpaired_high_surrogate",
+      "raw_json": "{\"value\":\"\\ud800\"}",
+      "expected_code": "invalid_unicode"
+    },
+    {
+      "name": "unpaired_low_surrogate",
+      "raw_json": "{\"value\":\"\\udc00\"}",
+      "expected_code": "invalid_unicode"
+    },
+    {
+      "name": "invalid_utf8",
+      "raw_utf8_base64": "eyJ2YWx1ZSI6Iv8ifQ",
+      "expected_code": "invalid_utf8"
+    },
+    {
+      "name": "utf8_bom_bytes",
+      "raw_utf8_base64": "77u_e30",
+      "expected_code": "invalid_json"
+    },
+    {
+      "name": "utf8_bom_text",
+      "raw_json": "﻿{}",
+      "expected_code": "invalid_json"
+    },
+    {
+      "name": "number_overflow",
+      "raw_json": "{\"value\":1e400}",
+      "expected_code": "number_overflow"
+    },
+    {
+      "name": "number_underflow",
+      "raw_json": "{\"value\":1e-4000}",
+      "expected_code": "number_underflow"
+    },
+    {
+      "name": "unsafe_integer",
+      "raw_json": "{\"value\":9007199254740992}",
+      "expected_code": "unsafe_integer"
+    },
+    {
+      "name": "significant_digit_loss",
+      "raw_json": "{\"value\":333333333.33333329}",
+      "expected_code": "number_precision"
+    },
+    {
+      "name": "trailing_json_value",
+      "raw_json": "{}{}",
+      "expected_code": "invalid_json"
+    },
+    {
+      "name": "over_utf8_size",
+      "generator": {
+        "kind": "string_value_total_utf8_bytes",
+        "utf8_bytes": 1048577
+      },
+      "expected_code": "size_limit"
+    },
+    {
+      "name": "over_max_depth",
+      "generator": {
+        "kind": "nested_arrays",
+        "depth": 33
+      },
+      "expected_code": "depth_limit"
+    }
+  ]
+}
