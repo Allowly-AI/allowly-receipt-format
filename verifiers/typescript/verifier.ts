@@ -490,7 +490,11 @@ export async function verifyReceipt(
 // ---------------------------------------------------------------------------
 
 export const POLICY_EVALUATION_PROFILE = "allowly-conditional-evaluation-v1";
-export const POLICY_EVALUATION_ENGINE_VERSION = "2026-09-16.1";
+export const POLICY_EVALUATION_ENGINE_VERSION = "2026-09-24.1";
+export const POLICY_EVALUATION_ENGINE_VERSIONS = [
+  "2026-09-16.1",
+  POLICY_EVALUATION_ENGINE_VERSION,
+] as const;
 
 export type PolicyEvaluationStatus = "matched" | "mismatch" | "not_checked";
 
@@ -528,7 +532,14 @@ const POLICY_OPERATORS = new Set([
   "contains_any", "contains_none", "empty", "exists",
 ]);
 const MAX_POLICY_CONDITIONS = 10;
-const REPLAY_CONTEXT_EXCLUSIONS = ["budget", "escalation", "session_id"] as const;
+const BASE_REPLAY_CONTEXT_EXCLUSIONS = ["budget", "escalation", "session_id"] as const;
+const CURRENT_REPLAY_CONTEXT_EXCLUSIONS = [
+  ...BASE_REPLAY_CONTEXT_EXCLUSIONS,
+  "client_timestamp",
+  "client_timestamp_source",
+  "execution",
+  "identity_verification",
+] as const;
 const PUBLIC_KEY_FINGERPRINT_RE = /^sha256:[0-9a-f]{64}$/;
 
 class UnsupportedPolicyError extends Error {}
@@ -656,7 +667,7 @@ export async function verifyPolicyEvaluation(
   if (recordedEvaluation === null) {
     return result(null, "not_checked", "policy_evaluation_not_recorded");
   }
-  if (engineVersion !== POLICY_EVALUATION_ENGINE_VERSION) {
+  if (!(POLICY_EVALUATION_ENGINE_VERSIONS as readonly string[]).includes(engineVersion)) {
     return result(null, "not_checked", "unsupported_engine_version");
   }
 
@@ -683,7 +694,9 @@ export async function verifyPolicyEvaluation(
   const authorizationReceipt = distinctMatchingReceipts.values().next().value!;
   const authorizationReceiptId = authorizationReceipt.receipt_id as string;
   if (
-    authorizationReceipt.engine_version !== POLICY_EVALUATION_ENGINE_VERSION
+    !(POLICY_EVALUATION_ENGINE_VERSIONS as readonly string[]).includes(
+      authorizationReceipt.engine_version as string,
+    )
     || parseRFC3339(authorizationReceipt.issued_at as string) > parseRFC3339(ownReceipt.issued_at as string)
   ) {
     return result(
@@ -710,7 +723,10 @@ export async function verifyPolicyEvaluation(
   const replayContext = {
     ...(ownReceipt.context as Record<string, unknown>),
   };
-  for (const key of REPLAY_CONTEXT_EXCLUSIONS) delete replayContext[key];
+  const replayContextExclusions = engineVersion === POLICY_EVALUATION_ENGINE_VERSION
+    ? CURRENT_REPLAY_CONTEXT_EXCLUSIONS
+    : BASE_REPLAY_CONTEXT_EXCLUSIONS;
+  for (const key of replayContextExclusions) delete replayContext[key];
 
   let calculatedEvaluation: Record<string, unknown> | null;
   try {

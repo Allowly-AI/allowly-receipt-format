@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import {
   POLICY_EVALUATION_ENGINE_VERSION,
+  POLICY_EVALUATION_ENGINE_VERSIONS,
   POLICY_EVALUATION_PROFILE,
   VerificationError,
   loadKeysFromJson,
@@ -18,8 +19,18 @@ function alteredSignature(signature: string): string {
 async function main(vectorsPath: string): Promise<void> {
   const vectors = JSON.parse(readFileSync(vectorsPath, "utf8")) as JsonObject;
   assert.equal(vectors.profile, POLICY_EVALUATION_PROFILE);
-  assert.deepEqual(vectors.supported_action_engine_versions, [POLICY_EVALUATION_ENGINE_VERSION]);
-  assert.deepEqual(vectors.supported_authorization_engine_versions, [POLICY_EVALUATION_ENGINE_VERSION]);
+  assert.equal(
+    POLICY_EVALUATION_ENGINE_VERSION,
+    POLICY_EVALUATION_ENGINE_VERSIONS.at(-1),
+  );
+  assert.deepEqual(
+    vectors.supported_action_engine_versions,
+    POLICY_EVALUATION_ENGINE_VERSIONS,
+  );
+  assert.deepEqual(
+    vectors.supported_authorization_engine_versions,
+    POLICY_EVALUATION_ENGINE_VERSIONS,
+  );
 
   const keys = loadKeysFromJson(vectors.public_keys);
   const trustedKeyFingerprints = new Set<string>(vectors.trusted_key_fingerprints);

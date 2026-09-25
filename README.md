@@ -119,10 +119,11 @@ are separate from signature verification. They do not reproduce budget, rate,
 revocation or human-approval state, or establish that the inputs were true.
 
 Use a reviewed source checkout for this feature. Published 4.1.0 packages do not
-contain policy replay. Install `./verifiers/python` into an isolated environment,
-or build `verifiers/typescript` locally; see the package READMEs for the new
-function and CLI options. A coordinated minor release and consumer lock update
-are required before deployment. Existing signature verification commands above
+contain policy replay. The Python and TypeScript manifests identify the pending
+coordinated release as 4.2.0. Install `./verifiers/python` into an isolated
+environment, or build `verifiers/typescript` locally; see the package READMEs
+for the new function and CLI options. Publish both packages and update consumer
+locks before deployment. Existing signature verification commands above
 continue to work with the published packages.
 
 ### Receipt wire format

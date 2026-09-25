@@ -20,6 +20,8 @@ from allowly_receipt_format import canonicalize
 
 PROFILE = "allowly-conditional-evaluation-v1"
 ENGINE = "2026-09-16.1"
+CURRENT_ENGINE = "2026-09-24.1"
+SUPPORTED_ENGINES = [ENGINE, CURRENT_ENGINE]
 WORKSPACE_ID = "ws_policy_replay_v1"
 USER_ID = "user_policy_replay_v1"
 AGENT_ID = "agent_policy_replay_v1"
@@ -116,6 +118,25 @@ def _action_receipt(
         "budget": {"limit_micros": 1000, "spent_before_micros": 100},
         "escalation": {"id": "esc_fixture", "event": "requested"},
     }
+    if engine_version == CURRENT_ENGINE:
+        signed_context.update(
+            {
+                "identity_verification": {
+                    "status": "verified",
+                    "kind": "auth0_m2m",
+                    "binding_id": "bind_fixture",
+                    "subject": "agent-client",
+                },
+                "client_timestamp": "2026-09-24T12:00:59.000Z",
+                "client_timestamp_source": "customer_reported",
+                "execution": {
+                    "operation_id": "operation_fixture",
+                    "destination_id": "destination_fixture",
+                    "request_fingerprint_profile": "allowly.execution.request.v1",
+                    "request_fingerprint": "sha256:" + "1" * 64,
+                },
+            }
+        )
     payload: dict[str, Any] = {
         "schema_version": "4",
         "receipt_id": f"rcp_policy_{index}_action",
@@ -529,6 +550,45 @@ def _special_verification_cases() -> list[dict[str, Any]]:
         "matched_condition": _normalized("second", "eq", 1),
         "field_value": 1,
     }
+
+    for label, authorization_engine in (
+        ("current", CURRENT_ENGINE),
+        ("legacy_authorization", ENGINE),
+    ):
+        authorization_id = f"auth_policy_current_{label}"
+        constraints = {"confirm_when": [{"field": "review", "eq": True}]}
+        policy_eval = {
+            "matched_condition": _normalized("review", "eq", True),
+            "field_value": True,
+        }
+        create = _create_receipt(
+            f"current_{label}",
+            constraints,
+            authorization_id=authorization_id,
+            engine_version=authorization_engine,
+        )
+        action = _action_receipt(
+            f"current_{label}",
+            {"review": True},
+            authorization_id=authorization_id,
+            policy_eval=policy_eval,
+            engine_version=CURRENT_ENGINE,
+        )
+        cases.append(
+            {
+                "name": f"current_engine_with_{label}_snapshot",
+                "receipt": action,
+                "authorization_receipts": [create],
+                "expected": _public_result(
+                    action,
+                    authorization_receipt_id=create["receipt_id"],
+                    status="matched",
+                    diagnostic="matched",
+                    recorded=policy_eval,
+                    calculated=policy_eval,
+                ),
+            }
+        )
 
     authorization_id = "auth_policy_mismatch"
     create = _create_receipt("mismatch", base_constraints, authorization_id=authorization_id)
@@ -1017,8 +1077,8 @@ def main() -> None:
     }
     document = {
         "profile": PROFILE,
-        "supported_action_engine_versions": [ENGINE],
-        "supported_authorization_engine_versions": [ENGINE],
+        "supported_action_engine_versions": SUPPORTED_ENGINES,
+        "supported_authorization_engine_versions": SUPPORTED_ENGINES,
         "runtime_source": {
             "repository": "allowly-api",
             "commit": RUNTIME_COMMIT,

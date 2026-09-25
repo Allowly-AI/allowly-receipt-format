@@ -20,6 +20,7 @@ must not apply newer semantics to an unknown engine.
 | Action engine | Authorization snapshot engine | Evaluator source |
 |---|---|---|
 | `2026-09-16.1` | `2026-09-16.1` | `allowly-api/app/services/policy_conditions.py` at commit `1a7b36e2e83d0a8b57914d16bc297d8f8090eb13` |
+| `2026-09-24.1` | `2026-09-16.1` or `2026-09-24.1` | The same conditional evaluator; this engine also records identity, customer time, and governed execution evidence after evaluation. |
 
 An unsupported action engine returns `not_checked` with
 `unsupported_engine_version`. An unsupported creation snapshot version or
@@ -62,12 +63,20 @@ shapes return `unsupported_authorization_snapshot`.
 
 ## 3. Reconstruct the evaluator input
 
-For engine `2026-09-16.1`, copy the action receipt's signed `context` and remove
+Copy the action receipt's signed `context`. For engine `2026-09-16.1`, remove
 exactly these top-level keys:
 
 - `budget`
 - `escalation`
 - `session_id`
+
+For engine `2026-09-24.1`, also remove these receipt-only fields, which the API
+adds after the conditional policy calculation:
+
+- `client_timestamp`
+- `client_timestamp_source`
+- `execution`
+- `identity_verification`
 
 The API evaluates the customer context before it adds those receipt-only
 fields. Preserve every other key, array order, JSON type, explicit `null`, and
@@ -142,7 +151,7 @@ match is returned.
 6. If no conditions exist, the conditional evaluator returns no result.
 
 This deferred deny fallback is part of the profile. A verifier that returns the
-first missing deny immediately does not implement engine `2026-09-16.1`.
+first missing deny immediately does not implement either supported engine.
 
 ## 6. `field_value` projection
 
@@ -168,7 +177,7 @@ The Python and TypeScript public functions return these snake-case fields:
 ```json
 {
   "profile": "allowly-conditional-evaluation-v1",
-  "engine_version": "2026-09-16.1",
+  "engine_version": "2026-09-24.1",
   "receipt_id": "rcp_...",
   "authorization_receipt_id": "rcp_...",
   "status": "matched",

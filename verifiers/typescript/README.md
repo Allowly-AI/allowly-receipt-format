@@ -79,8 +79,8 @@ Verifies a receipt. Resolves on success, throws `VerificationError` on any failu
 ### `verifyPolicyEvaluation(receipt, authorizationReceipts, publicKeys, opts)`
 
 Authenticates the action receipt and every supplied authorization receipt,
-then repeats the conditional policy calculation for supported engine
-`2026-09-16.1`. Both `opts.expectedWorkspaceId` and a non-empty
+then repeats the conditional policy calculation for supported engines
+`2026-09-16.1` and `2026-09-24.1`. Both `opts.expectedWorkspaceId` and a non-empty
 `opts.trustedKeyFingerprints` set are required and must come from caller-trusted
 configuration.
 

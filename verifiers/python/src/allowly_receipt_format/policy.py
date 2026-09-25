@@ -23,9 +23,25 @@ from .verifier import (
 )
 
 POLICY_PROFILE = "allowly-conditional-evaluation-v1"
-SUPPORTED_ACTION_ENGINE_VERSIONS = frozenset({"2026-09-16.1"})
-SUPPORTED_AUTHORIZATION_ENGINE_VERSIONS = frozenset({"2026-09-16.1"})
-RESERVED_RECEIPT_CONTEXT_KEYS = frozenset({"budget", "escalation", "session_id"})
+LEGACY_ENGINE_VERSION = "2026-09-16.1"
+CURRENT_ENGINE_VERSION = "2026-09-24.1"
+SUPPORTED_ACTION_ENGINE_VERSIONS = frozenset(
+    {LEGACY_ENGINE_VERSION, CURRENT_ENGINE_VERSION}
+)
+SUPPORTED_AUTHORIZATION_ENGINE_VERSIONS = frozenset(
+    {LEGACY_ENGINE_VERSION, CURRENT_ENGINE_VERSION}
+)
+_BASE_RECEIPT_CONTEXT_KEYS = frozenset({"budget", "escalation", "session_id"})
+_RECEIPT_CONTEXT_KEYS_BY_ENGINE = {
+    LEGACY_ENGINE_VERSION: _BASE_RECEIPT_CONTEXT_KEYS,
+    CURRENT_ENGINE_VERSION: _BASE_RECEIPT_CONTEXT_KEYS
+    | {
+        "client_timestamp",
+        "client_timestamp_source",
+        "execution",
+        "identity_verification",
+    },
+}
 
 _CONDITION_KEYS = ("deny_when", "escalate_when", "confirm_when")
 _OPERATORS = frozenset(
@@ -322,7 +338,7 @@ def verify_policy_evaluation(
     replay_context = {
         key: value
         for key, value in receipt["context"].items()
-        if key not in RESERVED_RECEIPT_CONTEXT_KEYS
+        if key not in _RECEIPT_CONTEXT_KEYS_BY_ENGINE[receipt["engine_version"]]
     }
     try:
         calculated_result = _evaluate_policy_conditions(constraints, replay_context)
