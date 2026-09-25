@@ -85,6 +85,7 @@ __all__ = [
     "main",
     "matches_ref",
     "public_key_fingerprint",
+    "verify_policy_evaluation",
     "verify_receipt",
     "verify_checkpoint",
 ]
@@ -474,6 +475,32 @@ def verify_receipt(
     # Step 8: accept (implicit — no exception raised)
 
 
+def verify_policy_evaluation(
+    receipt: dict[str, Any],
+    authorization_receipts: list[dict[str, Any]],
+    public_keys: list[PublicKey],
+    *,
+    expected_workspace_id: str,
+    trusted_key_fingerprints: set[str] | frozenset[str],
+    now: datetime | None = None,
+) -> dict[str, Any]:
+    """Authenticate and replay Allowly conditional policy evidence.
+
+    The implementation lives in a separate module so the base wire verifier
+    keeps its existing meaning and dependency surface.
+    """
+    from .policy import verify_policy_evaluation as replay
+
+    return replay(
+        receipt,
+        authorization_receipts,
+        public_keys,
+        expected_workspace_id=expected_workspace_id,
+        trusted_key_fingerprints=trusted_key_fingerprints,
+        now=now,
+    )
+
+
 def _check_schema(receipt: dict[str, Any]) -> None:
     extra = set(receipt.keys()) - ALL_TOP_LEVEL_FIELDS
     if extra:
@@ -823,6 +850,7 @@ def _verify_export(
     trusted_key_fingerprints: set[str],
     authorization_id: str | None,
     checkpoint_evidence_path: str | None,
+    check_policy_evaluation: bool,
 ) -> int:
     import sys
 
@@ -894,10 +922,87 @@ def _verify_export(
             trusted_key_fingerprints,
         )
 
+    policy_matched = policy_mismatch = policy_not_checked = 0
+    policy_prerequisites_valid = failed == 0 and chain_rc == 0 and checkpoint_rc == 0
+    if check_policy_evaluation and policy_prerequisites_valid:
+        authorization_receipts_by_id: dict[str, list[dict[str, Any]]] = {}
+        for candidate in chain:
+            candidate_authorization_id = candidate.get("authorization_id")
+            if (
+                candidate.get("event") == "authorization.create"
+                and isinstance(candidate_authorization_id, str)
+            ):
+                authorization_receipts_by_id.setdefault(
+                    candidate_authorization_id, []
+                ).append(candidate)
+        policy_results: list[dict[str, Any]] = []
+        policy_errors: list[tuple[str, VerificationError]] = []
+        for receipt in chain:
+            if "action" not in receipt:
+                continue
+            try:
+                policy_result = verify_policy_evaluation(
+                    receipt,
+                    authorization_receipts_by_id.get(receipt.get("authorization_id"), []),
+                    keys,
+                    expected_workspace_id=expected_workspace_id,
+                    trusted_key_fingerprints=trusted_key_fingerprints,
+                )
+            except VerificationError as exc:
+                policy_errors.append((receipt.get("receipt_id", "?"), exc))
+                continue
+            policy_results.append(policy_result)
+        if policy_errors:
+            for receipt_id, exc in policy_errors:
+                print(f"INVALID POLICY  {receipt_id}  {exc}", file=sys.stderr)
+            failed += len(policy_errors)
+            print(
+                "Policy evaluation: skipped because supplied receipt evidence is invalid",
+                file=sys.stderr,
+            )
+        else:
+            for policy_result in policy_results:
+                status = policy_result["status"]
+                diagnostic = policy_result["diagnostic"]
+                print(
+                    f"POLICY {status.upper()}  {policy_result['receipt_id']}  {diagnostic}"
+                )
+                if status == "matched":
+                    policy_matched += 1
+                elif status == "mismatch":
+                    policy_mismatch += 1
+                else:
+                    policy_not_checked += 1
+            policy_total = policy_matched + policy_mismatch + policy_not_checked
+            print(
+                "Policy evaluation: "
+                f"{policy_matched} matched, {policy_mismatch} mismatch, "
+                f"{policy_not_checked} not checked ({policy_total} action receipt(s))"
+            )
+    elif check_policy_evaluation:
+        print(
+            "Policy evaluation: skipped because supplied receipt evidence is invalid",
+            file=sys.stderr,
+        )
+
     if total == 0 and checkpoint_count == 0:
         print("No matching receipts or checkpoints found.", file=sys.stderr)
+        if (
+            check_policy_evaluation
+            and failed == 0
+            and chain_rc == 0
+            and checkpoint_rc == 0
+        ):
+            return 4
         return 1
-    return 0 if failed == 0 and chain_rc == 0 and checkpoint_rc == 0 else 1
+    if failed != 0 or chain_rc != 0 or checkpoint_rc != 0:
+        return 1
+    if check_policy_evaluation:
+        if policy_mismatch:
+            return 3
+        if policy_not_checked or policy_matched == 0:
+            return 4
+    return 0
 
 
 def _verify_checkpoint_evidence(
@@ -1047,6 +1152,14 @@ def main(argv: list[str] | None = None) -> int:
         metavar="FILE",
         help="with --export: recompute checkpoint entries in checkpoint_evidence.json",
     )
+    p.add_argument(
+        "--check-policy-evaluation",
+        action="store_true",
+        help=(
+            "with --export: authenticate creation snapshots and replay every selected "
+            "action receipt's conditional policy evidence"
+        ),
+    )
     args = p.parse_args(argv)
 
     trusted_fingerprints = set(args.trusted_key_fingerprint)
@@ -1063,6 +1176,8 @@ def main(argv: list[str] | None = None) -> int:
             p.error("--authorization-id requires --export")
         if args.checkpoint_evidence:
             p.error("--checkpoint-evidence requires --export")
+        if args.check_policy_evaluation:
+            p.error("--check-policy-evaluation requires --export")
         if len(args.paths) != 2:
             p.error("provide <receipt.json> <keys.json>, or use --export <file> <keys.json>")
 
@@ -1086,6 +1201,7 @@ def main(argv: list[str] | None = None) -> int:
             trusted_fingerprints,
             args.authorization_id,
             args.checkpoint_evidence,
+            args.check_policy_evaluation,
         )
 
     receipt_path, _keys_path = args.paths

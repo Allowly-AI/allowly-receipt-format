@@ -18,7 +18,7 @@ jobs:
         with:
           python-version: "3.12"
       - name: Install dependencies
-        run: pip install -e verifiers/python
+        run: pip install -e verifiers/python pytest
       - name: Run against test vectors
         working-directory: verifiers/python
         run: python test_vectors.py ../../test-vectors.json
@@ -31,6 +31,9 @@ jobs:
       - name: Check SEAL profile and verification vectors
         working-directory: verifiers/python
         run: python test_seal.py ../../vectors/seal/profile-v1.json ../../vectors/seal/verification-v1.json
+      - name: Check conditional policy replay and CLI
+        working-directory: verifiers/python
+        run: python -m pytest -q test_policy_evaluation.py
       - name: Build package
         working-directory: verifiers/python
         run: |
@@ -61,6 +64,11 @@ jobs:
       - name: Check SEAL profile and verification vectors
         working-directory: verifiers/typescript
         run: node dist/test_seal.js ../../vectors/seal/profile-v1.json ../../vectors/seal/verification-v1.json
+      - name: Check conditional policy replay in Node and the browser build
+        working-directory: verifiers/typescript
+        run: |
+          node dist/test_policy_evaluation.js ../../vectors/policy/profile-v1.json
+          node dist/test_browser_policy_evaluation.js ../../vectors/policy/profile-v1.json
 
   cross-check:
     name: Regenerate vectors and verify both still pass
@@ -75,25 +83,30 @@ jobs:
         with:
           node-version: "20"
       - name: Install Python deps
-        run: pip install -e verifiers/python
+        run: pip install -e verifiers/python pytest
       - name: Install TS deps
         working-directory: verifiers/typescript
         run: npm ci
       - name: Regenerate vectors
-        run: python scripts/gen_vectors.py
+        run: |
+          python scripts/gen_vectors.py
+          python scripts/gen_policy_vectors.py
       - name: Python verifier must still pass
         working-directory: verifiers/python
         run: |
           python test_vectors.py ../../test-vectors.json
           python test_seal.py ../../vectors/seal/profile-v1.json ../../vectors/seal/verification-v1.json
+          python -m pytest -q test_policy_evaluation.py
       - name: Build and run TS verifier
         working-directory: verifiers/typescript
         run: |
           npx tsc
           node dist/test_vectors.js ../../test-vectors.json
           node dist/test_seal.js ../../vectors/seal/profile-v1.json ../../vectors/seal/verification-v1.json
+          node dist/test_policy_evaluation.js ../../vectors/policy/profile-v1.json
+          node dist/test_browser_policy_evaluation.js ../../vectors/policy/profile-v1.json
       - name: Fail if vectors drift without being committed
-        run: git diff --exit-code test-vectors.json vectors/seal/
+        run: git diff --exit-code test-vectors.json vectors/seal/ vectors/policy/
 
   mutation:
     name: Changed critical verifier mutation gate

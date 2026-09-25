@@ -59,6 +59,26 @@ allowly-receipt-verify \
   keys.json
 ```
 
+Replay conditional policy evidence for every selected action receipt while
+verifying an export. Signed `authorization.create` receipts in the export are
+used as the historical rule snapshots:
+
+```bash
+allowly-receipt-verify \
+  --export chain.jsonl \
+  --check-policy-evaluation \
+  --workspace-id "$ALLOWLY_WORKSPACE_ID" \
+  --trusted-key-fingerprint "$ALLOWLY_TRUSTED_KEY_FINGERPRINT" \
+  keys.json
+```
+
+The policy mode prints one bounded line containing the receipt ID, status, and
+diagnostic for each action receipt, followed by matched, mismatch, and
+not-checked counts. It does not print receipt context or evaluation payloads.
+Lifecycle receipts provide creation evidence and are not counted as action
+results. Missing creation receipts, unsupported historical versions, and action
+receipts without `policy_eval` remain visible as `not_checked`.
+
 `--workspace-id` and at least one `--trusted-key-fingerprint` are required.
 Fingerprints use `sha256:<64 lowercase hex>` over the decoded raw 32-byte
 Ed25519 public key. Repeat the fingerprint flag for every trusted rotation key
@@ -75,8 +95,12 @@ python verifier.py \
 ```
 
 Exit codes:
-- `0` — all presented receipts valid (and, with `--authorization-id`, the presented chain is structurally well-formed)
-- `1` — any receipt invalid, no receipts matched, or a chain anomaly (reason on stderr)
+
+- `0` — all presented receipts are valid; in policy mode, at least one action receipt was selected and every selected action receipt is `matched`
+- `1` — invalid receipt evidence, a checkpoint failure, or a chain anomaly (reason on stderr)
+- `2` — command-line usage error
+- `3` — policy mode found one or more `mismatch` results; this takes precedence over incomplete coverage
+- `4` — policy mode found `not_checked`, selected no action receipts, or received an empty unscoped export
 
 ## Library
 
@@ -106,6 +130,39 @@ try:
 except VerificationError as e:
     print(f"invalid: {e}")
 ```
+
+### Replay conditional policy evidence
+
+`verify_policy_evaluation` authenticates the action receipt and every supplied
+authorization receipt before replay. The expected workspace and trusted key
+fingerprints are required. Its result uses the same snake-case fields as the
+TypeScript verifier:
+
+```python
+from allowly_receipt_format import verify_policy_evaluation
+
+result = verify_policy_evaluation(
+    action_receipt,
+    authorization_creation_receipts,
+    keys,
+    expected_workspace_id=configured_workspace_id,
+    trusted_key_fingerprints=trusted_fingerprints,
+)
+
+if result["status"] == "matched":
+    print("recorded conditional evidence matches the replay")
+elif result["status"] == "mismatch":
+    print("recorded conditional evidence differs from the replay")
+else:
+    print("policy evidence could not be checked:", result["diagnostic"])
+```
+
+The supported profile is `allowly-conditional-evaluation-v1`. A match compares
+only the complete `policy_eval` object. It does not claim that the final
+`allow`, `deny`, `confirm`, or `escalate` decision was reproduced; budgets,
+revocation, rate limits, approvals, and other state can affect that decision.
+See `spec/profiles/allowly-conditional-evaluation-v1.md` for the exact engine,
+operator, typed-comparison, missing-field, and context-reconstruction rules.
 
 Always pass `expected_workspace_id` to bind the receipt to a workspace — a
 `key_id` alone does not (spec §7, "Workspace binding"). Take that ID from
@@ -229,6 +286,7 @@ pip install -e .
 python test_vectors.py ../../test-vectors.json
 python test_exception_types.py ../../test-vectors.json
 python test_seal.py ../../vectors/seal/profile-v1.json ../../vectors/seal/verification-v1.json
+pytest -q test_policy_evaluation.py
 ```
 
 All `should_verify` vectors must pass; all `should_reject` vectors must be rejected with the expected reason.

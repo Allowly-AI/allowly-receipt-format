@@ -11,7 +11,8 @@
       "import": "./dist/verifier.js"
     },
     "./vectors/seal/profile-v1.json": "./dist/vectors/seal/profile-v1.json",
-    "./vectors/seal/verification-v1.json": "./dist/vectors/seal/verification-v1.json"
+    "./vectors/seal/verification-v1.json": "./dist/vectors/seal/verification-v1.json",
+    "./vectors/policy/profile-v1.json": "./dist/vectors/policy/profile-v1.json"
   },
   "files": [
     "dist",
@@ -20,7 +21,7 @@
   ],
   "scripts": {
     "build": "tsc && node scripts/copy-seal-vectors.mjs",
-    "test": "npm run build && node dist/test_vectors.js ../../test-vectors.json && node dist/test_pseudonym_refs.js && node dist/test_seal.js ../../vectors/seal/profile-v1.json ../../vectors/seal/verification-v1.json",
+    "test": "npm run build && node dist/test_vectors.js ../../test-vectors.json && node dist/test_policy_evaluation.js ../../vectors/policy/profile-v1.json && node dist/test_browser_policy_evaluation.js ../../vectors/policy/profile-v1.json && node dist/test_pseudonym_refs.js && node dist/test_seal.js ../../vectors/seal/profile-v1.json ../../vectors/seal/verification-v1.json",
     "prepublishOnly": "npm run build"
   },
   "engines": {

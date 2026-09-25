@@ -1,5 +1,19 @@
 # Changelog
 
+## Unreleased — conditional policy replay
+
+- Add the Allowly conditional evaluation profile and offline policy replay in
+  Python, TypeScript, the export CLI and the browser verifier. Results distinguish
+  a matching calculation, a mismatch and evidence that cannot be checked.
+- Authenticate the signed authorization snapshot and action receipt against
+  caller-trusted workspace/key configuration before repeating the calculation.
+  The profile initially supports engine `2026-09-16.1`; final state-dependent
+  decisions, input truth and action execution remain outside its scope.
+- Add shared policy fixtures and runtime comparison checks. Receipt wire format
+  remains `"4"`. Package versions and consumer locks remain at the published
+  4.1.0 baseline on this feature branch. Publish the next minor verifier release
+  and update consumer pins/locks together before deploying this capability.
+
 ## v4.1.0 — 2026-09-16
 
 - Add the optional `allowly.seal.jcs-sha256.v1` RFC 8785 JSON commitment

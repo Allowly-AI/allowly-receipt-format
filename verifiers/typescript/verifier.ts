@@ -486,6 +486,555 @@ export async function verifyReceipt(
 }
 
 // ---------------------------------------------------------------------------
+// Allowly conditional policy evaluation profile
+// ---------------------------------------------------------------------------
+
+export const POLICY_EVALUATION_PROFILE = "allowly-conditional-evaluation-v1";
+export const POLICY_EVALUATION_ENGINE_VERSION = "2026-09-16.1";
+
+export type PolicyEvaluationStatus = "matched" | "mismatch" | "not_checked";
+
+export interface PolicyEvaluationResult {
+  profile: typeof POLICY_EVALUATION_PROFILE;
+  engine_version: string;
+  receipt_id: string;
+  authorization_receipt_id: string | null;
+  status: PolicyEvaluationStatus;
+  diagnostic: string;
+  recorded_evaluation: Record<string, unknown> | null;
+  calculated_evaluation: Record<string, unknown> | null;
+}
+
+interface NormalizedPolicyCondition {
+  field: string;
+  op: string;
+  value: unknown;
+}
+
+interface PolicyConditionResult {
+  kind: "deny" | "escalate" | "confirm" | "none";
+  reason:
+    | "deny_condition_matched"
+    | "escalate_condition_matched"
+    | "confirm_condition_matched"
+    | "context_field_missing"
+    | "policy_conditions_not_matched";
+  policyEval: Record<string, unknown>;
+}
+
+const POLICY_CONDITION_KEYS = ["deny_when", "escalate_when", "confirm_when"] as const;
+const POLICY_OPERATORS = new Set([
+  "eq", "neq", "lt", "lte", "gt", "gte", "in", "nin",
+  "contains_any", "contains_none", "empty", "exists",
+]);
+const MAX_POLICY_CONDITIONS = 10;
+const REPLAY_CONTEXT_EXCLUSIONS = ["budget", "escalation", "session_id"] as const;
+const PUBLIC_KEY_FINGERPRINT_RE = /^sha256:[0-9a-f]{64}$/;
+
+class UnsupportedPolicyError extends Error {}
+
+/**
+ * Authenticate an action receipt and supplied authorization evidence, then
+ * repeat only its conditional policy calculation. This does not reproduce the
+ * final allow/deny/confirm/escalate decision, which can depend on runtime state.
+ */
+export async function verifyPolicyEvaluation(
+  receipt: Record<string, unknown>,
+  authorizationReceipts: Record<string, unknown>[],
+  publicKeys: PublicKey[],
+  opts: {
+    expectedWorkspaceId: string;
+    trustedKeyFingerprints: ReadonlySet<string>;
+    now?: Date;
+  },
+): Promise<PolicyEvaluationResult> {
+  // Snapshot every caller-controlled input before the first await. In
+  // particular, do not authenticate one object and later evaluate a mutated
+  // version of it.
+  if (typeof receipt !== "object" || receipt === null || Array.isArray(receipt)) {
+    throw new VerificationError("receipt must be an object");
+  }
+  const ownReceipt = snapshotJson(receipt, "receipt", false) as Record<string, unknown>;
+  if (!Array.isArray(authorizationReceipts)) {
+    throw new VerificationError("authorizationReceipts must be an array");
+  }
+  const ownAuthorizationReceipts = snapshotJson(
+    authorizationReceipts,
+    "authorizationReceipts",
+    false,
+  ) as Record<string, unknown>[];
+  if (!Array.isArray(publicKeys)) {
+    throw new VerificationError("publicKeys must be an array");
+  }
+  let ownPublicKeys: PublicKey[];
+  try {
+    ownPublicKeys = structuredClone(publicKeys);
+  } catch {
+    throw new VerificationError("publicKeys must be structured-cloneable data");
+  }
+  if (
+    typeof SharedArrayBuffer !== "undefined"
+    && ownPublicKeys.some((key) => key?.publicKeyBytes?.buffer instanceof SharedArrayBuffer)
+  ) {
+    throw new VerificationError("publicKeyBytes must not use SharedArrayBuffer");
+  }
+  if (
+    typeof opts !== "object"
+    || opts === null
+    || typeof opts.expectedWorkspaceId !== "string"
+    || opts.expectedWorkspaceId.length === 0
+  ) {
+    throw new VerificationError("expectedWorkspaceId must be a non-empty string");
+  }
+  if (
+    opts.trustedKeyFingerprints === null
+    || typeof opts.trustedKeyFingerprints !== "object"
+    || typeof opts.trustedKeyFingerprints.has !== "function"
+    || typeof opts.trustedKeyFingerprints.size !== "number"
+  ) {
+    throw new VerificationError("trustedKeyFingerprints must be a non-empty set");
+  }
+  let trustedKeyFingerprints: Set<string>;
+  try {
+    trustedKeyFingerprints = new Set(opts.trustedKeyFingerprints);
+  } catch {
+    throw new VerificationError("trustedKeyFingerprints must be a non-empty set");
+  }
+  if (
+    trustedKeyFingerprints.size === 0
+    || [...trustedKeyFingerprints].some(
+      (fingerprint) => typeof fingerprint !== "string" || !PUBLIC_KEY_FINGERPRINT_RE.test(fingerprint),
+    )
+  ) {
+    throw new VerificationError(
+      "trustedKeyFingerprints must contain at least one sha256:<64 lowercase hex> fingerprint",
+    );
+  }
+  let ownNow = opts.now;
+  if (ownNow !== undefined) {
+    try {
+      ownNow = new Date(Date.prototype.getTime.call(ownNow));
+    } catch {
+      throw new VerificationError("now must be a valid Date");
+    }
+  }
+  const receiptOptions = {
+    now: ownNow,
+    expectedWorkspaceId: opts.expectedWorkspaceId,
+    trustedKeyFingerprints,
+  };
+
+  await verifyReceipt(ownReceipt, ownPublicKeys, receiptOptions);
+  for (const authorizationReceipt of ownAuthorizationReceipts) {
+    await verifyReceipt(authorizationReceipt, ownPublicKeys, receiptOptions);
+  }
+  if (!Object.hasOwn(ownReceipt, "action")) {
+    throw new VerificationError("policy evaluation requires an action receipt");
+  }
+
+  const engineVersion = ownReceipt.engine_version as string;
+  const receiptId = ownReceipt.receipt_id as string;
+  const recordedEvaluation = Object.hasOwn(ownReceipt, "policy_eval")
+    ? ownReceipt.policy_eval as Record<string, unknown>
+    : null;
+  const result = (
+    authorizationReceiptId: string | null,
+    status: PolicyEvaluationStatus,
+    diagnostic: string,
+    calculatedEvaluation: Record<string, unknown> | null = null,
+  ): PolicyEvaluationResult => ({
+    profile: POLICY_EVALUATION_PROFILE,
+    engine_version: engineVersion,
+    receipt_id: receiptId,
+    authorization_receipt_id: authorizationReceiptId,
+    status,
+    diagnostic,
+    recorded_evaluation: recordedEvaluation,
+    calculated_evaluation: calculatedEvaluation,
+  });
+
+  if (recordedEvaluation === null) {
+    return result(null, "not_checked", "policy_evaluation_not_recorded");
+  }
+  if (engineVersion !== POLICY_EVALUATION_ENGINE_VERSION) {
+    return result(null, "not_checked", "unsupported_engine_version");
+  }
+
+  const authorizationId = ownReceipt.authorization_id;
+  if (typeof authorizationId !== "string" || authorizationId.length === 0) {
+    return result(null, "not_checked", "authorization_receipt_not_found");
+  }
+  const matchingReceipts = ownAuthorizationReceipts.filter(
+    (candidate) => candidate.event === "authorization.create"
+      && candidate.authorization_id === authorizationId
+      && candidate.workspace_id === ownReceipt.workspace_id,
+  );
+  const distinctMatchingReceipts = new Map<string, Record<string, unknown>>();
+  for (const candidate of matchingReceipts) {
+    distinctMatchingReceipts.set(new TextDecoder().decode(canonicalize(candidate)), candidate);
+  }
+  if (distinctMatchingReceipts.size === 0) {
+    return result(null, "not_checked", "authorization_receipt_not_found");
+  }
+  if (distinctMatchingReceipts.size > 1) {
+    return result(null, "not_checked", "conflicting_authorization_receipts");
+  }
+
+  const authorizationReceipt = distinctMatchingReceipts.values().next().value!;
+  const authorizationReceiptId = authorizationReceipt.receipt_id as string;
+  if (
+    authorizationReceipt.engine_version !== POLICY_EVALUATION_ENGINE_VERSION
+    || parseRFC3339(authorizationReceipt.issued_at as string) > parseRFC3339(ownReceipt.issued_at as string)
+  ) {
+    return result(
+      authorizationReceiptId,
+      "not_checked",
+      "unsupported_authorization_snapshot",
+    );
+  }
+  if (
+    authorizationReceipt.user_id !== ownReceipt.user_id
+    || authorizationReceipt.agent_id !== ownReceipt.agent_id
+  ) {
+    return result(authorizationReceiptId, "not_checked", "authorization_subject_mismatch");
+  }
+
+  const snapshot = policyConstraintsFromAuthorization(
+    authorizationReceipt,
+    ownReceipt.action as string,
+  );
+  if (snapshot.diagnostic !== null) {
+    return result(authorizationReceiptId, "not_checked", snapshot.diagnostic);
+  }
+
+  const replayContext = {
+    ...(ownReceipt.context as Record<string, unknown>),
+  };
+  for (const key of REPLAY_CONTEXT_EXCLUSIONS) delete replayContext[key];
+
+  let calculatedEvaluation: Record<string, unknown> | null;
+  try {
+    calculatedEvaluation = evaluatePolicyConditions(snapshot.constraints!, replayContext)?.policyEval ?? null;
+  } catch (error) {
+    if (error instanceof UnsupportedPolicyError) {
+      return result(authorizationReceiptId, "not_checked", "unsupported_policy");
+    }
+    throw error;
+  }
+  const status = policyEvaluationsEqual(recordedEvaluation, calculatedEvaluation)
+    ? "matched"
+    : "mismatch";
+  return result(
+    authorizationReceiptId,
+    status,
+    status === "matched" ? "matched" : "policy_evaluation_mismatch",
+    calculatedEvaluation,
+  );
+}
+
+function policyConstraintsFromAuthorization(
+  authorizationReceipt: Record<string, unknown>,
+  action: string,
+): {
+  constraints: Record<string, unknown> | null;
+  diagnostic:
+    | "unsupported_authorization_snapshot"
+    | "authorization_action_not_found"
+    | "authorization_action_ambiguous"
+    | null;
+} {
+  const context = authorizationReceipt.context;
+  if (!isPlainJsonObject(context)) {
+    return { constraints: null, diagnostic: "unsupported_authorization_snapshot" };
+  }
+  const actions = context.actions;
+  if (!Array.isArray(actions) || actions.length === 0) {
+    return { constraints: null, diagnostic: "unsupported_authorization_snapshot" };
+  }
+  const parsedActions: Array<{ name: string; constraints: Record<string, unknown> }> = [];
+  for (const entry of actions) {
+    if (!isPlainJsonObject(entry) || !hasExactKeys(entry, ["name", "constraints"])) {
+      return { constraints: null, diagnostic: "unsupported_authorization_snapshot" };
+    }
+    if (
+      typeof entry.name !== "string"
+      || entry.name.length === 0
+      || !isPlainJsonObject(entry.constraints)
+    ) {
+      return { constraints: null, diagnostic: "unsupported_authorization_snapshot" };
+    }
+    parsedActions.push({
+      name: entry.name,
+      constraints: entry.constraints as Record<string, unknown>,
+    });
+  }
+  const matchingActions = parsedActions.filter((entry) => entry.name === action);
+  if (matchingActions.length === 0) {
+    return { constraints: null, diagnostic: "authorization_action_not_found" };
+  }
+  if (matchingActions.length > 1) {
+    return { constraints: null, diagnostic: "authorization_action_ambiguous" };
+  }
+  const unrelatedNames = parsedActions
+    .filter((entry) => entry.name !== action)
+    .map((entry) => entry.name);
+  if (new Set(unrelatedNames).size !== unrelatedNames.length) {
+    return { constraints: null, diagnostic: "unsupported_authorization_snapshot" };
+  }
+  return { constraints: matchingActions[0].constraints, diagnostic: null };
+}
+
+function evaluatePolicyConditions(
+  constraints: Record<string, unknown>,
+  context: Record<string, unknown>,
+): PolicyConditionResult | null {
+  validatePolicyConditions(constraints);
+  const denyResult = evaluateConditionList(
+    "deny",
+    "deny_condition_matched",
+    constraints.deny_when,
+    context,
+    "confirm",
+  );
+  if (denyResult !== null && denyResult.reason === "deny_condition_matched") {
+    return denyResult;
+  }
+  const denyMissingFallback = denyResult;
+
+  const escalateResult = evaluateConditionList(
+    "escalate",
+    "escalate_condition_matched",
+    constraints.escalate_when,
+    context,
+  );
+  if (escalateResult !== null) return escalateResult;
+
+  const confirmResult = evaluateConditionList(
+    "confirm",
+    "confirm_condition_matched",
+    constraints.confirm_when,
+    context,
+  );
+  if (confirmResult !== null) return confirmResult;
+  if (denyMissingFallback !== null) return denyMissingFallback;
+
+  if (hasPolicyConditions(constraints)) {
+    return {
+      kind: "none",
+      reason: "policy_conditions_not_matched",
+      policyEval: { matched_condition: null, field_value: null },
+    };
+  }
+  return null;
+}
+
+function evaluateConditionList(
+  kind: "deny" | "escalate" | "confirm",
+  reason:
+    | "deny_condition_matched"
+    | "escalate_condition_matched"
+    | "confirm_condition_matched",
+  value: unknown,
+  context: Record<string, unknown>,
+  missingKind?: "confirm",
+): PolicyConditionResult | null {
+  if (!Array.isArray(value)) return null;
+  let missingResult: PolicyConditionResult | null = null;
+  for (const rawCondition of value) {
+    const condition = normalizePolicyCondition(rawCondition);
+    const present = Object.hasOwn(context, condition.field);
+    const actual = context[condition.field];
+    const policyEval = {
+      matched_condition: {
+        field: condition.field,
+        op: condition.op,
+        value: condition.value,
+      },
+      field_value: policyEvaluationFieldValue(
+        condition.op,
+        actual,
+        condition.value,
+        present,
+      ),
+    };
+    if (condition.op === "exists") {
+      if (present === condition.value) return { kind, reason, policyEval };
+      continue;
+    }
+    const matched = present
+      ? policyConditionMatches(condition.op, actual, condition.value)
+      : null;
+    if (matched === null) {
+      const result: PolicyConditionResult = {
+        kind: missingKind ?? kind,
+        reason: "context_field_missing",
+        policyEval,
+      };
+      if (missingKind === undefined) return result;
+      missingResult ??= result;
+      continue;
+    }
+    if (matched) return { kind, reason, policyEval };
+  }
+  return missingResult;
+}
+
+function validatePolicyConditions(constraints: Record<string, unknown>): void {
+  let total = 0;
+  for (const key of POLICY_CONDITION_KEYS) {
+    const value = constraints[key];
+    if (value === undefined || value === null) continue;
+    if (!Array.isArray(value)) throw new UnsupportedPolicyError();
+    total += value.length;
+    if (total > MAX_POLICY_CONDITIONS) throw new UnsupportedPolicyError();
+    for (const condition of value) normalizePolicyCondition(condition);
+  }
+}
+
+function normalizePolicyCondition(value: unknown): NormalizedPolicyCondition {
+  if (!isPlainJsonObject(value)) throw new UnsupportedPolicyError();
+  const field = value.field;
+  if (typeof field !== "string" || field.length === 0) throw new UnsupportedPolicyError();
+  const keys = Object.keys(value);
+  const operatorKeys = keys.filter((key) => POLICY_OPERATORS.has(key));
+  if (
+    keys.length !== 2
+    || operatorKeys.length !== 1
+    || keys.some((key) => key !== "field" && !POLICY_OPERATORS.has(key))
+  ) {
+    throw new UnsupportedPolicyError();
+  }
+  const op = operatorKeys[0];
+  const expected = value[op];
+  if (op === "exists" || op === "empty") {
+    if (typeof expected !== "boolean") throw new UnsupportedPolicyError();
+  } else if (["in", "nin", "contains_any", "contains_none"].includes(op)) {
+    if (
+      !Array.isArray(expected)
+      || expected.length === 0
+      || expected.some((item) => !isStrictPolicyScalar(item))
+    ) {
+      throw new UnsupportedPolicyError();
+    }
+  } else if (["lt", "lte", "gt", "gte"].includes(op)) {
+    if (!isStrictPolicyInteger(expected)) throw new UnsupportedPolicyError();
+  } else if (!isStrictPolicyScalar(expected)) {
+    throw new UnsupportedPolicyError();
+  }
+  return { field, op, value: expected };
+}
+
+function policyConditionMatches(op: string, actual: unknown, expected: unknown): boolean | null {
+  if (op === "eq" || op === "neq") {
+    if (!samePolicyScalarType(actual, expected)) return null;
+    return op === "eq" ? actual === expected : actual !== expected;
+  }
+  if (["lt", "lte", "gt", "gte"].includes(op)) {
+    if (!isStrictPolicyInteger(actual) || !isStrictPolicyInteger(expected)) return null;
+    if (op === "lt") return actual < expected;
+    if (op === "lte") return actual <= expected;
+    if (op === "gt") return actual > expected;
+    return actual >= expected;
+  }
+  if (op === "in" || op === "nin") {
+    if (!Array.isArray(expected)) return null;
+    const comparable = expected.filter((item) => samePolicyScalarType(actual, item));
+    if (comparable.length === 0) return null;
+    const included = comparable.some((item) => item === actual);
+    return op === "in" ? included : !included;
+  }
+  if (op === "contains_any" || op === "contains_none") {
+    if (
+      !Array.isArray(actual)
+      || !Array.isArray(expected)
+      || actual.some((item) => !isStrictPolicyScalar(item))
+      || expected.some((item) => !isStrictPolicyScalar(item))
+    ) {
+      return null;
+    }
+    const expectedKeys = new Set(expected.map(typedPolicyScalarKey));
+    const intersects = actual.some((item) => expectedKeys.has(typedPolicyScalarKey(item)));
+    return op === "contains_any" ? intersects : !intersects;
+  }
+  if (op === "empty") {
+    if (!Array.isArray(actual) || typeof expected !== "boolean") return null;
+    return (actual.length === 0) === expected;
+  }
+  return false;
+}
+
+function policyEvaluationFieldValue(
+  op: string,
+  actual: unknown,
+  expected: unknown,
+  present: boolean,
+): unknown {
+  if (!present) return null;
+  if (op === "contains_any" && Array.isArray(actual) && Array.isArray(expected)) {
+    const expectedKeys = new Set(
+      expected.filter(isStrictPolicyScalar).map(typedPolicyScalarKey),
+    );
+    for (const item of actual) {
+      if (isStrictPolicyScalar(item) && expectedKeys.has(typedPolicyScalarKey(item))) {
+        return item;
+      }
+    }
+    return null;
+  }
+  if (op === "contains_none" || op === "empty") return null;
+  return isStrictPolicyScalar(actual) ? actual : null;
+}
+
+function hasPolicyConditions(constraints: Record<string, unknown>): boolean {
+  return POLICY_CONDITION_KEYS.some(
+    (key) => Array.isArray(constraints[key]) && (constraints[key] as unknown[]).length > 0,
+  );
+}
+
+function isStrictPolicyInteger(value: unknown): value is number {
+  return typeof value === "number" && Number.isSafeInteger(value);
+}
+
+function isStrictPolicyScalar(value: unknown): value is string | number | boolean | null {
+  return value === null
+    || typeof value === "string"
+    || typeof value === "boolean"
+    || isStrictPolicyInteger(value);
+}
+
+function samePolicyScalarType(left: unknown, right: unknown): boolean {
+  if (!isStrictPolicyScalar(left) || !isStrictPolicyScalar(right)) return false;
+  if (left === null || right === null) return left === null && right === null;
+  return typeof left === typeof right;
+}
+
+function typedPolicyScalarKey(value: string | number | boolean | null): string {
+  if (value === null) return "null:";
+  if (typeof value === "string") return `string:${JSON.stringify(value)}`;
+  if (typeof value === "boolean") return `boolean:${value ? "true" : "false"}`;
+  return `integer:${String(value)}`;
+}
+
+function isPlainJsonObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function hasExactKeys(value: Record<string, unknown>, expected: string[]): boolean {
+  const keys = Object.keys(value);
+  return keys.length === expected.length && expected.every((key) => Object.hasOwn(value, key));
+}
+
+function policyEvaluationsEqual(
+  recorded: Record<string, unknown>,
+  calculated: Record<string, unknown> | null,
+): boolean {
+  if (calculated === null) return false;
+  const left = canonicalize(recorded);
+  const right = canonicalize(calculated);
+  return left.length === right.length && left.every((byte, index) => byte === right[index]);
+}
+
+// ---------------------------------------------------------------------------
 // SEAL profile (RFC 8785 / JCS record hashing)
 // ---------------------------------------------------------------------------
 
@@ -1077,7 +1626,10 @@ export async function verifyCheckpoint(
   } catch {
     throw new VerificationError("publicKeys must be structured-cloneable data");
   }
-  if (ownPublicKeys.some((key) => key?.publicKeyBytes?.buffer instanceof SharedArrayBuffer)) {
+  if (
+    typeof SharedArrayBuffer !== "undefined"
+    && ownPublicKeys.some((key) => key?.publicKeyBytes?.buffer instanceof SharedArrayBuffer)
+  ) {
     throw new VerificationError("publicKeyBytes must not use SharedArrayBuffer");
   }
   let ownNow = opts.now;

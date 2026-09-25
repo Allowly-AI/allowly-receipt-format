@@ -29,6 +29,9 @@ The format is vendor-neutral on purpose. Any service making agent authorization 
 - `verifiers/typescript/` — reference TypeScript verifier (`@allowly/verifier` on npm).
 - `test-vectors.json` — shared test vectors every implementation must pass.
 - `vectors/seal/` — shared strict-hashing and signed SEAL verification vectors.
+- `spec/profiles/allowly-conditional-evaluation-v1.md` — Allowly's conditional
+  policy replay profile (unreleased).
+- `vectors/policy/` — shared conditional policy evaluation fixtures.
 - `GOVERNANCE.md` — how decisions about the spec get made.
 - `CONTRIBUTING.md` — how to report bugs, propose changes, and add verifiers.
 - `CHANGELOG.md` — version history.
@@ -105,6 +108,24 @@ try {
 ```
 
 ## Status
+
+### Conditional policy replay (unreleased)
+
+The feature branch adds `verify_policy_evaluation` in Python and
+`verifyPolicyEvaluation` in TypeScript. They authenticate an action receipt and
+its signed authorization snapshot, repeat the supported conditional calculation,
+and report `matched`, `mismatch` or `not_checked` with a diagnostic. These results
+are separate from signature verification. They do not reproduce budget, rate,
+revocation or human-approval state, or establish that the inputs were true.
+
+Use a reviewed source checkout for this feature. Published 4.1.0 packages do not
+contain policy replay. Install `./verifiers/python` into an isolated environment,
+or build `verifiers/typescript` locally; see the package READMEs for the new
+function and CLI options. A coordinated minor release and consumer lock update
+are required before deployment. Existing signature verification commands above
+continue to work with the published packages.
+
+### Receipt wire format
 
 **Verifier packages 4.x implement receipt wire format 4.** Wire versions are plain integers and the package major always equals the wire version it verifies, so default caret ranges (`^4.0.0`) can never cross a wire boundary. Receipts carry `schema_version: "4"` and sign top-level `alg` and `key_id`; `signature` is the base64url signature string. Reference verifiers accept only receipt wire format 4 and recompute checkpoint Merkle roots in both languages. A checkpoint proves equality to its signed set commitment, not that the issuer registered every real-world event or externally anchored the checkpoint.
 

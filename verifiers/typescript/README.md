@@ -76,6 +76,59 @@ Verifies a receipt. Resolves on success, throws `VerificationError` on any failu
   fingerprint. Include every trusted rotation key that may have signed the
   selected receipts.
 
+### `verifyPolicyEvaluation(receipt, authorizationReceipts, publicKeys, opts)`
+
+Authenticates the action receipt and every supplied authorization receipt,
+then repeats the conditional policy calculation for supported engine
+`2026-09-16.1`. Both `opts.expectedWorkspaceId` and a non-empty
+`opts.trustedKeyFingerprints` set are required and must come from caller-trusted
+configuration.
+
+```typescript
+import { loadKeysFromJson, verifyPolicyEvaluation } from "@allowly/verifier";
+
+const result = await verifyPolicyEvaluation(
+  actionReceipt,
+  authorizationReceipts,
+  loadKeysFromJson(keysDoc),
+  {
+    expectedWorkspaceId: configuredWorkspaceId,
+    trustedKeyFingerprints: new Set(configuredKeyFingerprints),
+  },
+);
+
+if (result.status === "mismatch") {
+  console.error(result.diagnostic, result.recorded_evaluation, result.calculated_evaluation);
+}
+```
+
+The result uses the same snake-case contract as the Python verifier:
+
+```typescript
+interface PolicyEvaluationResult {
+  profile: "allowly-conditional-evaluation-v1";
+  engine_version: string;
+  receipt_id: string;
+  authorization_receipt_id: string | null;
+  status: "matched" | "mismatch" | "not_checked";
+  diagnostic: string;
+  recorded_evaluation: Record<string, unknown> | null;
+  calculated_evaluation: Record<string, unknown> | null;
+}
+```
+
+`matched` means the signed rules and reconstructed signed context produce the
+recorded complete `policy_eval` object. It does not reproduce the final
+`allow`, `deny`, `confirm`, or `escalate` decision. Runtime state such as
+revocation, expiry, rate limits, budgets, confirmations, and escalations can
+change that decision. `not_checked` keeps missing evidence and unsupported
+historical profiles visible instead of treating them as successful checks.
+
+See the
+[`allowly-conditional-evaluation-v1` profile](../../spec/profiles/allowly-conditional-evaluation-v1.md)
+for the exact pairing, context reconstruction, operator, precedence, and
+diagnostic rules.
+
 ### `canonicalize(payload)`
 
 Produces the canonical JSON byte sequence per spec §4. Exposed for implementers building signers in TypeScript.
@@ -124,11 +177,12 @@ The package publishes the exact shared JSON vectors at these stable subpaths:
 ```typescript
 import profileVectors from "@allowly/verifier/vectors/seal/profile-v1.json" with { type: "json" };
 import verificationVectors from "@allowly/verifier/vectors/seal/verification-v1.json" with { type: "json" };
+import policyVectors from "@allowly/verifier/vectors/policy/profile-v1.json" with { type: "json" };
 ```
 
-They are copied from the repository's canonical `vectors/seal/` files during
-the package build; integrations should consume these fixtures instead of
-maintaining a second source.
+They are copied from the repository's canonical `vectors/seal/` and
+`vectors/policy/` files during the package build; integrations should consume
+these fixtures instead of maintaining a second source.
 
 ### `matchesRef(key, fieldName, value, ref)`
 
@@ -165,8 +219,10 @@ A valid receipt proves that the selected private key signed the exact recorded d
 `npm test` checks it against the same SEAL vectors as the Node verifier.
 After building this directory, run `python3 scripts/refresh-verifier.py` in
 each consumer repo. Those wrappers use `scripts/build-browser.py` here to
-generate the self-hosted receipt verifier and JSON helper; edit these sources
-instead of the generated consumer files.
+generate the self-hosted receipt verifier and JSON helper. The generated
+receipt verifier includes `verifyPolicyEvaluation` and its conditional
+evaluator without a runtime package dependency. Edit these sources instead of
+the generated consumer files.
 
 ## License
 
