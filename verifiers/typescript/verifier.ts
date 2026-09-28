@@ -490,9 +490,10 @@ export async function verifyReceipt(
 // ---------------------------------------------------------------------------
 
 export const POLICY_EVALUATION_PROFILE = "allowly-conditional-evaluation-v1";
-export const POLICY_EVALUATION_ENGINE_VERSION = "2026-09-24.1";
+export const POLICY_EVALUATION_ENGINE_VERSION = "2026-09-27.1";
 export const POLICY_EVALUATION_ENGINE_VERSIONS = [
   "2026-09-16.1",
+  "2026-09-24.1",
   POLICY_EVALUATION_ENGINE_VERSION,
 ] as const;
 
@@ -723,7 +724,7 @@ export async function verifyPolicyEvaluation(
   const replayContext = {
     ...(ownReceipt.context as Record<string, unknown>),
   };
-  const replayContextExclusions = engineVersion === POLICY_EVALUATION_ENGINE_VERSION
+  const replayContextExclusions = engineVersion !== "2026-09-16.1"
     ? CURRENT_REPLAY_CONTEXT_EXCLUSIONS
     : BASE_REPLAY_CONTEXT_EXCLUSIONS;
   for (const key of replayContextExclusions) delete replayContext[key];
@@ -769,7 +770,7 @@ function policyConstraintsFromAuthorization(
   }
   const parsedActions: Array<{ name: string; constraints: Record<string, unknown> }> = [];
   for (const entry of actions) {
-    if (!isPlainJsonObject(entry) || !hasExactKeys(entry, ["name", "constraints"])) {
+    if (!isPlainJsonObject(entry) || !supportedActionShape(entry, authorizationReceipt.engine_version)) {
       return { constraints: null, diagnostic: "unsupported_authorization_snapshot" };
     }
     if (
@@ -798,6 +799,19 @@ function policyConstraintsFromAuthorization(
     return { constraints: null, diagnostic: "unsupported_authorization_snapshot" };
   }
   return { constraints: matchingActions[0].constraints, diagnostic: null };
+}
+
+function supportedActionShape(entry: Record<string, unknown>, engine: unknown): boolean {
+  if (hasExactKeys(entry, ["name", "constraints"])) return true;
+  if (engine !== POLICY_EVALUATION_ENGINE_VERSION
+      || !hasExactKeys(entry, ["name", "constraints", "executable_operations"])) return false;
+  const grants = entry.executable_operations;
+  const fields = ["enabled_executable_id", "provider_id", "operation_id", "catalog_revision", "definition_fingerprint", "minimum_evidence_mode"];
+  return Array.isArray(grants) && grants.length <= 100 && grants.every((grant) =>
+    isPlainJsonObject(grant) && hasExactKeys(grant, fields)
+    && Object.values(grant).every((value) => typeof value === "string" && value.length > 0)
+    && PUBLIC_KEY_FINGERPRINT_RE.test(grant.definition_fingerprint as string)
+    && ["receipt", "witnessed"].includes(grant.minimum_evidence_mode as string));
 }
 
 function evaluatePolicyConditions(

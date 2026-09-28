@@ -2,11 +2,13 @@
   "profile": "allowly-conditional-evaluation-v1",
   "supported_action_engine_versions": [
     "2026-09-16.1",
-    "2026-09-24.1"
+    "2026-09-24.1",
+    "2026-09-27.1"
   ],
   "supported_authorization_engine_versions": [
     "2026-09-16.1",
-    "2026-09-24.1"
+    "2026-09-24.1",
+    "2026-09-27.1"
   ],
   "runtime_source": {
     "repository": "allowly-api",
@@ -4324,11 +4326,12 @@
             "operation_id": "operation_fixture",
             "destination_id": "destination_fixture",
             "request_fingerprint_profile": "allowly.execution.request.v1",
-            "request_fingerprint": "sha256:1111111111111111111111111111111111111111111111111111111111111111"
+            "request_fingerprint": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+            "approval_sha256": "sha256:2222222222222222222222222222222222222222222222222222222222222222"
           }
         },
         "authorization_id": "auth_policy_current_current",
-        "engine_version": "2026-09-24.1",
+        "engine_version": "2026-09-27.1",
         "policy_eval": {
           "matched_condition": {
             "field": "review",
@@ -4339,7 +4342,7 @@
         },
         "alg": "Ed25519",
         "key_id": "test-policy-replay-key-v1",
-        "signature": "7o8cw7EKVwPqlh4GHN7YdEYonKOxbFfd5-Z7M21YiZJke5ae6qZ3vw_d10YgMxu7-K1eNLcPxXT8KiNDhg2sAg"
+        "signature": "C2uJFgIxiLHLOBr4CwvQ7gq5i1ZLqlRR-XsF6v8HpaX5_-TI1W8wZVjGqkJtjVvTnkWod7U2WHoEKBqfWA63Dw"
       },
       "authorization_receipts": [
         {
@@ -4364,7 +4367,17 @@
                       "eq": true
                     }
                   ]
-                }
+                },
+                "executable_operations": [
+                  {
+                    "enabled_executable_id": "exe_fixture",
+                    "provider_id": "fixture",
+                    "operation_id": "fixture.records.review",
+                    "catalog_revision": "fixture-v1",
+                    "definition_fingerprint": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+                    "minimum_evidence_mode": "witnessed"
+                  }
+                ]
               }
             ],
             "requires_confirm_for": [],
@@ -4375,15 +4388,15 @@
             "policy_id": "policy_replay_fixture"
           },
           "authorization_id": "auth_policy_current_current",
-          "engine_version": "2026-09-24.1",
+          "engine_version": "2026-09-27.1",
           "alg": "Ed25519",
           "key_id": "test-policy-replay-key-v1",
-          "signature": "Fx4xOjg4MPHVSpzRIHMoK1ppEU-gUl8cmYD6z36vltWDWjEklDHWA9MAqlgX6hOVQMegBIhNWUvP4tX34JCqDQ"
+          "signature": "pqaROz0lTj6jpn7IxA95xWwf_xp3X6kEW0nNftqwQOBKkbgP6Id0PWHRkk6nfRHo-lTYZ9PWg8o2h9WNwpjvCg"
         }
       ],
       "expected": {
         "profile": "allowly-conditional-evaluation-v1",
-        "engine_version": "2026-09-24.1",
+        "engine_version": "2026-09-27.1",
         "receipt_id": "rcp_policy_current_current_action",
         "authorization_receipt_id": "rcp_policy_current_current_create",
         "status": "matched",
@@ -4442,11 +4455,12 @@
             "operation_id": "operation_fixture",
             "destination_id": "destination_fixture",
             "request_fingerprint_profile": "allowly.execution.request.v1",
-            "request_fingerprint": "sha256:1111111111111111111111111111111111111111111111111111111111111111"
+            "request_fingerprint": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+            "approval_sha256": "sha256:2222222222222222222222222222222222222222222222222222222222222222"
           }
         },
         "authorization_id": "auth_policy_current_legacy_authorization",
-        "engine_version": "2026-09-24.1",
+        "engine_version": "2026-09-27.1",
         "policy_eval": {
           "matched_condition": {
             "field": "review",
@@ -4457,7 +4471,7 @@
         },
         "alg": "Ed25519",
         "key_id": "test-policy-replay-key-v1",
-        "signature": "Qr8RIP6sWEnIk0tbiwNxLgcqfRs6iAj-KPooDT_6YME4AZqO3TnlxbxM115lEfqDmH-NRPAi9kBiUt_CuhGyCg"
+        "signature": "j3M8i2cXLh9_ri0phkrwCLLffhxCiCt64sxa2Gj4HhXGzIzCljEgmoKT3bk-b-DzHst3OYu6A3MA3EMQsvX1AQ"
       },
       "authorization_receipts": [
         {
@@ -4501,7 +4515,7 @@
       ],
       "expected": {
         "profile": "allowly-conditional-evaluation-v1",
-        "engine_version": "2026-09-24.1",
+        "engine_version": "2026-09-27.1",
         "receipt_id": "rcp_policy_current_legacy_authorization_action",
         "authorization_receipt_id": "rcp_policy_current_legacy_authorization_create",
         "status": "matched",
@@ -4522,6 +4536,721 @@
           },
           "field_value": true
         }
+      }
+    },
+    {
+      "name": "current_engine_with_identity_authorization_snapshot",
+      "receipt": {
+        "schema_version": "4",
+        "receipt_id": "rcp_policy_current_identity_authorization_action",
+        "workspace_id": "ws_policy_replay_v1",
+        "issued_at": "2026-09-16T12:01:00.000Z",
+        "decision": "allow",
+        "reason": "authorization_granted_action_active",
+        "user_id": "user_policy_replay_v1",
+        "agent_id": "agent_policy_replay_v1",
+        "action": "records.review",
+        "resource": "record:fixture",
+        "context": {
+          "review": true,
+          "session_id": "session_added_after_evaluation",
+          "budget": {
+            "limit_micros": 1000,
+            "spent_before_micros": 100
+          },
+          "escalation": {
+            "id": "esc_fixture",
+            "event": "requested"
+          },
+          "identity_verification": {
+            "status": "verified",
+            "kind": "auth0_m2m",
+            "binding_id": "bind_fixture",
+            "subject": "agent-client"
+          },
+          "client_timestamp": "2026-09-24T12:00:59.000Z",
+          "client_timestamp_source": "customer_reported",
+          "execution": {
+            "operation_id": "operation_fixture",
+            "destination_id": "destination_fixture",
+            "request_fingerprint_profile": "allowly.execution.request.v1",
+            "request_fingerprint": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+            "approval_sha256": "sha256:2222222222222222222222222222222222222222222222222222222222222222"
+          }
+        },
+        "authorization_id": "auth_policy_current_identity_authorization",
+        "engine_version": "2026-09-27.1",
+        "policy_eval": {
+          "matched_condition": {
+            "field": "review",
+            "op": "eq",
+            "value": true
+          },
+          "field_value": true
+        },
+        "alg": "Ed25519",
+        "key_id": "test-policy-replay-key-v1",
+        "signature": "DBnnohhWXNuW_hI1SiUiylRRsio0NMLH1SNpn47jaDDk6-DAQOh65MoC7ub3xXevEyjFg6tZRLh7ZYKpozpFDw"
+      },
+      "authorization_receipts": [
+        {
+          "schema_version": "4",
+          "receipt_id": "rcp_policy_current_identity_authorization_create",
+          "workspace_id": "ws_policy_replay_v1",
+          "issued_at": "2026-09-16T12:00:00.000Z",
+          "decision": "authorization_granted",
+          "reason": "authorization_creation_reported_by_client",
+          "user_id": "user_policy_replay_v1",
+          "agent_id": "agent_policy_replay_v1",
+          "event": "authorization.create",
+          "resource": null,
+          "context": {
+            "actions": [
+              {
+                "name": "records.review",
+                "constraints": {
+                  "confirm_when": [
+                    {
+                      "field": "review",
+                      "eq": true
+                    }
+                  ]
+                }
+              }
+            ],
+            "requires_confirm_for": [],
+            "requires_escalation_for": [],
+            "requires_deny_for": [],
+            "escalation_targets": {},
+            "expires_at": "2027-09-16T12:00:00+00:00",
+            "policy_id": "policy_replay_fixture"
+          },
+          "authorization_id": "auth_policy_current_identity_authorization",
+          "engine_version": "2026-09-24.1",
+          "alg": "Ed25519",
+          "key_id": "test-policy-replay-key-v1",
+          "signature": "AKo9JUk1MEfQhXnI1YG0w5IbJo8yEb5tKibs4S4y4Obmmk6rFTzmS4RdiXjE-Oqic1Lidk58KnzU7fRQM1e7DQ"
+        }
+      ],
+      "expected": {
+        "profile": "allowly-conditional-evaluation-v1",
+        "engine_version": "2026-09-27.1",
+        "receipt_id": "rcp_policy_current_identity_authorization_action",
+        "authorization_receipt_id": "rcp_policy_current_identity_authorization_create",
+        "status": "matched",
+        "diagnostic": "matched",
+        "recorded_evaluation": {
+          "matched_condition": {
+            "field": "review",
+            "op": "eq",
+            "value": true
+          },
+          "field_value": true
+        },
+        "calculated_evaluation": {
+          "matched_condition": {
+            "field": "review",
+            "op": "eq",
+            "value": true
+          },
+          "field_value": true
+        }
+      }
+    },
+    {
+      "name": "current_engine_with_previous_action_snapshot",
+      "receipt": {
+        "schema_version": "4",
+        "receipt_id": "rcp_policy_current_previous_action_action",
+        "workspace_id": "ws_policy_replay_v1",
+        "issued_at": "2026-09-16T12:01:00.000Z",
+        "decision": "allow",
+        "reason": "authorization_granted_action_active",
+        "user_id": "user_policy_replay_v1",
+        "agent_id": "agent_policy_replay_v1",
+        "action": "records.review",
+        "resource": "record:fixture",
+        "context": {
+          "review": true,
+          "session_id": "session_added_after_evaluation",
+          "budget": {
+            "limit_micros": 1000,
+            "spent_before_micros": 100
+          },
+          "escalation": {
+            "id": "esc_fixture",
+            "event": "requested"
+          },
+          "identity_verification": {
+            "status": "verified",
+            "kind": "auth0_m2m",
+            "binding_id": "bind_fixture",
+            "subject": "agent-client"
+          },
+          "client_timestamp": "2026-09-24T12:00:59.000Z",
+          "client_timestamp_source": "customer_reported",
+          "execution": {
+            "operation_id": "operation_fixture",
+            "destination_id": "destination_fixture",
+            "request_fingerprint_profile": "allowly.execution.request.v1",
+            "request_fingerprint": "sha256:1111111111111111111111111111111111111111111111111111111111111111"
+          }
+        },
+        "authorization_id": "auth_policy_current_previous_action",
+        "engine_version": "2026-09-24.1",
+        "policy_eval": {
+          "matched_condition": {
+            "field": "review",
+            "op": "eq",
+            "value": true
+          },
+          "field_value": true
+        },
+        "alg": "Ed25519",
+        "key_id": "test-policy-replay-key-v1",
+        "signature": "Xcd4y2jCU_XwmcUVWbh_NfsJZyLRfTf9Roit-wH1ZZPpRQX7nGT9Ly7GY09WIY1KWQ-FItZdRntN1bUUIiZHCA"
+      },
+      "authorization_receipts": [
+        {
+          "schema_version": "4",
+          "receipt_id": "rcp_policy_current_previous_action_create",
+          "workspace_id": "ws_policy_replay_v1",
+          "issued_at": "2026-09-16T12:00:00.000Z",
+          "decision": "authorization_granted",
+          "reason": "authorization_creation_reported_by_client",
+          "user_id": "user_policy_replay_v1",
+          "agent_id": "agent_policy_replay_v1",
+          "event": "authorization.create",
+          "resource": null,
+          "context": {
+            "actions": [
+              {
+                "name": "records.review",
+                "constraints": {
+                  "confirm_when": [
+                    {
+                      "field": "review",
+                      "eq": true
+                    }
+                  ]
+                }
+              }
+            ],
+            "requires_confirm_for": [],
+            "requires_escalation_for": [],
+            "requires_deny_for": [],
+            "escalation_targets": {},
+            "expires_at": "2027-09-16T12:00:00+00:00",
+            "policy_id": "policy_replay_fixture"
+          },
+          "authorization_id": "auth_policy_current_previous_action",
+          "engine_version": "2026-09-24.1",
+          "alg": "Ed25519",
+          "key_id": "test-policy-replay-key-v1",
+          "signature": "2dysz3R5JBrd78i_APHt74BFf7U9fL4p4QZCChx8UbGOS2mSMc9lutkFzkAPZd1LkC3vB8zqZ3ry0eLfnxZZAA"
+        }
+      ],
+      "expected": {
+        "profile": "allowly-conditional-evaluation-v1",
+        "engine_version": "2026-09-24.1",
+        "receipt_id": "rcp_policy_current_previous_action_action",
+        "authorization_receipt_id": "rcp_policy_current_previous_action_create",
+        "status": "matched",
+        "diagnostic": "matched",
+        "recorded_evaluation": {
+          "matched_condition": {
+            "field": "review",
+            "op": "eq",
+            "value": true
+          },
+          "field_value": true
+        },
+        "calculated_evaluation": {
+          "matched_condition": {
+            "field": "review",
+            "op": "eq",
+            "value": true
+          },
+          "field_value": true
+        }
+      }
+    },
+    {
+      "name": "current_engine_with_previous_action_new_snapshot_snapshot",
+      "receipt": {
+        "schema_version": "4",
+        "receipt_id": "rcp_policy_current_previous_action_new_snapshot_action",
+        "workspace_id": "ws_policy_replay_v1",
+        "issued_at": "2026-09-16T12:01:00.000Z",
+        "decision": "allow",
+        "reason": "authorization_granted_action_active",
+        "user_id": "user_policy_replay_v1",
+        "agent_id": "agent_policy_replay_v1",
+        "action": "records.review",
+        "resource": "record:fixture",
+        "context": {
+          "review": true,
+          "session_id": "session_added_after_evaluation",
+          "budget": {
+            "limit_micros": 1000,
+            "spent_before_micros": 100
+          },
+          "escalation": {
+            "id": "esc_fixture",
+            "event": "requested"
+          },
+          "identity_verification": {
+            "status": "verified",
+            "kind": "auth0_m2m",
+            "binding_id": "bind_fixture",
+            "subject": "agent-client"
+          },
+          "client_timestamp": "2026-09-24T12:00:59.000Z",
+          "client_timestamp_source": "customer_reported",
+          "execution": {
+            "operation_id": "operation_fixture",
+            "destination_id": "destination_fixture",
+            "request_fingerprint_profile": "allowly.execution.request.v1",
+            "request_fingerprint": "sha256:1111111111111111111111111111111111111111111111111111111111111111"
+          }
+        },
+        "authorization_id": "auth_policy_current_previous_action_new_snapshot",
+        "engine_version": "2026-09-24.1",
+        "policy_eval": {
+          "matched_condition": {
+            "field": "review",
+            "op": "eq",
+            "value": true
+          },
+          "field_value": true
+        },
+        "alg": "Ed25519",
+        "key_id": "test-policy-replay-key-v1",
+        "signature": "7YrERo8O4LhCrqHQW7S09EWfWQrKCt-Px1n3xdjE369w6hHQUFx3_supSBtEf7Nw7Gnzl2h7_SVSwe557gc2DQ"
+      },
+      "authorization_receipts": [
+        {
+          "schema_version": "4",
+          "receipt_id": "rcp_policy_current_previous_action_new_snapshot_create",
+          "workspace_id": "ws_policy_replay_v1",
+          "issued_at": "2026-09-16T12:00:00.000Z",
+          "decision": "authorization_granted",
+          "reason": "authorization_creation_reported_by_client",
+          "user_id": "user_policy_replay_v1",
+          "agent_id": "agent_policy_replay_v1",
+          "event": "authorization.create",
+          "resource": null,
+          "context": {
+            "actions": [
+              {
+                "name": "records.review",
+                "constraints": {
+                  "confirm_when": [
+                    {
+                      "field": "review",
+                      "eq": true
+                    }
+                  ]
+                },
+                "executable_operations": [
+                  {
+                    "enabled_executable_id": "exe_fixture",
+                    "provider_id": "fixture",
+                    "operation_id": "fixture.records.review",
+                    "catalog_revision": "fixture-v1",
+                    "definition_fingerprint": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+                    "minimum_evidence_mode": "witnessed"
+                  }
+                ]
+              }
+            ],
+            "requires_confirm_for": [],
+            "requires_escalation_for": [],
+            "requires_deny_for": [],
+            "escalation_targets": {},
+            "expires_at": "2027-09-16T12:00:00+00:00",
+            "policy_id": "policy_replay_fixture"
+          },
+          "authorization_id": "auth_policy_current_previous_action_new_snapshot",
+          "engine_version": "2026-09-27.1",
+          "alg": "Ed25519",
+          "key_id": "test-policy-replay-key-v1",
+          "signature": "xjucWsXUalFk6k6Lit0P18J471C1K6kc8uzmZSmFVRr8vdkDB1ctwJJw0wM728F81hY8HScPwkq-B8v0KQygDA"
+        }
+      ],
+      "expected": {
+        "profile": "allowly-conditional-evaluation-v1",
+        "engine_version": "2026-09-24.1",
+        "receipt_id": "rcp_policy_current_previous_action_new_snapshot_action",
+        "authorization_receipt_id": "rcp_policy_current_previous_action_new_snapshot_create",
+        "status": "matched",
+        "diagnostic": "matched",
+        "recorded_evaluation": {
+          "matched_condition": {
+            "field": "review",
+            "op": "eq",
+            "value": true
+          },
+          "field_value": true
+        },
+        "calculated_evaluation": {
+          "matched_condition": {
+            "field": "review",
+            "op": "eq",
+            "value": true
+          },
+          "field_value": true
+        }
+      }
+    },
+    {
+      "name": "empty_executable_grants",
+      "receipt": {
+        "schema_version": "4",
+        "receipt_id": "rcp_policy_empty_executable_grants_action",
+        "workspace_id": "ws_policy_replay_v1",
+        "issued_at": "2026-09-16T12:01:00.000Z",
+        "decision": "allow",
+        "reason": "authorization_granted_action_active",
+        "user_id": "user_policy_replay_v1",
+        "agent_id": "agent_policy_replay_v1",
+        "action": "records.review",
+        "resource": "record:fixture",
+        "context": {
+          "review": true,
+          "session_id": "session_added_after_evaluation",
+          "budget": {
+            "limit_micros": 1000,
+            "spent_before_micros": 100
+          },
+          "escalation": {
+            "id": "esc_fixture",
+            "event": "requested"
+          },
+          "identity_verification": {
+            "status": "verified",
+            "kind": "auth0_m2m",
+            "binding_id": "bind_fixture",
+            "subject": "agent-client"
+          },
+          "client_timestamp": "2026-09-24T12:00:59.000Z",
+          "client_timestamp_source": "customer_reported",
+          "execution": {
+            "operation_id": "operation_fixture",
+            "destination_id": "destination_fixture",
+            "request_fingerprint_profile": "allowly.execution.request.v1",
+            "request_fingerprint": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+            "approval_sha256": "sha256:2222222222222222222222222222222222222222222222222222222222222222"
+          }
+        },
+        "authorization_id": "auth_policy_empty_executable_grants",
+        "engine_version": "2026-09-27.1",
+        "policy_eval": {
+          "matched_condition": {
+            "field": "review",
+            "op": "eq",
+            "value": true
+          },
+          "field_value": true
+        },
+        "alg": "Ed25519",
+        "key_id": "test-policy-replay-key-v1",
+        "signature": "G8dxwq01gaupr14sN3jhXmxtIvhbmxE5DFkp8FTw0JxhLgt3kk7N713HWozKFnPD0AZvnca2kZYg0X_865zOBA"
+      },
+      "authorization_receipts": [
+        {
+          "schema_version": "4",
+          "receipt_id": "rcp_policy_empty_executable_grants_create",
+          "workspace_id": "ws_policy_replay_v1",
+          "issued_at": "2026-09-16T12:00:00.000Z",
+          "decision": "authorization_granted",
+          "reason": "authorization_creation_reported_by_client",
+          "user_id": "user_policy_replay_v1",
+          "agent_id": "agent_policy_replay_v1",
+          "event": "authorization.create",
+          "resource": null,
+          "context": {
+            "actions": [
+              {
+                "name": "records.review",
+                "constraints": {
+                  "confirm_when": [
+                    {
+                      "field": "review",
+                      "eq": true
+                    }
+                  ]
+                },
+                "executable_operations": []
+              }
+            ],
+            "requires_confirm_for": [],
+            "requires_escalation_for": [],
+            "requires_deny_for": [],
+            "escalation_targets": {},
+            "expires_at": "2027-09-16T12:00:00+00:00",
+            "policy_id": "policy_replay_fixture"
+          },
+          "authorization_id": "auth_policy_empty_executable_grants",
+          "engine_version": "2026-09-27.1",
+          "alg": "Ed25519",
+          "key_id": "test-policy-replay-key-v1",
+          "signature": "qHe8xHvAxAFoyYGzc_lMJhI7SMNqDxb-j1PvbubVAF7JJYFR4w048XR_x25izjAExvcuMNTj--_383bbNHQEAg"
+        }
+      ],
+      "expected": {
+        "profile": "allowly-conditional-evaluation-v1",
+        "engine_version": "2026-09-27.1",
+        "receipt_id": "rcp_policy_empty_executable_grants_action",
+        "authorization_receipt_id": "rcp_policy_empty_executable_grants_create",
+        "status": "matched",
+        "diagnostic": "matched",
+        "recorded_evaluation": {
+          "matched_condition": {
+            "field": "review",
+            "op": "eq",
+            "value": true
+          },
+          "field_value": true
+        },
+        "calculated_evaluation": {
+          "matched_condition": {
+            "field": "review",
+            "op": "eq",
+            "value": true
+          },
+          "field_value": true
+        }
+      }
+    },
+    {
+      "name": "malformed_executable_grants",
+      "receipt": {
+        "schema_version": "4",
+        "receipt_id": "rcp_policy_malformed_executable_grants_action",
+        "workspace_id": "ws_policy_replay_v1",
+        "issued_at": "2026-09-16T12:01:00.000Z",
+        "decision": "allow",
+        "reason": "authorization_granted_action_active",
+        "user_id": "user_policy_replay_v1",
+        "agent_id": "agent_policy_replay_v1",
+        "action": "records.review",
+        "resource": "record:fixture",
+        "context": {
+          "review": true,
+          "session_id": "session_added_after_evaluation",
+          "budget": {
+            "limit_micros": 1000,
+            "spent_before_micros": 100
+          },
+          "escalation": {
+            "id": "esc_fixture",
+            "event": "requested"
+          },
+          "identity_verification": {
+            "status": "verified",
+            "kind": "auth0_m2m",
+            "binding_id": "bind_fixture",
+            "subject": "agent-client"
+          },
+          "client_timestamp": "2026-09-24T12:00:59.000Z",
+          "client_timestamp_source": "customer_reported",
+          "execution": {
+            "operation_id": "operation_fixture",
+            "destination_id": "destination_fixture",
+            "request_fingerprint_profile": "allowly.execution.request.v1",
+            "request_fingerprint": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+            "approval_sha256": "sha256:2222222222222222222222222222222222222222222222222222222222222222"
+          }
+        },
+        "authorization_id": "auth_policy_malformed_executable_grants",
+        "engine_version": "2026-09-27.1",
+        "policy_eval": {
+          "matched_condition": {
+            "field": "review",
+            "op": "eq",
+            "value": true
+          },
+          "field_value": true
+        },
+        "alg": "Ed25519",
+        "key_id": "test-policy-replay-key-v1",
+        "signature": "uOOSViMW7NSLYYq7gxN92Fj4cmwOZQI_dUAPOBIoiVfbUtgX10OZ2wjfrsbPg1zUwjo3E0DtANUVvY69erJlDQ"
+      },
+      "authorization_receipts": [
+        {
+          "schema_version": "4",
+          "receipt_id": "rcp_policy_malformed_executable_grants_create",
+          "workspace_id": "ws_policy_replay_v1",
+          "issued_at": "2026-09-16T12:00:00.000Z",
+          "decision": "authorization_granted",
+          "reason": "authorization_creation_reported_by_client",
+          "user_id": "user_policy_replay_v1",
+          "agent_id": "agent_policy_replay_v1",
+          "event": "authorization.create",
+          "resource": null,
+          "context": {
+            "actions": [
+              {
+                "name": "records.review",
+                "constraints": {
+                  "confirm_when": [
+                    {
+                      "field": "review",
+                      "eq": true
+                    }
+                  ]
+                },
+                "executable_operations": [
+                  {
+                    "operation_id": "incomplete"
+                  }
+                ]
+              }
+            ],
+            "requires_confirm_for": [],
+            "requires_escalation_for": [],
+            "requires_deny_for": [],
+            "escalation_targets": {},
+            "expires_at": "2027-09-16T12:00:00+00:00",
+            "policy_id": "policy_replay_fixture"
+          },
+          "authorization_id": "auth_policy_malformed_executable_grants",
+          "engine_version": "2026-09-27.1",
+          "alg": "Ed25519",
+          "key_id": "test-policy-replay-key-v1",
+          "signature": "IucJDX7biyl9gB0PZmyhfKElO5NEl0WgnE4EXnpS-VZCzp34xqAv_oW_wPmCLTj-WGH8uBezYvofrKPlCWJyDg"
+        }
+      ],
+      "expected": {
+        "profile": "allowly-conditional-evaluation-v1",
+        "engine_version": "2026-09-27.1",
+        "receipt_id": "rcp_policy_malformed_executable_grants_action",
+        "authorization_receipt_id": "rcp_policy_malformed_executable_grants_create",
+        "status": "not_checked",
+        "diagnostic": "unsupported_authorization_snapshot",
+        "recorded_evaluation": {
+          "matched_condition": {
+            "field": "review",
+            "op": "eq",
+            "value": true
+          },
+          "field_value": true
+        },
+        "calculated_evaluation": null
+      }
+    },
+    {
+      "name": "old_snapshot_executable_field",
+      "receipt": {
+        "schema_version": "4",
+        "receipt_id": "rcp_policy_old_snapshot_executable_field_action",
+        "workspace_id": "ws_policy_replay_v1",
+        "issued_at": "2026-09-16T12:01:00.000Z",
+        "decision": "allow",
+        "reason": "authorization_granted_action_active",
+        "user_id": "user_policy_replay_v1",
+        "agent_id": "agent_policy_replay_v1",
+        "action": "records.review",
+        "resource": "record:fixture",
+        "context": {
+          "review": true,
+          "session_id": "session_added_after_evaluation",
+          "budget": {
+            "limit_micros": 1000,
+            "spent_before_micros": 100
+          },
+          "escalation": {
+            "id": "esc_fixture",
+            "event": "requested"
+          },
+          "identity_verification": {
+            "status": "verified",
+            "kind": "auth0_m2m",
+            "binding_id": "bind_fixture",
+            "subject": "agent-client"
+          },
+          "client_timestamp": "2026-09-24T12:00:59.000Z",
+          "client_timestamp_source": "customer_reported",
+          "execution": {
+            "operation_id": "operation_fixture",
+            "destination_id": "destination_fixture",
+            "request_fingerprint_profile": "allowly.execution.request.v1",
+            "request_fingerprint": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+            "approval_sha256": "sha256:2222222222222222222222222222222222222222222222222222222222222222"
+          }
+        },
+        "authorization_id": "auth_policy_old_snapshot_executable_field",
+        "engine_version": "2026-09-27.1",
+        "policy_eval": {
+          "matched_condition": {
+            "field": "review",
+            "op": "eq",
+            "value": true
+          },
+          "field_value": true
+        },
+        "alg": "Ed25519",
+        "key_id": "test-policy-replay-key-v1",
+        "signature": "oqMc5gdIwah3eeqcP4FqXn2zorK8pRJhg2KxUOxYgWPC887ea0R0_C_b1jsLod3EXuAriZ19Q4bUVo6TirzHBw"
+      },
+      "authorization_receipts": [
+        {
+          "schema_version": "4",
+          "receipt_id": "rcp_policy_old_snapshot_executable_field_create",
+          "workspace_id": "ws_policy_replay_v1",
+          "issued_at": "2026-09-16T12:00:00.000Z",
+          "decision": "authorization_granted",
+          "reason": "authorization_creation_reported_by_client",
+          "user_id": "user_policy_replay_v1",
+          "agent_id": "agent_policy_replay_v1",
+          "event": "authorization.create",
+          "resource": null,
+          "context": {
+            "actions": [
+              {
+                "name": "records.review",
+                "constraints": {
+                  "confirm_when": [
+                    {
+                      "field": "review",
+                      "eq": true
+                    }
+                  ]
+                },
+                "executable_operations": []
+              }
+            ],
+            "requires_confirm_for": [],
+            "requires_escalation_for": [],
+            "requires_deny_for": [],
+            "escalation_targets": {},
+            "expires_at": "2027-09-16T12:00:00+00:00",
+            "policy_id": "policy_replay_fixture"
+          },
+          "authorization_id": "auth_policy_old_snapshot_executable_field",
+          "engine_version": "2026-09-24.1",
+          "alg": "Ed25519",
+          "key_id": "test-policy-replay-key-v1",
+          "signature": "HoErvUt2E2hXoUf_skjgMOjsNAqsdsDCodYYuJe2Jlky6VT0cPCPqE3a-1zI0DuCKiDKF6jMGcNwz9dDUVoLDw"
+        }
+      ],
+      "expected": {
+        "profile": "allowly-conditional-evaluation-v1",
+        "engine_version": "2026-09-27.1",
+        "receipt_id": "rcp_policy_old_snapshot_executable_field_action",
+        "authorization_receipt_id": "rcp_policy_old_snapshot_executable_field_create",
+        "status": "not_checked",
+        "diagnostic": "unsupported_authorization_snapshot",
+        "recorded_evaluation": {
+          "matched_condition": {
+            "field": "review",
+            "op": "eq",
+            "value": true
+          },
+          "field_value": true
+        },
+        "calculated_evaluation": null
       }
     },
     {

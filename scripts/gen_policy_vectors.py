@@ -20,8 +20,9 @@ from allowly_receipt_format import canonicalize
 
 PROFILE = "allowly-conditional-evaluation-v1"
 ENGINE = "2026-09-16.1"
-CURRENT_ENGINE = "2026-09-24.1"
-SUPPORTED_ENGINES = [ENGINE, CURRENT_ENGINE]
+IDENTITY_ENGINE = "2026-09-24.1"
+CURRENT_ENGINE = "2026-09-27.1"
+SUPPORTED_ENGINES = [ENGINE, IDENTITY_ENGINE, CURRENT_ENGINE]
 WORKSPACE_ID = "ws_policy_replay_v1"
 USER_ID = "user_policy_replay_v1"
 AGENT_ID = "agent_policy_replay_v1"
@@ -68,6 +69,13 @@ def _create_receipt(
     actions = action_entries if action_entries is not None else [
         {"name": ACTION, "constraints": constraints}
     ]
+    if engine_version == CURRENT_ENGINE and action_entries is None:
+        actions[0]["executable_operations"] = [{
+            "enabled_executable_id": "exe_fixture", "provider_id": "fixture",
+            "operation_id": "fixture.records.review", "catalog_revision": "fixture-v1",
+            "definition_fingerprint": "sha256:" + "3" * 64,
+            "minimum_evidence_mode": "witnessed",
+        }]
     return _sign(
         {
             "schema_version": "4",
@@ -118,7 +126,7 @@ def _action_receipt(
         "budget": {"limit_micros": 1000, "spent_before_micros": 100},
         "escalation": {"id": "esc_fixture", "event": "requested"},
     }
-    if engine_version == CURRENT_ENGINE:
+    if engine_version in {IDENTITY_ENGINE, CURRENT_ENGINE}:
         signed_context.update(
             {
                 "identity_verification": {
@@ -137,6 +145,8 @@ def _action_receipt(
                 },
             }
         )
+        if engine_version == CURRENT_ENGINE:
+            signed_context["execution"]["approval_sha256"] = "sha256:" + "2" * 64
     payload: dict[str, Any] = {
         "schema_version": "4",
         "receipt_id": f"rcp_policy_{index}_action",
@@ -551,9 +561,12 @@ def _special_verification_cases() -> list[dict[str, Any]]:
         "field_value": 1,
     }
 
-    for label, authorization_engine in (
-        ("current", CURRENT_ENGINE),
-        ("legacy_authorization", ENGINE),
+    for label, action_engine, authorization_engine in (
+        ("current", CURRENT_ENGINE, CURRENT_ENGINE),
+        ("legacy_authorization", CURRENT_ENGINE, ENGINE),
+        ("identity_authorization", CURRENT_ENGINE, IDENTITY_ENGINE),
+        ("previous_action", IDENTITY_ENGINE, IDENTITY_ENGINE),
+        ("previous_action_new_snapshot", IDENTITY_ENGINE, CURRENT_ENGINE),
     ):
         authorization_id = f"auth_policy_current_{label}"
         constraints = {"confirm_when": [{"field": "review", "eq": True}]}
@@ -572,7 +585,7 @@ def _special_verification_cases() -> list[dict[str, Any]]:
             {"review": True},
             authorization_id=authorization_id,
             policy_eval=policy_eval,
-            engine_version=CURRENT_ENGINE,
+            engine_version=action_engine,
         )
         cases.append(
             {
@@ -589,6 +602,31 @@ def _special_verification_cases() -> list[dict[str, Any]]:
                 ),
             }
         )
+
+    for label, snapshot_engine, grants, matches in (
+        ("empty_executable_grants", CURRENT_ENGINE, [], True),
+        ("malformed_executable_grants", CURRENT_ENGINE, [{"operation_id": "incomplete"}], False),
+        ("old_snapshot_executable_field", IDENTITY_ENGINE, [], False),
+    ):
+        authorization_id = f"auth_policy_{label}"
+        create = _create_receipt(
+            label, constraints, authorization_id=authorization_id,
+            engine_version=snapshot_engine,
+            action_entries=[{"name": ACTION, "constraints": constraints, "executable_operations": grants}],
+        )
+        action = _action_receipt(
+            label, {"review": True}, authorization_id=authorization_id,
+            policy_eval=policy_eval, engine_version=CURRENT_ENGINE,
+        )
+        cases.append({
+            "name": label, "receipt": action, "authorization_receipts": [create],
+            "expected": _public_result(
+                action, authorization_receipt_id=create["receipt_id"],
+                status="matched" if matches else "not_checked",
+                diagnostic="matched" if matches else "unsupported_authorization_snapshot",
+                recorded=policy_eval, calculated=policy_eval if matches else None,
+            ),
+        })
 
     authorization_id = "auth_policy_mismatch"
     create = _create_receipt("mismatch", base_constraints, authorization_id=authorization_id)

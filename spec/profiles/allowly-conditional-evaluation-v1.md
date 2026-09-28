@@ -21,6 +21,12 @@ must not apply newer semantics to an unknown engine.
 |---|---|---|
 | `2026-09-16.1` | `2026-09-16.1` | `allowly-api/app/services/policy_conditions.py` at commit `1a7b36e2e83d0a8b57914d16bc297d8f8090eb13` |
 | `2026-09-24.1` | `2026-09-16.1` or `2026-09-24.1` | The same conditional evaluator; this engine also records identity, customer time, and governed execution evidence after evaluation. |
+| `2026-09-27.1` | `2026-09-16.1`, `2026-09-24.1`, or `2026-09-27.1` | The same conditional evaluator; `context.execution.approval_sha256` additionally links customer-side execution to its approved descriptor. |
+
+The verifier accepts authorization snapshots from all three listed versions
+for each supported action engine. Snapshot shape checks still apply. This
+profile checks only the conditional calculation, not provider request semantics,
+dispatch, dynamic limits, or TLS evidence.
 
 An unsupported action engine returns `not_checked` with
 `unsupported_engine_version`. An unsupported creation snapshot version or
@@ -52,9 +58,21 @@ The selected creation receipt must meet all of these rules:
 - its `issued_at` is no later than the action receipt's `issued_at`;
 - its `user_id` and `agent_id` equal the action receipt values;
 - `context.actions` is a non-empty array;
-- every action entry has exactly `name` and `constraints`;
+- every action entry has `name` and `constraints`, with only the versioned
+  optional field described below;
 - every `name` is a non-empty string and all names are unique; and
 - every `constraints` value is an object.
+
+For a `2026-09-27.1` authorization snapshot, an action may also contain
+`executable_operations`: an array of at most 100 objects with exactly
+`enabled_executable_id`, `provider_id`, `operation_id`, `catalog_revision`,
+`definition_fingerprint`, and `minimum_evidence_mode`. All values are non-empty
+strings; the fingerprint is `sha256:` followed by 64 lowercase hexadecimal
+characters, and the evidence mode is `receipt` or `witnessed`. This metadata is
+authenticated with the snapshot but is not part of the conditional calculation.
+A `matched` result does not verify catalog bindings, endpoint permission,
+provider request semantics, dispatch, or TLS evidence. Older snapshot engines
+still require exactly `name` and `constraints`.
 
 A subject mismatch returns `authorization_subject_mismatch`. A missing action
 returns `authorization_action_not_found`. More than one entry for the selected
@@ -70,7 +88,7 @@ exactly these top-level keys:
 - `escalation`
 - `session_id`
 
-For engine `2026-09-24.1`, also remove these receipt-only fields, which the API
+For engines `2026-09-24.1` and `2026-09-27.1`, also remove these receipt-only fields, which the API
 adds after the conditional policy calculation:
 
 - `client_timestamp`
@@ -151,7 +169,7 @@ match is returned.
 6. If no conditions exist, the conditional evaluator returns no result.
 
 This deferred deny fallback is part of the profile. A verifier that returns the
-first missing deny immediately does not implement either supported engine.
+first missing deny immediately does not implement the supported engines.
 
 ## 6. `field_value` projection
 
