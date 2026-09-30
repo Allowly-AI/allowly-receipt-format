@@ -949,17 +949,17 @@ def _verify_export(
                     trusted_key_fingerprints=trusted_key_fingerprints,
                 )
             except VerificationError as exc:
-                policy_errors.append((receipt.get("receipt_id", "?"), exc))
+                policy_errors.append((receipt["receipt_id"], exc))
                 continue
             policy_results.append(policy_result)
         if policy_errors:
             for receipt_id, exc in policy_errors:
                 print(f"INVALID POLICY  {receipt_id}  {exc}", file=sys.stderr)
-            failed += len(policy_errors)
             print(
                 "Policy evaluation: skipped because supplied receipt evidence is invalid",
                 file=sys.stderr,
             )
+            return 1
         else:
             for policy_result in policy_results:
                 status = policy_result["status"]

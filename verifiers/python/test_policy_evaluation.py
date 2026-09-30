@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import base64
 import copy
+import hashlib
 import io
 import json
 from contextlib import redirect_stderr, redirect_stdout
@@ -13,6 +15,7 @@ import pytest
 from allowly_receipt_format import (
     SchemaError,
     VerificationError,
+    canonicalize,
     load_keys_from_json,
     verify_policy_evaluation,
 )
@@ -21,6 +24,7 @@ from allowly_receipt_format import (
 )
 from allowly_receipt_format.policy import _evaluate_policy_conditions
 from allowly_receipt_format.verifier import verify_receipt as verify_receipt_base
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
 VECTORS_PATH = Path(__file__).resolve().parents[2] / "vectors" / "policy" / "profile-v1.json"
 
@@ -175,6 +179,151 @@ def _named_case(vectors: dict, name: str) -> dict:
     return next(case for case in vectors["verification_cases"] if case["name"] == name)
 
 
+def _resign_fixture(receipt: dict) -> dict:
+    payload = {key: value for key, value in receipt.items() if key != "signature"}
+    # The public, deterministic key used by scripts/gen_policy_vectors.py.
+    key = Ed25519PrivateKey.from_private_bytes(
+        hashlib.sha256(b"allowly-policy-profile-v1-fixture-key").digest()
+    )
+    signature = base64.urlsafe_b64encode(key.sign(canonicalize(payload))).decode("ascii")
+    return {**payload, "signature": signature.rstrip("=")}
+
+
+@pytest.mark.parametrize(
+    ("case_names", "expected_exit", "expected_counts"),
+    [
+        (
+            ("runtime_deny_eq_string", "runtime_confirm_neq_boolean"),
+            0,
+            "2 matched, 0 mismatch, 0 not checked",
+        ),
+        (
+            ("valid_signature_wrong_policy_eval", "valid_signature_wrong_policy_eval"),
+            3,
+            "0 matched, 2 mismatch, 0 not checked",
+        ),
+        (
+            ("policy_evaluation_not_recorded", "unsupported_action_engine"),
+            4,
+            "0 matched, 0 mismatch, 2 not checked",
+        ),
+    ],
+)
+def test_policy_cli_exact_diagnostics_and_multiple_result_counts(
+    case_names: tuple[str, str], expected_exit: int, expected_counts: str
+) -> None:
+    vectors = _vectors()
+    cases = [_named_case(vectors, name) for name in case_names]
+    creations = {
+        receipt["receipt_id"]: receipt
+        for case in cases
+        for receipt in case["authorization_receipts"]
+    }
+    actions = [case["receipt"] for case in cases]
+    if actions[0]["receipt_id"] == actions[1]["receipt_id"]:
+        actions[1] = _resign_fixture(
+            {**actions[1], "receipt_id": actions[1]["receipt_id"] + "_second"}
+        )
+
+    rc, stdout, stderr = _run_cli([*creations.values(), *actions], vectors)
+
+    assert rc == expected_exit
+    assert stderr == ""
+    assert [line for line in stdout.splitlines() if line.startswith("POLICY")] == [
+        f"POLICY {case['expected']['status'].upper()}  {receipt['receipt_id']}  "
+        f"{case['expected']['diagnostic']}"
+        for case, receipt in zip(cases, actions)
+    ]
+    assert stdout.splitlines()[-1] == (
+        f"Policy evaluation: {expected_counts} (2 action receipt(s))"
+    )
+
+
+def test_policy_cli_ignores_non_creation_receipts_as_snapshot_candidates() -> None:
+    vectors = _vectors()
+    case = copy.deepcopy(_named_case(vectors, "runtime_deny_eq_string"))
+    nested = None
+    for _ in range(29):
+        nested = [nested]
+    # This action is valid at the wire depth limit. Putting it in the creation
+    # candidate list would add another depth level and wrongly fail replay.
+    case["receipt"]["context"]["unrelated_deep_value"] = nested
+    action = _resign_fixture(case["receipt"])
+
+    rc, stdout, stderr = _run_cli([*case["authorization_receipts"], action], vectors)
+
+    assert rc == 0
+    assert stderr == ""
+    assert f"POLICY MATCHED  {action['receipt_id']}  matched" in stdout.splitlines()
+    assert stdout.splitlines()[-1] == (
+        "Policy evaluation: 1 matched, 0 mismatch, 0 not checked (1 action receipt(s))"
+    )
+
+
+def test_policy_cli_reports_every_replay_error_after_valid_signature_checks() -> None:
+    vectors = _vectors()
+    receipts = []
+    action_ids = []
+    for name in ("runtime_deny_eq_string", "runtime_confirm_neq_boolean"):
+        case = copy.deepcopy(_named_case(vectors, name))
+        nested = None
+        for _ in range(29):
+            nested = [nested]
+        # Each creation verifies independently at depth 32; the replay input
+        # list adds one level and must raise a real SchemaError, not crash.
+        creation = case["authorization_receipts"][0]
+        creation["context"]["unrelated_deep_value"] = nested
+        receipts.extend([_resign_fixture(creation), case["receipt"]])
+        action_ids.append(case["receipt"]["receipt_id"])
+
+    rc, stdout, stderr = _run_cli(receipts, vectors, check_policy=False)
+    assert rc == 0
+    assert stderr == ""
+    assert stdout.splitlines()[-1] == "4 ok, 0 invalid  (4 checked)"
+
+    rc, stdout, stderr = _run_cli(receipts, vectors)
+    assert rc == 1
+    assert not any(line.startswith("POLICY") for line in stdout.splitlines())
+    assert stderr.splitlines() == [
+        *[
+            f"INVALID POLICY  {receipt_id}  policy evaluation input nesting exceeds max depth 32"
+            for receipt_id in action_ids
+        ],
+        "Policy evaluation: skipped because supplied receipt evidence is invalid",
+    ]
+
+
+def test_signature_only_cli_empty_export_is_invalid() -> None:
+    rc, stdout, stderr = _run_cli([], _vectors(), check_policy=False)
+    assert rc == 1
+    assert stdout == "\n0 ok, 0 invalid  (0 checked)\n"
+    assert stderr == "No matching receipts or checkpoints found.\n"
+
+
+def test_policy_cli_help_and_usage_error(capsys) -> None:
+    with pytest.raises(SystemExit) as help_exit:
+        verifier_main(["--help"])
+    assert help_exit.value.code == 0
+    stdout, stderr = capsys.readouterr()
+    assert stderr == ""
+    assert " ".join(stdout.rsplit("--check-policy-evaluation", 1)[1].split()) == (
+        "with --export: authenticate creation snapshots and replay every selected "
+        "action receipt's conditional policy evidence"
+    )
+
+    vectors = _vectors()
+    with pytest.raises(SystemExit) as usage_exit:
+        verifier_main([
+            "--workspace-id", vectors["expected_workspace_id"],
+            "--trusted-key-fingerprint", vectors["trusted_key_fingerprints"][0],
+            "--check-policy-evaluation", "receipt.json", "keys.json",
+        ])
+    assert usage_exit.value.code == 2
+    stdout, stderr = capsys.readouterr()
+    assert stdout == ""
+    assert stderr.rsplit(": error: ", 1)[1] == "--check-policy-evaluation requires --export\n"
+
+
 def test_policy_cli_exit_codes_and_bounded_output() -> None:
     vectors = _vectors()
 
@@ -230,6 +379,9 @@ def test_policy_cli_invalid_evidence_suppresses_semantic_success() -> None:
     assert rc == 1
     assert "POLICY MATCHED" not in stdout
     assert "skipped because supplied receipt evidence is invalid" in stderr
+    assert stderr.splitlines()[-1] == (
+        "Policy evaluation: skipped because supplied receipt evidence is invalid"
+    )
 
 
 def test_policy_cli_mismatch_takes_precedence_over_incomplete() -> None:
