@@ -5,6 +5,7 @@
  *   or after build: node dist/test_vectors.js ../../test-vectors.json
  */
 import { readFileSync } from "node:fs";
+import assert from "node:assert/strict";
 import { generateKeyPairSync, sign as signBytes } from "node:crypto";
 import {
   VerificationError,
@@ -88,6 +89,116 @@ async function main(vectorsPath: string): Promise<number> {
   inheritedFields.key_id = "prototype-key";
   inheritedFields.signature = signBytes(null, Buffer.from("{}"), privateKey).toString("base64url");
   const publicKeyDer = publicKey.export({ type: "spki", format: "der" });
+  const boundaryKey = {
+    keyId: "boundary-key",
+    alg: "Ed25519" as const,
+    publicKeyBytes: new Uint8Array(publicKeyDer.subarray(-32)),
+    activeFrom: new Date("0001-01-01T00:00:00.000Z"),
+    activeUntil: null,
+  };
+
+  // Pin both sides of the reference verifier's five-minute clock allowance.
+  const issuedAt = Date.parse(vectors.should_verify[0].receipt.issued_at);
+  for (const ahead of [0, 1, 299_999, 300_000]) {
+    await verifyReceipt(vectors.should_verify[0].receipt, keys, {
+      now: new Date(issuedAt - ahead),
+    });
+  }
+  await assert.rejects(
+    verifyReceipt(vectors.should_verify[0].receipt, keys, {
+      now: new Date(issuedAt - 300_001),
+    }),
+    (error: unknown) => error instanceof VerificationError
+      && error.message.startsWith("receipt issued in the future:"),
+  );
+
+  // A valid signature must not hide an invalid lifecycle resource.
+  for (const [event, decision] of [
+    ["authorization.create", "authorization_granted"],
+    ["authorization.revoke", "authorization_revoked"],
+  ]) {
+    const payload = {
+      ...structuredClone(vectors.should_verify[0].receipt),
+      key_id: boundaryKey.keyId,
+      event, decision, resource: "not-null",
+    };
+    delete payload.signature;
+    delete payload.action;
+    const receipt = {
+      ...payload,
+      signature: signBytes(null, canonicalize(payload), privateKey).toString("base64url"),
+    };
+    await assert.rejects(
+      verifyReceipt(receipt, [boundaryKey], { now }),
+      (error: unknown) => error instanceof VerificationError
+        && error.message === `authorization lifecycle receipt with event=${JSON.stringify(event)} must have null resource`,
+    );
+  }
+
+  // Duplicate IDs and duplicate bytes are independent key-document failures.
+  const independentKey = {
+    ...vectors.public_keys.keys[0],
+    public_key: Buffer.from(boundaryKey.publicKeyBytes).toString("base64url"),
+  };
+  delete independentKey.public_key_fingerprint;
+  assert.throws(
+    () => loadKeysFromJson({
+      ...vectors.public_keys,
+      keys: [vectors.public_keys.keys[0], independentKey],
+    }),
+    (error: unknown) => error instanceof VerificationError
+      && error.message === `duplicate key_id in keys document: ${JSON.stringify(independentKey.key_id)}`,
+  );
+  const duplicateBytes = { ...vectors.public_keys.keys[0], key_id: "same-bytes-new-id" };
+  assert.throws(
+    () => loadKeysFromJson({
+      ...vectors.public_keys,
+      keys: [vectors.public_keys.keys[0], duplicateBytes],
+    }),
+    (error: unknown) => error instanceof VerificationError
+      && error.message === 'duplicate public key in keys document: "same-bytes-new-id"',
+  );
+
+  // Merkle commitments are sets, including empty, odd-sized and reordered sets.
+  const members = vectors.should_verify.slice(0, 3).map((vector: { receipt: Record<string, unknown> }) => vector.receipt);
+  const root = await checkpointMerkleRoot(members);
+  // Independent SHA-256 calculation with the spec's 00/01 domains and odd leaf.
+  assert.equal(root, "sha256:e529bb04362039e95713a85de5341c1bb1e544c35024a13248785b1880f6f71c");
+  assert.equal(await checkpointMerkleRoot([...members].reverse()), root);
+  assert.equal(await checkpointMerkleRoot([]), "sha256:dbc1b4c900ffe48d575b5da5c638040125f65db0fe3e24494b76ea986457d986");
+  await assert.rejects(
+    checkpointMerkleRoot([members[0], members[0]]),
+    (error: unknown) => error instanceof VerificationError
+      && error.message.startsWith("duplicate checkpoint member receipt_id:"),
+  );
+  for (const member of [null, "not-a-receipt", { receipt_id: 1 }]) {
+    await assert.rejects(
+      checkpointMerkleRoot([member as never]),
+      (error: unknown) => error instanceof VerificationError
+        && error.message === "checkpoint member must be a receipt object with receipt_id",
+    );
+  }
+
+  assert.equal(new TextDecoder().decode(canonicalize({ v: '"\\\b\f\r' })), String.raw`{"v":"\"\\\u0008\u000c\u000d"}`);
+  assert.doesNotThrow(() => canonicalize(new Array(49_999).fill(null)));
+  assert.throws(
+    () => canonicalize(new Array(50_000).fill(null)),
+    (error: unknown) => error instanceof VerificationError
+      && error.message === "payload exceeds max node count 50000",
+  );
+  let nested: unknown = null;
+  for (let depth = 1; depth < 32; depth++) nested = [nested];
+  assert.doesNotThrow(() => canonicalize(nested));
+  assert.throws(
+    () => canonicalize([nested]),
+    (error: unknown) => error instanceof VerificationError
+      && error.message === "payload nesting exceeds max depth 32",
+  );
+  assert.throws(
+    () => canonicalize({ ["\ud800"]: null }),
+    (error: unknown) => error instanceof VerificationError
+      && error.message === "string contains an unpaired Unicode surrogate",
+  );
   try {
     await verifyReceipt(Object.create(inheritedFields), [{
       keyId: "prototype-key",

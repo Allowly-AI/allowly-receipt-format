@@ -108,6 +108,57 @@ async function main(vectorsPath: string): Promise<void> {
   );
   assert.ok(matchedCase, "shared vectors need a matched case");
 
+  for (const [receipt, candidates, publicKeys, expectedError] of [
+    [matchedCase.receipt, null, keys, "authorizationReceipts must be an array"],
+    [matchedCase.receipt, {}, keys, "authorizationReceipts must be an array"],
+    [matchedCase.receipt, matchedCase.authorization_receipts, null, "publicKeys must be an array"],
+    [matchedCase.receipt, matchedCase.authorization_receipts, {}, "publicKeys must be an array"],
+  ] as const) {
+    await assert.rejects(
+      verifyPolicyEvaluation(receipt as never, candidates as never, publicKeys as never, opts),
+      (error: unknown) => error instanceof VerificationError && error.message === expectedError,
+    );
+  }
+
+  for (const [options, expectedError] of [
+    [null, "expectedWorkspaceId must be a non-empty string"],
+    [0, "expectedWorkspaceId must be a non-empty string"],
+    [{ ...opts, expectedWorkspaceId: undefined }, "expectedWorkspaceId must be a non-empty string"],
+    [{ ...opts, expectedWorkspaceId: null }, "expectedWorkspaceId must be a non-empty string"],
+    [{ ...opts, expectedWorkspaceId: 1 }, "expectedWorkspaceId must be a non-empty string"],
+    [{ ...opts, expectedWorkspaceId: "" }, "expectedWorkspaceId must be a non-empty string"],
+    [{ ...opts, trustedKeyFingerprints: {
+      has: 1,
+      size: 1,
+      *[Symbol.iterator]() { yield [...trustedKeyFingerprints][0]; },
+    } }, "trustedKeyFingerprints must be a non-empty set"],
+    [{ ...opts, trustedKeyFingerprints: null }, "trustedKeyFingerprints must be a non-empty set"],
+    [{ ...opts, trustedKeyFingerprints: "not-a-set" }, "trustedKeyFingerprints must be a non-empty set"],
+    [{ ...opts, trustedKeyFingerprints: {} }, "trustedKeyFingerprints must be a non-empty set"],
+    [{ ...opts, trustedKeyFingerprints: { has: 1, size: 1 } }, "trustedKeyFingerprints must be a non-empty set"],
+    [{ ...opts, trustedKeyFingerprints: { has() { return true; }, size: "1" } }, "trustedKeyFingerprints must be a non-empty set"],
+    [{ ...opts, trustedKeyFingerprints: { has() { return true; }, size: 1 } }, "trustedKeyFingerprints must be a non-empty set"],
+    [{ ...opts, now: "not-a-date" }, "now must be a valid Date"],
+    [{ ...opts, now: new Date(Number.NaN) }, "now must be a valid Date"],
+  ] as const) {
+    await assert.rejects(
+      verifyPolicyEvaluation(matchedCase.receipt, matchedCase.authorization_receipts, keys, options as never),
+      (error: unknown) => error instanceof VerificationError && error.message === expectedError,
+    );
+  }
+  const pinned = [...trustedKeyFingerprints][0];
+  for (const malformed of [null, 1, `extra${pinned}`, `${pinned}extra`, pinned.toUpperCase()]) {
+    await assert.rejects(
+      verifyPolicyEvaluation(matchedCase.receipt, matchedCase.authorization_receipts, keys, {
+        ...opts,
+        trustedKeyFingerprints: new Set([pinned, malformed]) as never,
+      }),
+      (error: unknown) => error instanceof VerificationError
+        && error.message === "trustedKeyFingerprints must contain at least one sha256:<64 lowercase hex> fingerprint",
+      "one valid pin must not hide a malformed second pin",
+    );
+  }
+
   const badActionReceipt = structuredClone(matchedCase.receipt);
   badActionReceipt.signature = alteredSignature(badActionReceipt.signature);
   await assert.rejects(
@@ -164,16 +215,19 @@ async function main(vectorsPath: string): Promise<void> {
   const mutableReceipt = structuredClone(matchedCase.receipt);
   const mutableCandidates = structuredClone(matchedCase.authorization_receipts);
   const mutableKeys = structuredClone(keys);
+  const mutableOptions = structuredClone(opts);
   const replay = verifyPolicyEvaluation(
     mutableReceipt,
     mutableCandidates,
     mutableKeys,
-    opts,
+    mutableOptions,
   );
   queueMicrotask(() => {
     mutableReceipt.policy_eval = { matched_condition: null, field_value: null };
     mutableCandidates[0].context.actions[0].constraints = {};
     mutableKeys[0].publicKeyBytes.fill(0);
+    mutableOptions.now.setUTCFullYear(1900);
+    mutableOptions.trustedKeyFingerprints.clear();
   });
   assert.deepEqual(await replay, matchedCase.expected, "replay must use the authenticated snapshots");
 
