@@ -89,12 +89,17 @@ def python_gate(base: str, targets: list[str]) -> int:
         "PYTHON_MUTATION_RUNNER",
         f"PYTHONPATH=verifiers/python/src {python} verifiers/python/test_vectors.py test-vectors.json && "
         f"PYTHONPATH=verifiers/python/src {python} verifiers/python/test_exception_types.py test-vectors.json && "
-        f"PYTHONPATH=verifiers/python/src {python} verifiers/python/test_pseudonym_refs.py",
+        f"PYTHONPATH=verifiers/python/src {python} verifiers/python/test_pseudonym_refs.py && "
+        f"PYTHONPATH=verifiers/python/src {python} verifiers/python/test_seal.py "
+        "vectors/seal/profile-v1.json vectors/seal/verification-v1.json && "
+        f"PYTHONPATH=verifiers/python/src {python} -m pytest -q verifiers/python/test_policy_evaluation.py",
     )
     result = run(
         [
             mutmut,
             "run",
+            "--paths-to-mutate",
+            ",".join(targets),
             "--use-patch-file",
             patch_path,
             "--tests-dir",
