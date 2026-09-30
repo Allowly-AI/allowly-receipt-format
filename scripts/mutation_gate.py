@@ -105,7 +105,7 @@ def python_gate(base: str, targets: list[str]) -> int:
             "--tests-dir",
             "verifiers/python/",
             "--runner",
-            runner,
+            "sh -c " + shlex.quote(runner),
             "--simple-output",
             "--no-progress",
         ],
