@@ -54,6 +54,8 @@ jobs:
       - name: Install dependencies
         working-directory: verifiers/typescript
         run: npm ci
+      - name: Check evidence-based mutation report gate
+        run: node --test scripts/test_mutation_report_gate.cjs
       - name: Build
         working-directory: verifiers/typescript
         run: npm run build

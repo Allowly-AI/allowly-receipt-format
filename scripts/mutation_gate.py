@@ -138,19 +138,25 @@ def typescript_gate(targets: list[str]) -> int:
     if baseline.returncode:
         return baseline.returncode
 
+    fixtures = run(["node", "--test", "scripts/test_mutation_report_gate.cjs"], check=False)
+    if fixtures.returncode:
+        return fixtures.returncode
+    report = Path("verifiers/typescript/reports/mutation/mutation.json")
+    report.unlink(missing_ok=True)
     command = os.environ.get("STRYKER_CMD")
-    if command:
-        return run(shlex.split(command), cwd="verifiers/typescript", check=False).returncode
-
-    return run(
-        [
-            "./node_modules/.bin/stryker",
-            "run",
-            "stryker.conf.cjs",
-        ],
-        cwd="verifiers/typescript",
-        check=False,
-    ).returncode
+    arguments = shlex.split(command) if command else [
+        "./node_modules/.bin/stryker", "run", "stryker.conf.cjs",
+        "--reporters", "json", "--concurrency", "2", "--timeoutMS", "20000",
+    ]
+    result = run(arguments, cwd="verifiers/typescript", check=False)
+    # Stryker returns 1 for its raw score; the stricter evidence gate below
+    # blocks every unresolved survivor/timeout instead of counting text edits.
+    if result.returncode not in (0, 1):
+        return result.returncode
+    if not report.is_file():
+        print("Stryker did not produce a fresh mutation report.", file=sys.stderr)
+        return 2
+    return run(["node", "scripts/mutation_report_gate.cjs", str(report)], check=False).returncode
 
 
 def main() -> int:
