@@ -19,6 +19,8 @@ jobs:
           python-version: "3.12"
       - name: Install dependencies
         run: pip install -e verifiers/python pytest
+      - name: Check mutation release runner
+        run: python -m pytest -q scripts/test_mutation_gate.py
       - name: Run against test vectors
         working-directory: verifiers/python
         run: python test_vectors.py ../../test-vectors.json

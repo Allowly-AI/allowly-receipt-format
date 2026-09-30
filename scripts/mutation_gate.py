@@ -132,6 +132,12 @@ def typescript_gate(targets: list[str]) -> int:
     for target in targets:
         print(f"  {target}")
 
+    # The generated browser adapter requires exact uninstrumented Node source.
+    # Keep its full build/vector gate before Stryker instruments that source.
+    baseline = run(["npm", "test"], cwd="verifiers/typescript", check=False)
+    if baseline.returncode:
+        return baseline.returncode
+
     command = os.environ.get("STRYKER_CMD")
     if command:
         return run(shlex.split(command), cwd="verifiers/typescript", check=False).returncode
@@ -159,14 +165,27 @@ def main() -> int:
     if dirty_status:
         return dirty_status
 
-    if python_targets:
-        status = python_gate(base, python_targets)
-        if status:
-            return status
-    if typescript_targets:
-        status = typescript_gate(typescript_targets)
-        if status:
-            return status
+    # Mutation tools rewrite source. Test the committed release in a disposable
+    # clone so interrupted runs cannot leave a customer's checkout instrumented.
+    root = Path.cwd()
+    base = run(["git", "rev-parse", base], capture=True).stdout.strip()
+    with tempfile.TemporaryDirectory(prefix="allowly-verifier-mutation-") as sandbox:
+        run(["git", "clone", "--quiet", "--shared", str(root), sandbox])
+        node_modules = Path(sandbox) / "verifiers/typescript/node_modules"
+        if (root / "verifiers/typescript/node_modules").exists():
+            node_modules.symlink_to(root / "verifiers/typescript/node_modules", target_is_directory=True)
+        os.chdir(sandbox)
+        try:
+            if python_targets:
+                status = python_gate(base, python_targets)
+                if status:
+                    return status
+            if typescript_targets:
+                status = typescript_gate(typescript_targets)
+                if status:
+                    return status
+        finally:
+            os.chdir(root)
 
     print("Receipt-format mutation gate passed.")
     return 0
