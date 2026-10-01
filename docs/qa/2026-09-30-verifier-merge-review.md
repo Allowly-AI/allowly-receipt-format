@@ -175,3 +175,23 @@ were mechanically compared to base `6fc4443` and are byte-for-byte unchanged.
 The integrated verification context matches the frozen timeout corpus:
 `aeadc2a678817243c2e07a305d01776e43d3adbe190a8877afceddf6f3548dda`.
 Finish through the hook's normal documented unchanged-code-diff retry.
+
+### Additional callback-domain deferrals
+
+The final read-only policy review also defers new proposed exclusions 1342,
+1353 and 1354. These replace the private scalar-key strings `null:`, `true`
+and `false` with empty strings. An inherited caller-owned policy array can
+provide its own `.map` method at verifier line 985, receiving the private
+`typedPolicyScalarKey` callback. A custom `.filter` result can expose the same
+callback at line 1005. Those methods can inspect its returned strings and
+branch or throw. The proposed unobservable-private-result argument therefore
+does not establish equivalence across the admitted input domain.
+
+This is a conservative source-based refusal, not a new runtime probe or a
+claim of three independently reproduced production bugs. The remaining
+scalar/type callback rules preserve the boolean outputs under their unchanged
+guards; the review identified no further affected rows. The final new exact
+table has 129 entries: 47 cosmetic and 82 equivalent. The worker's original
+143 proposals and the previous 132-entry merge remain historical evidence.
+The three removed entries now have explicit rejection fixtures. No production
+source, runtime test, dependency, lockfile, mutation scope or threshold changes.

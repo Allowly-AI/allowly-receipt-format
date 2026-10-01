@@ -84,9 +84,6 @@ const EXACT_FIXTURES = [
   [1037,7,"LogicalOperator","left === null || right === null","left === null && right === null","equivalent"],
   [1037,7,"ConditionalExpression","left === null","false","equivalent"],
   [1037,24,"ConditionalExpression","right === null","false","equivalent"],
-  [1042,30,"StringLiteral","\"null:\"","\"\"","equivalent"],
-  [1044,61,"StringLiteral","\"true\"","\"\"","equivalent"],
-  [1044,70,"StringLiteral","\"false\"","\"\"","equivalent"],
   [1061,7,"ConditionalExpression","calculated === null","false","equivalent"],
   [1064,10,"ConditionalExpression","left.length === right.length","true","equivalent"],
   [1123,7,"StringLiteral","`record exceeds the ${SEAL_MAX_UTF8_BYTES}-byte SEAL limit`","``","cosmetic"],
@@ -172,6 +169,9 @@ const EXACT_FIXTURES = [
   [1922,10,"ConditionalExpression","expected.length === got.length","true","equivalent"],
 ];
 const REFUSED_FIXTURES = [
+  [1042,30,"StringLiteral","\"null:\"","\"\""],
+  [1044,61,"StringLiteral","\"true\"","\"\""],
+  [1044,70,"StringLiteral","\"false\"","\"\""],
   [981,10,"MethodExpression","expected.some((item) => !isStrictPolicyScalar(item))","expected.every(item => !isStrictPolicyScalar(item))"],
   [981,24,"ArrowFunction","(item) => !isStrictPolicyScalar(item)","() => undefined"],
   [1005,7,"MethodExpression","expected.filter(isStrictPolicyScalar)","expected"],
@@ -224,11 +224,11 @@ test("every reviewed exact identity is classified with an individual reason and 
   assert.equal(result.pass, true);
   assert.equal(result.exactEvidenceSourceMatched, true);
   assert.equal(result.losslessEvidenceMatched, true);
-  assert.equal(result.total, 132);
-  assert.equal(result.counts.Survived, 132);
+  assert.equal(result.total, 129);
+  assert.equal(result.counts.Survived, 129);
   assert.equal(result.counts.Killed, 0);
   assert.equal(result.counts.cosmetic, 47);
-  assert.equal(result.counts.equivalent, 85);
+  assert.equal(result.counts.equivalent, 82);
   assert.equal(result.counts.unclassifiedSurvived, 0);
   for (let index = 0; index < mutants.length; index++) {
     const m = mutants[index], exclusion = result.exclusions[index];
@@ -278,14 +278,14 @@ test("the raw source pin refuses changed callers, observed private results, guar
     assert.equal(result.pass, false);
     assert.equal(result.exactEvidenceSourceMatched, false);
     assert.equal(result.exclusions.length, 0);
-    assert.equal(result.counts.unclassifiedSurvived, 132);
+    assert.equal(result.counts.unclassifiedSurvived, 129);
   }
   const textOnly = source.replace(MESSAGE, '"changed plain message"');
   const refused = classify(mutants, textOnly);
   assert.equal(refused.evidenceSourceMatched, true);
   assert.equal(refused.exactEvidenceSourceMatched, false);
   assert.equal(refused.exclusions.length, 0);
-  assert.equal(refused.counts.unclassifiedSurvived, 132);
+  assert.equal(refused.counts.unclassifiedSurvived, 129);
 });
 
 test("public name, result and diagnostic mutations and the unresolved comparator/options entries block", () => {
@@ -308,14 +308,14 @@ test("exact entries never accept non-Survived statuses, resource timeouts or inj
     const mutants = EXACT_FIXTURES.map((fixture) => ({ ...exactFixture(fixture), status,
       statusReason: status === "Timeout" ? "Resource or unexplained timeout" : "fixture" }));
     const result = classify(mutants);
-    assert.equal(result.counts[status], 132);
+    assert.equal(result.counts[status], 129);
     assert.equal(result.counts.cosmetic, 0);
     assert.equal(result.counts.equivalent, 0);
     assert.equal(result.counts.detectedTimeout, 0);
     assert.deepEqual(result.exclusions, []);
     assert.deepEqual(result.detectedFaults, []);
     assert.equal(result.pass, status === "Killed");
-    assert.equal(result.blockers.length, status === "Killed" ? 0 : 132);
+    assert.equal(result.blockers.length, status === "Killed" ? 0 : 129);
   }
   const m = exactFixture(EXACT_FIXTURES[0]);
   assert.throws(() => classify([{ ...m, status: "Equivalent" }]), /unknown status/);
