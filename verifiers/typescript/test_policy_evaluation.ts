@@ -1,12 +1,12 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { generateKeyPairSync, sign as signBytes } from "node:crypto";
+import jcsCanonicalize from "canonicalize";
 import {
   POLICY_EVALUATION_ENGINE_VERSION,
   POLICY_EVALUATION_ENGINE_VERSIONS,
   POLICY_EVALUATION_PROFILE,
   VerificationError,
-  canonicalize,
   loadKeysFromJson,
   publicKeyFingerprint,
   verifyPolicyEvaluation,
@@ -120,11 +120,85 @@ async function main(vectorsPath: string): Promise<void> {
   const signReceipt = (receipt: JsonObject): JsonObject => {
     const { signature, ...payload } = receipt;
     payload.key_id = replayKey.keyId;
-    return { ...payload, signature: signBytes(null, canonicalize(payload), privateKey).toString("base64url") };
+    // This generated corpus has no control characters; JCS and wire 4 agree.
+    // Do not sign with the verifier's own possibly-mutated canonicalizer.
+    return { ...payload, signature: signBytes(null,
+      Buffer.from(jcsCanonicalize(payload)!), privateKey).toString("base64url") };
   };
   const replayOptions = { ...opts, trustedKeyFingerprints: new Set([publicKeyFingerprint(replayKey)]) };
   const signedAction = signReceipt(matchedCase.receipt);
   const signedCreation = signReceipt(matchedCase.authorization_receipts[0]);
+
+  // Profile §§4–6: hand-written truth tables distinguish match, no-match and
+  // uncomparable inputs. The latter still records the evaluated condition.
+  const operatorCases: Array<[string, unknown, unknown, boolean | null, unknown]> = [
+    ["eq", true, true, true, true], ["eq", true, false, false, null],
+    ["eq", true, 1, null, true], ["eq", 1, "1", null, 1],
+    ["eq", null, null, true, null], ["eq", "a", "b", false, null],
+    ["neq", true, false, true, true], ["neq", true, true, false, null],
+    ["neq", null, null, false, null], ["neq", false, 0, null, false],
+    ["lt", 9, 10, true, 9], ["lt", 10, 10, false, null], ["lt", 11, 10, false, null],
+    ["lte", 9, 10, true, 9], ["lte", 10, 10, true, 10], ["lte", 11, 10, false, null],
+    ["gt", 9, 10, false, null], ["gt", 10, 10, false, null], ["gt", 11, 10, true, 11],
+    ["gte", 9, 10, false, null], ["gte", 10, 10, true, 10], ["gte", 11, 10, true, 11],
+    ["lt", true, 10, null, true], ["gte", "10", 10, null, "10"],
+    ["in", true, [1, true], true, true], ["in", false, [1, true], false, null],
+    ["in", true, [1], null, true], ["in", null, [null], true, null],
+    ["nin", true, [1, false], true, true], ["nin", true, [true], false, null],
+    ["nin", true, [1], null, true], ["nin", null, [null], false, null],
+    ["contains_any", [true], [1], false, null],
+    ["contains_any", [1, true], [true, 1], true, 1],
+    ["contains_any", [true, 1], [1, true], true, true],
+    ["contains_any", [], [null], false, null],
+    ["contains_any", [null], [null], true, null],
+    ["contains_any", "a", ["a"], null, "a"],
+    ["contains_any", [{}], [null], null, null],
+    ["contains_none", [], [null], true, null],
+    ["contains_none", [true], [1], true, null],
+    ["contains_none", [1, true], [true], false, null],
+    ["contains_none", [null], [null], false, null],
+    ["contains_none", {}, [null], null, null],
+    ["empty", [], true, true, null], ["empty", [null], true, false, null],
+    ["empty", [], false, false, null], ["empty", [null], false, true, null],
+    ["empty", "", true, null, null],
+    ["exists", null, true, true, null], ["exists", null, false, false, null],
+    ["exists", false, true, true, false],
+  ];
+  for (const [op, actual, value, matches, fieldValue] of operatorCases) {
+    const evaluation = matches === false ? { matched_condition: null, field_value: null }
+      : { matched_condition: { field: "sample", op, value }, field_value: fieldValue };
+    const action = signReceipt({ ...signedAction, context: { sample: actual }, policy_eval: evaluation });
+    const creation = signReceipt({ ...signedCreation,
+      context: { actions: [{ name: action.action, constraints: { deny_when: [{ field: "sample", [op]: value }] } }] } });
+    assert.deepEqual(await verifyPolicyEvaluation(action, [creation], [replayKey], replayOptions),
+      { ...matchedCase.expected, recorded_evaluation: evaluation, calculated_evaluation: evaluation },
+      `${op}: ${JSON.stringify(actual)} against ${JSON.stringify(value)}`);
+  }
+
+  // Malformed policy is not replayable, even with an authentic signature.
+  const invalidConditions: unknown[] = [null, [], "condition", {},
+    { field: "", eq: 1 }, { field: 1, eq: 1 }, { field: null, eq: 1 },
+    { field: "sample" }, { eq: 1 }, { field: "sample", unknown: 1 },
+    { field: "sample", eq: 1, neq: 2 }, { field: "sample", eq: 1, extra: null }];
+  for (const op of ["exists", "empty"]) {
+    for (const value of [null, 0, 1, "true", [], {}]) invalidConditions.push({ field: "sample", [op]: value });
+  }
+  for (const op of ["in", "nin", "contains_any", "contains_none"]) {
+    for (const value of [null, true, 1, "a", [], {}, [{}]]) invalidConditions.push({ field: "sample", [op]: value });
+  }
+  for (const op of ["lt", "lte", "gt", "gte"]) {
+    for (const value of [null, true, "1", [], {}]) invalidConditions.push({ field: "sample", [op]: value });
+  }
+  for (const op of ["eq", "neq"]) {
+    for (const value of [[], {}]) invalidConditions.push({ field: "sample", [op]: value });
+  }
+  for (const condition of invalidConditions) {
+    const creation = signReceipt({ ...signedCreation,
+      context: { actions: [{ name: signedAction.action, constraints: { deny_when: [condition] } }] } });
+    assert.deepEqual(await verifyPolicyEvaluation(signedAction, [creation], [replayKey], replayOptions),
+      { ...matchedCase.expected, status: "not_checked", diagnostic: "unsupported_policy", calculated_evaluation: null },
+      `malformed condition: ${JSON.stringify(condition)}`);
+  }
   for (const unrelated of [
     signReceipt({ ...signedCreation, authorization_id: "another-authorization" }),
     signReceipt({ ...signedCreation, event: "authorization.revoke", decision: "authorization_revoked" }),

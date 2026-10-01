@@ -6,7 +6,8 @@
  */
 import { readFileSync } from "node:fs";
 import assert from "node:assert/strict";
-import { generateKeyPairSync, sign as signBytes } from "node:crypto";
+import { createHash, generateKeyPairSync, sign as signBytes } from "node:crypto";
+import jcsCanonicalize from "canonicalize";
 import {
   VerificationError,
   canonicalize,
@@ -96,6 +97,120 @@ async function main(vectorsPath: string): Promise<number> {
     activeFrom: new Date("0001-01-01T00:00:00.000Z"),
     activeUntil: null,
   };
+
+  // These generated fixtures have no control characters, so RFC 8785 gives
+  // the same bytes as wire 4. Sign independently of the code being mutated.
+  // A malformed field must be rejected even when its signature is authentic.
+  const signBoundaryReceipt = (receipt: Record<string, unknown>) => {
+    const { signature, ...payload } = receipt;
+    payload.key_id = boundaryKey.keyId;
+    return { ...payload, signature: signBytes(null,
+      Buffer.from(jcsCanonicalize(payload)!), privateKey).toString("base64url") };
+  };
+  const baseline = vectors.should_verify[0].receipt;
+  await verifyReceipt(signBoundaryReceipt(baseline), [boundaryKey], { now });
+  const rejectSigned = async (receipt: Record<string, unknown>, label: string) => {
+    await assert.rejects(verifyReceipt(signBoundaryReceipt(receipt), [boundaryKey], { now }),
+      VerificationError, label);
+  };
+  for (const field of ["receipt_id", "workspace_id", "reason", "user_id", "agent_id", "engine_version"]) {
+    for (const value of [null, false, 1, [], {}]) {
+      await rejectSigned({ ...baseline, [field]: value }, `${field} must be a string`);
+    }
+  }
+  for (const field of ["resource", "authorization_id"]) {
+    for (const value of [false, 1, [], {}]) {
+      await rejectSigned({ ...baseline, [field]: value }, `${field} must be string or null`);
+    }
+    await verifyReceipt(signBoundaryReceipt({ ...baseline, [field]: null }), [boundaryKey], { now });
+  }
+  for (const context of [null, false, 1, "context", []]) {
+    await rejectSigned({ ...baseline, context }, "context must be an object");
+  }
+  for (const fields of [
+    { schema_version: "5" }, { alg: "RSA" }, { action: null }, { action: 1 },
+    { action: [] }, { decision: "unknown" }, { unknown_field: null },
+    { event: "authorization.create" },
+  ]) await rejectSigned({ ...baseline, ...fields }, "signed invalid receipt shape");
+  for (const field of Object.keys(baseline).filter(field => field !== "signature" && field !== "key_id")) {
+    const missing = { ...baseline };
+    delete missing[field];
+    await rejectSigned(missing, `signed receipt missing ${field}`);
+  }
+  for (const policy_eval of [
+    null, [], "evaluation", { matched_condition: null }, { field_value: null },
+    { matched_condition: null, field_value: null, extra: true },
+    { matched_condition: [], field_value: null },
+    { matched_condition: { field: 1, op: "eq", value: null }, field_value: null },
+    { matched_condition: { field: "v", op: 1, value: null }, field_value: null },
+    { matched_condition: { field: "v", op: "eq", value: {} }, field_value: null },
+    { matched_condition: { field: "v", op: "eq", value: [{}] }, field_value: null },
+    { matched_condition: { field: "v", op: "eq", value: null, extra: true }, field_value: null },
+    { matched_condition: null, field_value: [] }, { matched_condition: null, field_value: {} },
+  ]) await rejectSigned({ ...baseline, policy_eval }, "signed malformed policy evaluation");
+  for (const field of ["field", "op", "value"]) {
+    const condition: Record<string, unknown> = { field: "v", op: "eq", value: null };
+    delete condition[field];
+    await rejectSigned({ ...baseline, policy_eval: { matched_condition: condition, field_value: null } },
+      `signed policy condition missing ${field}`);
+  }
+  for (const field_value of [null, true, false, 0, -1, "scalar"]) {
+    await verifyReceipt(signBoundaryReceipt({ ...baseline,
+      policy_eval: { matched_condition: null, field_value } }), [boundaryKey], { now });
+  }
+  const checkpointCase = vectors.checkpoint_cases[0];
+  const checkpoint = checkpointCase.checkpoint;
+  await verifyReceipt(signBoundaryReceipt(checkpoint), [boundaryKey], { now });
+  for (const fields of [
+    { period_start: "2026-04-21T00:00:00.001Z" },
+    { period_end: checkpoint.context.period_start },
+    { period_end: "2026-04-23T00:00:00.000Z" },
+    { receipt_count: -1 }, { receipt_count: "2" },
+    { merkle_root: "sha256:" + "A".repeat(64) },
+    { merkle_root: "sha256:" + "0".repeat(63) },
+    { previous_checkpoint_id: null }, { previous_merkle_root: null },
+    { previous_checkpoint_id: 1 }, { previous_merkle_root: "sha256:bad" },
+    { unknown_field: null },
+  ]) await rejectSigned({ ...checkpoint, context: { ...checkpoint.context, ...fields } },
+    "signed checkpoint context must obey the daily commitment schema");
+  for (const field of Object.keys(checkpoint.context)) {
+    const context = { ...checkpoint.context };
+    delete context[field];
+    await rejectSigned({ ...checkpoint, context }, `checkpoint context missing ${field}`);
+  }
+  await rejectSigned({ ...checkpoint, issued_at: checkpoint.context.period_start },
+    "checkpoint cannot be issued before its period ends");
+  await rejectSigned({ ...checkpoint, authorization_id: "not-null" },
+    "checkpoint authorization must be null");
+  await rejectSigned({ ...checkpoint, resource: "not-null" }, "checkpoint resource must be null");
+  const checkpointOptions = { expectedWorkspaceId: checkpoint.workspace_id, now };
+  const checkpointKeys = [...keys, boundaryKey];
+  await verifyCheckpoint(signBoundaryReceipt(checkpoint), checkpointCase.receipts, checkpointKeys, checkpointOptions);
+  for (const fields of [
+    { receipt_count: checkpointCase.receipts.length + 1 },
+    { merkle_root: "sha256:" + "0".repeat(64) },
+  ]) await assert.rejects(verifyCheckpoint(signBoundaryReceipt({ ...checkpoint,
+    context: { ...checkpoint.context, ...fields } }), checkpointCase.receipts, checkpointKeys, checkpointOptions),
+    VerificationError, "authentic checkpoint must commit the supplied member set");
+  assert.equal(checkpointCase.receipts.length, 2, "the fixed checkpoint fixture has two members");
+  for (const [issued_at, accepted] of [
+    [checkpoint.context.period_start, true], [checkpoint.context.period_end, false],
+    [new Date(Date.parse(checkpoint.context.period_start) - 1).toISOString(), false],
+  ]) {
+    const members = [...checkpointCase.receipts];
+    members[0] = signBoundaryReceipt({ ...members[0], issued_at });
+    // Independent two-leaf commitment keeps the signatures, count and root
+    // correct. Only the member's period membership can cause rejection.
+    const leaves = members.map(member => createHash("sha256").update(Buffer.from([0]))
+      .update(jcsCanonicalize(member)!).digest()).sort(Buffer.compare);
+    const merkle_root = "sha256:" + createHash("sha256").update(Buffer.from([1]))
+      .update(leaves[0]).update(leaves[1]).digest("hex");
+    const verification = verifyCheckpoint(signBoundaryReceipt({ ...checkpoint,
+      context: { ...checkpoint.context, merkle_root } }), members, checkpointKeys, checkpointOptions);
+    if (accepted) await verification;
+    else await assert.rejects(verification, VerificationError,
+      "the checkpoint period includes its start but excludes its end");
+  }
 
   // Pin both sides of the reference verifier's five-minute clock allowance.
   const issuedAt = Date.parse(vectors.should_verify[0].receipt.issued_at);
@@ -313,6 +428,28 @@ async function main(vectorsPath: string): Promise<number> {
         failures++;
       }
     }
+  }
+  for (const invalid of [null, false, 1, "entry"]) {
+    assert.throws(() => loadKeysFromJson({ ...vectors.public_keys, keys: [invalid] }), VerificationError,
+      "malformed key entries must raise the documented verification error");
+  }
+  for (const field of ["key_id", "alg", "public_key", "active_from"]) {
+    for (const value of [null, false, 1, [], {}]) {
+      assert.throws(() => loadKeysFromJson({ ...vectors.public_keys,
+        keys: [{ ...vectors.public_keys.keys[0], [field]: value }] }), VerificationError,
+        `key ${field} must be a string`);
+    }
+    const missing = { ...vectors.public_keys.keys[0] };
+    delete missing[field];
+    assert.throws(() => loadKeysFromJson({ ...vectors.public_keys, keys: [missing] }), VerificationError,
+      `key entry requires ${field}`);
+  }
+  for (const length of [0, 31, 33]) {
+    const entry = { ...vectors.public_keys.keys[0], public_key: Buffer.alloc(length).toString("base64url") };
+    delete entry.public_key_fingerprint;
+    assert.throws(() => loadKeysFromJson({ ...vectors.public_keys,
+      keys: [entry] }),
+      VerificationError, "Ed25519 public keys must contain exactly 32 bytes");
   }
   const noncanonicalPublicKey = structuredClone(vectors.public_keys);
   noncanonicalPublicKey.keys[0].public_key =

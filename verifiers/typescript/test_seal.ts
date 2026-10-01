@@ -92,6 +92,40 @@ async function main(profilePath: string, verificationPath: string): Promise<void
     }
   }
 
+  // Check depth before a recursive parser can overflow. Brackets, braces and
+  // escaped quotes inside strings are data, not nesting (spec Appendix B.1).
+  for (const raw of [
+    "[".repeat(5000) + "null" + "]".repeat(5000),
+    '{"v":'.repeat(5000) + "null" + "}".repeat(5000),
+  ]) assert.throws(() => hashSealJson(raw),
+    (error: unknown) => error instanceof SealInputError && error.code === "depth_limit",
+    "raw depth must be bounded before parsing");
+  for (const value of ['[{]}', '"[{]}', '\\"[{]}']) {
+    const raw = JSON.stringify(value);
+    assert.equal(hashSealJson(raw), hashSealValue(value), "string punctuation cannot change depth");
+  }
+
+  for (const value of [undefined, 1n, () => null, Symbol("non-json"), new Date(),
+    new Map(), new Set(), new Uint8Array([1]), { [Symbol("key")]: null },
+    Object.defineProperty({}, "hidden", { value: null }),
+    Object.defineProperty({}, "getter", { enumerable: true, get: () => null }),
+    Object.defineProperty([1], "0", { enumerable: true, get: () => 1 }),
+  ]) assert.throws(() => hashSealValue(value),
+    (error: unknown) => error instanceof SealInputError && error.code === "unsupported_value",
+    "parsed-value hashing must not silently normalize non-JSON data");
+  for (const value of [Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY]) {
+    assert.throws(() => hashSealValue(value),
+      (error: unknown) => error instanceof SealInputError && error.code === "number_overflow");
+  }
+  for (const value of [Number.MAX_SAFE_INTEGER + 1, Number.MIN_SAFE_INTEGER - 1]) {
+    assert.throws(() => hashSealValue(value),
+      (error: unknown) => error instanceof SealInputError && error.code === "unsafe_integer");
+  }
+  for (const value of ["\ud800", { ["\ud800"]: null }]) {
+    assert.throws(() => hashSealValue(value),
+      (error: unknown) => error instanceof SealInputError && error.code === "invalid_unicode");
+  }
+
   const assertInvalidArray = (value: unknown[], label: string) => assert.throws(
     () => hashSealValue(value),
     (error: unknown) => error instanceof SealInputError
