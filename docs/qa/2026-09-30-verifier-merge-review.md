@@ -31,3 +31,13 @@ repair. All original assertions and the new expected outcomes remain intact.
 After the helper simplification, the normal integrated `npm test` command passed.
 The unchanged code-diff retry records these rejections through the existing
 Ponytail hook; no hook or release gate is bypassed.
+
+## Receipt worker merge
+
+Worker commit: `4f851db05d6a8bb0e202d73a96f3c515e9bfa53b`.
+
+Ponytail suggested moving detailed local probe output into a CI artifact. Reject
+that cut for this merge: these probes ran locally, and no durable CI artifact
+has replaced the committed evidence. Keep exact mutation identities, hashes,
+commands, outcomes, and the source arguments needed to review the proposed
+exclusions. Production code and every test assertion remain unchanged.
