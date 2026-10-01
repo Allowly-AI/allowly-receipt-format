@@ -29,10 +29,11 @@ const TIMEOUT_CONTEXT_PATHS = Object.freeze([
   "verifiers/typescript/stryker.conf.cjs",
 ]);
 const STATUSES = ["Killed", "Survived", "Timeout", "NoCoverage", "RuntimeError", "CompileError", "Ignored", "Pending"];
+const MIN_RAW_SCORE = 80;
 
 // Reviewed verifier.ts at 4cdf6d6: replace only the 64 direct sole plain
 // VerificationError message literals with this marker, then hash ALL bytes.
-// Any other source edit invalidates both exemption proofs; never auto-refresh.
+// Any other source edit invalidates the message proof; never auto-refresh.
 const MESSAGE_MARKER = '"__ALLOWLY_COSMETIC_ERROR_MESSAGE__"';
 const VERIFIER_EVIDENCE_SHA256 = "943300d14b6968aa0fc0112ae3433560c65bb69c5d541db037ad896ebbfbe469";
 // Each exact identity below was reviewed at 6fc4443 against the immutable
@@ -234,10 +235,7 @@ function evidence(ast) {
     normalized = normalized.slice(0, start) + MESSAGE_MARKER + normalized.slice(end);
   }
   const normalizedSourceSha256 = hash(normalized);
-  const compare = ast.statements.find((node) => ts.isFunctionDeclaration(node) && node.name?.text === "compareBytes");
-  const expression = compare?.body?.statements.at(-1)?.expression;
-  const comparisonRange = expression ? `${expression.getStart(ast)}:${expression.end}` : null;
-  return { cosmeticRanges, comparisonRange, normalizedSourceSha256,
+  return { cosmeticRanges, normalizedSourceSha256,
     rawTrusted: hash(ast.text) === RAW_VERIFIER_EVIDENCE_SHA256,
     losslessTrusted: losslessEvidenceMatched(),
     trusted: normalizedSourceSha256 === VERIFIER_EVIDENCE_SHA256 };
@@ -253,20 +251,26 @@ function offset(position, ast) {
   requireThat(position.column - 1 <= end - begin, "Mutation column is outside its source line");
   return begin + position.column - 1;
 }
-function validateMutant(mutant, ast, ids) {
+function validateMutant(mutant, ast, ids, identities = new Set()) {
   onlyKeys(mutant, ["id", "mutatorName", "replacement", "status", "location", "statusReason", "testsCompleted", "killedBy", "coveredBy", "duration", "static", "description"], "Mutant");
-  requireThat(typeof mutant.id === "string" && mutant.id.length > 0 && !ids.has(mutant.id), "Missing or duplicate mutant ID");
+  requireThat(typeof mutant.id === "string" && mutant.id.trim().length > 0 && !ids.has(mutant.id), "Missing or duplicate mutant ID");
   ids.add(mutant.id);
-  requireThat(typeof mutant.mutatorName === "string" && mutant.mutatorName.length > 0 && typeof mutant.replacement === "string", `Mutant ${mutant.id} lacks mutation evidence`);
+  requireThat(typeof mutant.mutatorName === "string" && mutant.mutatorName.trim().length > 0 && typeof mutant.replacement === "string", `Mutant ${mutant.id} lacks mutation evidence`);
   requireThat(STATUSES.includes(mutant.status), `Mutant ${mutant.id} has unknown status: ${mutant.status}`);
   onlyKeys(mutant.location, ["start", "end"], "Mutation location");
   const start = offset(mutant.location.start, ast);
   const end = offset(mutant.location.end, ast);
   requireThat(start < end, `Mutant ${mutant.id} has an empty or reversed range`);
   requireThat(mutant.replacement !== ast.text.slice(start, end), `Mutant ${mutant.id} does not change the source`);
+  const identity = timeoutKey(mutant);
+  requireThat(!identities.has(identity), `Duplicate mutation identity: ${mutant.id}`);
+  identities.add(identity);
   for (const key of ["statusReason", "description"]) if (key in mutant) requireThat(typeof mutant[key] === "string", `Invalid ${key}`);
-  for (const key of ["testsCompleted", "duration"]) if (key in mutant) requireThat(Number.isFinite(mutant[key]) && mutant[key] >= 0, `Invalid ${key}`);
-  for (const key of ["killedBy", "coveredBy"]) if (key in mutant) requireThat(Array.isArray(mutant[key]) && mutant[key].every((id) => typeof id === "string"), `Invalid ${key}`);
+  if ("testsCompleted" in mutant) requireThat(Number.isSafeInteger(mutant.testsCompleted) && mutant.testsCompleted >= 0, "Invalid testsCompleted");
+  if ("duration" in mutant) requireThat(Number.isFinite(mutant.duration) && mutant.duration >= 0, "Invalid duration");
+  for (const key of ["killedBy", "coveredBy"]) if (key in mutant) requireThat(Array.isArray(mutant[key])
+    && mutant[key].every((id) => typeof id === "string" && id.trim().length > 0)
+    && new Set(mutant[key]).size === mutant[key].length, `Invalid ${key}`);
   if ("static" in mutant) requireThat(typeof mutant.static === "boolean", "Invalid static flag");
   return { start, end };
 }
@@ -303,11 +307,8 @@ function exemption(mutant, range, ast, proof) {
   if (mutant.mutatorName === "StringLiteral" && proof.cosmeticRanges.has(rangeKey) && literalReplacement(mutant.replacement)) {
     return { classification: "cosmetic", reason: "Only the direct sole plain-text argument of throw new VerificationError changes; exception class and control flow remain unchanged." };
   }
-  if (mutant.mutatorName === "ArithmeticOperator"
-    && rangeKey === proof.comparisonRange && ast.text.slice(range.start, range.end) === "left.length - right.length"
-    && mutant.replacement === "left.length + right.length") {
-    return { classification: "equivalent", reason: "Pinned compareBytes/sha256/checkpointMerkleRoot and sole level.sort(compareBytes) reference: inputs are 32-byte SHA-256 digests. The final return is reached only for equal bytes; 0 -> 64 can only reorder identical digests, leaving Merkle bytes/root unchanged." };
-  }
+  // The old equal-byte comparator exemption is withdrawn: returning 64 for
+  // self-comparison violates comparator laws and has no portability proof.
   return null;
 }
 
@@ -356,6 +357,7 @@ function classifyReport(report, trustedSource, timeoutEvidence = { manifest: nul
   const thresholds = [report.thresholds.high, report.thresholds.low];
   if ("break" in report.thresholds) thresholds.push(report.thresholds.break);
   requireThat(thresholds.every((n) => Number.isSafeInteger(n) && n >= 0 && n <= 100), "Invalid report thresholds");
+  requireThat(report.thresholds.low <= report.thresholds.high, "Invalid report thresholds");
   for (const key of ["testFiles", "config", "framework", "system", "performance"]) if (key in report) requireThat(object(report[key]), `Invalid report ${key}`);
   if ("projectRoot" in report) requireThat(typeof report.projectRoot === "string", "Invalid report projectRoot");
   onlyKeys(report.files, ["verifier.ts"], "Report files");
@@ -372,10 +374,12 @@ function classifyReport(report, trustedSource, timeoutEvidence = { manifest: nul
   Object.assign(counts, { cosmetic: 0, equivalent: 0, unclassifiedSurvived: 0 });
   const exclusions = [];
   const detectedFaults = [];
+  const unresolvedSurvivors = [];
   const blockers = [];
   const ids = new Set();
+  const identities = new Set();
   for (const mutant of file.mutants) {
-    const range = validateMutant(mutant, ast, ids);
+    const range = validateMutant(mutant, ast, ids, identities);
     counts[mutant.status]++;
     if (mutant.status === "Killed") continue;
     const record = { id: mutant.id, location: mutant.location, mutatorName: mutant.mutatorName, status: mutant.status };
@@ -389,16 +393,25 @@ function classifyReport(report, trustedSource, timeoutEvidence = { manifest: nul
     if (allowed) {
       counts[allowed.classification]++;
       exclusions.push({ ...record, ...allowed });
+    } else if (mutant.status === "Survived") {
+      counts.unclassifiedSurvived++;
+      unresolvedSurvivors.push({ ...record, replacement: mutant.replacement,
+        reason: "Unresolved test gap retained under the approved raw 80% policy; no cosmetic/equivalent proof" });
     } else {
-      if (mutant.status === "Survived") counts.unclassifiedSurvived++;
-      blockers.push({ ...record, reason: mutant.status === "Survived" ? "No individually proven cosmetic/equivalent exemption" : `${mutant.status} is unresolved and blocks the gate` });
+      blockers.push({ ...record, reason: `${mutant.status} is unresolved and blocks the gate` });
     }
   }
   counts.detectedTimeout = detectedFaults.length;
-  return { pass: blockers.length === 0, file: "verifier.ts", sourceSha256: hash(trustedSource),
+  const detected = counts.Killed + counts.detectedTimeout;
+  const total = file.mutants.length;
+  // Keep every raw mutant in the denominator, including reviewed exclusions.
+  // Integer comparison prevents a rounded score below 80% from passing.
+  const score = { detected, total, rawPercent: detected * 100 / total,
+    thresholdPercent: MIN_RAW_SCORE, meetsThreshold: detected * 100 >= total * MIN_RAW_SCORE };
+  return { pass: score.meetsThreshold && blockers.length === 0, score, file: "verifier.ts", sourceSha256: hash(trustedSource),
     normalizedSourceSha256: proof.normalizedSourceSha256, evidenceSourceMatched: proof.trusted,
     exactEvidenceSourceMatched: proof.rawTrusted, losslessEvidenceMatched: proof.losslessTrusted,
-    total: file.mutants.length, counts, exclusions, detectedFaults, blockers };
+    total, counts, exclusions, detectedFaults, unresolvedSurvivors, blockers };
 }
 
 if (require.main === module) {

@@ -13,6 +13,6 @@ module.exports = {
   coverageAnalysis: "off",
   inPlace: true,
   thresholds: {
-    break: 100,
+    break: 80,
   },
 };

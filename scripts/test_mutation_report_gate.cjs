@@ -31,8 +31,10 @@ function report(mutants, original = source) {
     "verifier.ts": { language: "typescript", source: original, mutants },
   } };
 }
-const equivalent = (original = source) => mutant(ORIGINAL_RETURN,
+const comparatorSurvivor = (original = source) => mutant(ORIGINAL_RETURN,
   { mutatorName: "ArithmeticOperator", replacement: "left.length + right.length" }, original);
+const killed = (original = source) => mutant(ORIGINAL_RETURN,
+  { status: "Killed", mutatorName: "ArithmeticOperator", replacement: `left.length + right.length + ${nextId}` }, original);
 const classify = (mutants, original = source) => classifyReport(report(mutants, original), original);
 
 // Independent synthetic identities copied from the reviewed immutable report.
@@ -221,7 +223,11 @@ function exactFixture([line, column, mutatorName, original, replacement]) {
 test("every reviewed exact identity is classified with an individual reason and untouched raw status", () => {
   const mutants = EXACT_FIXTURES.map(exactFixture);
   const result = classify(mutants);
-  assert.equal(result.pass, true);
+  assert.equal(result.pass, false);
+  assert.equal(result.score.rawPercent, 0);
+  assert.equal(result.score.thresholdPercent, 80);
+  assert.equal(result.score.meetsThreshold, false);
+  assert.deepEqual(result.blockers, []);
   assert.equal(result.exactEvidenceSourceMatched, true);
   assert.equal(result.losslessEvidenceMatched, true);
   assert.equal(result.total, 129);
@@ -288,7 +294,7 @@ test("the raw source pin refuses changed callers, observed private results, guar
   assert.equal(refused.counts.unclassifiedSurvived, 129);
 });
 
-test("public name, result and diagnostic mutations and the unresolved comparator/options entries block", () => {
+test("public name, result and diagnostic mutations and comparator/options entries have no exemption", () => {
   for (const m of [
     mutant('"VerificationError"'),
     mutant('"SealInputError"'),
@@ -342,8 +348,9 @@ test("parser-dependent exact entries bind the fixed installed call chain and loc
       path.join(directory, "verifiers/typescript/node_modules/typescript"), "dir");
     fs.writeFileSync(reportPath, JSON.stringify(report([m])));
     const accepted = run();
-    assert.equal(accepted.status, 0, accepted.stderr);
+    assert.equal(accepted.status, 1, accepted.stderr);
     assert.equal(JSON.parse(accepted.stdout).counts.equivalent, 1);
+    assert.equal(JSON.parse(accepted.stdout).score.rawPercent, 0);
     for (const name of LOSSLESS_EVIDENCE_PATHS) {
       const target = path.join(directory, name);
       const original = fs.readFileSync(target, "utf8");
@@ -363,7 +370,7 @@ test("parser-dependent exact entries bind the fixed installed call chain and loc
   }
 });
 
-test("source-bound counterexamples and unproven candidates remain blockers", () => {
+test("source-bound counterexamples and unproven candidates remain unresolved survivors", () => {
   for (const fixture of REFUSED_FIXTURES) {
     const result = classify([exactFixture(fixture)]);
     assert.equal(result.pass, false, JSON.stringify(fixture));
@@ -377,7 +384,9 @@ test("source-bound counterexamples and unproven candidates remain blockers", () 
 test("plain direct VerificationError text is cosmetic; ID/location/reason are recorded", () => {
   const m = mutant();
   const result = classify([m]);
-  assert.equal(result.pass, true);
+  assert.equal(result.pass, false);
+  assert.equal(result.score.rawPercent, 0);
+  assert.deepEqual(result.blockers, []);
   assert.equal(result.counts.Survived, 1);
   assert.equal(result.counts.cosmetic, 1);
   assert.equal(result.counts.unclassifiedSurvived, 0);
@@ -385,35 +394,90 @@ test("plain direct VerificationError text is cosmetic; ID/location/reason are re
     classification: "cosmetic", reason: "Only the direct sole plain-text argument of throw new VerificationError changes; exception class and control flow remain unchanged." });
 });
 
-test("the exact proven Merkle comparison is equivalent, with its equal-content proof", () => {
-  const m = equivalent();
-  const result = classify([m]);
+test("the old Merkle comparator exemption is withdrawn and remains an accepted unresolved gap at 80%", () => {
+  const m = comparatorSurvivor();
+  const result = classify([killed(), killed(), killed(), killed(), m]);
   assert.equal(result.pass, true);
-  assert.equal(result.counts.equivalent, 1);
+  assert.equal(result.score.rawPercent, 80);
+  assert.equal(result.score.thresholdPercent, 80);
+  assert.equal(result.counts.Killed, 4);
+  assert.equal(result.counts.equivalent, 0);
   assert.equal(result.counts.cosmetic, 0);
-  assert.equal(result.exclusions[0].id, m.id);
-  assert.deepEqual(result.exclusions[0].location, m.location);
-  assert.match(result.exclusions[0].reason, /only for equal bytes.*identical digests.*Merkle bytes\/root unchanged/);
+  assert.equal(result.counts.unclassifiedSurvived, 1);
+  assert.deepEqual(result.exclusions, []);
+  assert.equal(result.unresolvedSurvivors[0].id, m.id);
+  assert.deepEqual(result.unresolvedSurvivors[0].location, m.location);
+  assert.equal(result.unresolvedSurvivors[0].status, "Survived");
+  assert.match(result.unresolvedSurvivors[0].reason, /Unresolved test gap/);
+  assert.deepEqual(result.blockers, []);
+});
+
+test("the raw 80% floor keeps cosmetic and equivalent survivors in its denominator", () => {
+  const cosmetic = mutant();
+  const reviewed = exactFixture(EXACT_FIXTURES[0]);
+  const result = classify([killed(), killed(), killed(), cosmetic, reviewed]);
+  assert.equal(result.score.rawPercent, 60);
+  assert.equal(result.score.total, 5);
+  assert.equal(result.score.detected, 3);
+  assert.equal(result.counts.cosmetic, 1);
+  assert.equal(result.counts.equivalent, 1);
+  assert.equal(result.score.meetsThreshold, false);
+  assert.equal(result.pass, false);
+  assert.deepEqual(result.blockers, []);
+});
+
+test("a score that rounds to 80% still fails when it is below the floor", () => {
+  const base = comparatorSurvivor();
+  const mutants = Array.from({ length: 25001 }, (_, index) => ({ ...base,
+    id: `boundary-${index}`, replacement: `left.length + right.length + ${index}`,
+    status: index < 20000 ? "Killed" : "Survived" }));
+  const input = report(mutants);
+  input.thresholds.break = 0;
+  const result = classifyReport(input, source);
+  assert.equal(result.score.rawPercent.toFixed(2), "80.00");
+  assert.equal(result.score.rawPercent < 80, true);
+  assert.equal(result.score.thresholdPercent, 80);
+  assert.equal(result.score.meetsThreshold, false);
+  assert.equal(result.pass, false);
+  assert.equal(result.unresolvedSurvivors.length, 5001);
+  assert.deepEqual(result.blockers, []);
+});
+
+test("bad statuses and unproved timeouts block even when the raw score meets 80%", () => {
+  for (const status of ["Timeout", "NoCoverage", "RuntimeError", "CompileError", "Ignored", "Pending"]) {
+    const bad = mutant(MESSAGE, { status, replacement: JSON.stringify(status) });
+    const result = classify([...Array.from({ length: 8 }, () => killed()), comparatorSurvivor(), bad]);
+    assert.equal(result.score.rawPercent, 80, status);
+    assert.equal(result.score.meetsThreshold, true, status);
+    assert.equal(result.pass, false, status);
+    assert.equal(result.blockers.length, 1, status);
+    assert.equal(result.blockers[0].id, bad.id, status);
+    assert.equal(result.counts.detectedTimeout, 0, status);
+  }
 });
 
 test("a plain non-interpolated template changes text only; its timeout still blocks", () => {
   const changed = source.replace(MESSAGE, '`receipt must be an object`');
   const m = mutant('`receipt must be an object`', { replacement: '``' }, changed);
-  assert.equal(classify([m], changed).pass, true);
+  assert.equal(classify([m], changed).pass, false);
+  assert.equal(classify([m], changed).counts.cosmetic, 1);
   assert.equal(classify([{ ...m, status: "Timeout" }], changed).pass, false);
 });
 
 test("the actual Stryker 1.0 report shape accepts a validated break threshold without relaxing the gate", () => {
-  const mutants = [mutant(MESSAGE, { status: "Killed" }), mutant(), equivalent()]
+  const mutants = [...Array.from({ length: 8 }, () => killed()), mutant(), comparatorSurvivor()]
     .map((m) => ({ ...m, statusReason: "fixture result", testsCompleted: 1, killedBy: m.status === "Killed" ? ["0"] : [] }));
   const realShape = { files: report(mutants).files, schemaVersion: "1.0", thresholds: { break: 100, high: 80, low: 60 },
     testFiles: {}, projectRoot: ".", config: {}, framework: { name: "StrykerJS", version: "10.0.0" } };
   const result = classifyReport(realShape, source);
   assert.equal(result.pass, true);
-  assert.equal(result.total, 3);
-  assert.equal(result.counts.Killed, 1);
+  assert.equal(result.total, 10);
+  assert.equal(result.counts.Killed, 8);
+  assert.equal(result.score.rawPercent, 80);
+  assert.equal(result.score.thresholdPercent, 80);
   assert.equal(result.counts.cosmetic, 1);
-  assert.equal(result.counts.equivalent, 1);
+  assert.equal(result.counts.equivalent, 0);
+  assert.equal(result.counts.unclassifiedSurvived, 1);
   for (const value of [-1, 101, NaN, Infinity, "100", null, undefined, 1.5]) {
     assert.throws(() => classifyReport({ ...realShape, thresholds: { ...realShape.thresholds, break: value } }, source), /Invalid report thresholds/);
   }
@@ -466,14 +530,14 @@ test("changed VerificationError semantics, shadowing, or base Error binding bloc
   ]) assert.equal(classify([mutant(MESSAGE, {}, changed)], changed).pass, false);
 });
 
-test("new message observers, crypto writes, and unrelated meaningful code invalidate BOTH exemptions", () => {
+test("new message observers, crypto writes, and unrelated meaningful code invalidate the message proof", () => {
   for (const changed of [
     source.replace("if (error instanceof VerificationError) {", 'if (error instanceof VerificationError && error.message === "") {'),
     source + '\nglobalThis.crypto.subtle.digest = async () => new ArrayBuffer(1);\n',
     source.replace("const MAX_FUTURE_SKEW_MS = 5 * 60 * 1000;", "const MAX_FUTURE_SKEW_MS = 6 * 60 * 1000;"),
     source.replace('this.name = "VerificationError";', 'this.name = "ChangedError";'),
   ]) {
-    const result = classify([mutant(MESSAGE, {}, changed), equivalent(changed)], changed);
+    const result = classify([mutant(MESSAGE, {}, changed), comparatorSurvivor(changed)], changed);
     assert.equal(result.pass, false);
     assert.equal(result.evidenceSourceMatched, false);
     assert.equal(result.counts.cosmetic, 0);
@@ -483,24 +547,27 @@ test("new message observers, crypto writes, and unrelated meaningful code invali
   }
 });
 
-test("only direct sole plain error message text is normalized; edited text preserves both proofs", () => {
+test("only direct sole plain error message text is normalized; the comparator remains unresolved", () => {
   const changedMessage = '"new plain error message"';
   const changed = source.replace(MESSAGE, changedMessage);
-  const result = classify([mutant(changedMessage, {}, changed), equivalent(changed)], changed);
-  const baseline = classify([mutant(), equivalent()]);
-  assert.equal(result.pass, true);
+  const result = classify([mutant(changedMessage, {}, changed), comparatorSurvivor(changed)], changed);
+  const baseline = classify([mutant(), comparatorSurvivor()]);
+  assert.equal(result.pass, false);
   assert.equal(result.evidenceSourceMatched, true);
   assert.equal(result.normalizedSourceSha256, "943300d14b6968aa0fc0112ae3433560c65bb69c5d541db037ad896ebbfbe469");
   assert.equal(result.normalizedSourceSha256, baseline.normalizedSourceSha256);
   assert.notEqual(result.sourceSha256, baseline.sourceSha256);
   assert.equal(result.counts.cosmetic, 1);
-  assert.equal(result.counts.equivalent, 1);
+  assert.equal(result.counts.equivalent, 0);
+  assert.equal(result.counts.unclassifiedSurvived, 1);
+  assert.equal(result.unresolvedSurvivors.length, 1);
+  assert.equal(result.score.rawPercent, 0);
 });
 
 test("other compareBytes mutations and an inexact replacement remain behavioral survivors", () => {
   assert.equal(classify([mutant("left[i] - right[i]", { mutatorName: "ArithmeticOperator", replacement: "left[i] + right[i]" })]).pass, false);
-  assert.equal(classify([{ ...equivalent(), replacement: "left.length * right.length" }]).pass, false);
-  assert.equal(classify([{ ...equivalent(), mutatorName: "UnknownMutation" }]).pass, false);
+  assert.equal(classify([{ ...comparatorSurvivor(), replacement: "left.length * right.length" }]).pass, false);
+  assert.equal(classify([{ ...comparatorSurvivor(), mutatorName: "UnknownMutation" }]).pass, false);
 });
 
 test("changed caller, extra references, variable-length input, hash function, or crypto import invalidates proof", () => {
@@ -512,24 +579,25 @@ test("changed caller, extra references, variable-length input, hash function, or
     source.replace('from "node:crypto"', 'from "custom-crypto"'),
     source + "\nconst extraDigest = sha256;\n",
     source.replace("i < left.length", "i < right.length"),
-  ]) assert.equal(classify([equivalent(changed)], changed).pass, false);
+  ]) assert.equal(classify([comparatorSurvivor(changed)], changed).pass, false);
 });
 
 test("killed, raw survived, timeout, cosmetic, equivalent, and unresolved statuses stay separate", () => {
-  const mutants = [mutant(MESSAGE, { status: "Killed" }), mutant(), equivalent(), mutant(MESSAGE, { status: "Timeout" }),
-    ...["NoCoverage", "RuntimeError", "CompileError", "Ignored", "Pending"].map((status) => mutant(MESSAGE, { status }))];
+  const mutants = [killed(), mutant(), comparatorSurvivor(), mutant(MESSAGE, { status: "Timeout", replacement: '"timeout"' }),
+    ...["NoCoverage", "RuntimeError", "CompileError", "Ignored", "Pending"].map((status) => mutant(MESSAGE, { status, replacement: JSON.stringify(status) }))];
   const result = classify(mutants);
   assert.equal(result.pass, false);
   assert.equal(result.total, 9);
   assert.deepEqual(result.counts, { Killed: 1, Survived: 2, Timeout: 1, NoCoverage: 1, RuntimeError: 1,
-    CompileError: 1, Ignored: 1, Pending: 1, cosmetic: 1, equivalent: 1, unclassifiedSurvived: 0, detectedTimeout: 0 });
+    CompileError: 1, Ignored: 1, Pending: 1, cosmetic: 1, equivalent: 0, unclassifiedSurvived: 1, detectedTimeout: 0 });
+  assert.equal(result.unresolvedSurvivors.length, 1);
   assert.equal(result.blockers.length, 6);
   assert.deepEqual(result.blockers.map((m) => m.id), mutants.slice(3).map((m) => m.id));
   for (const m of result.blockers) {
     assert.deepEqual(m.location, mutants.find((input) => input.id === m.id).location);
     assert.match(m.reason, /unresolved and blocks/);
   }
-  assert.equal(classify([{ ...equivalent(), status: "Timeout" }]).pass, false);
+  assert.equal(classify([{ ...comparatorSurvivor(), status: "Timeout" }]).pass, false);
 });
 
 // These are fictional proof records over synthetic context; they never write a
@@ -619,12 +687,16 @@ test("unknown statuses/schema and missing, empty, wrong-target, or forged source
 test("duplicate IDs, malformed locations, and no-op replacements cannot pass", () => {
   const m = mutant();
   assert.throws(() => classify([m, { ...m }]), /duplicate/);
+  assert.throws(() => classify([m, { ...m, id: "another-id" }]), /Duplicate mutation identity/);
   for (const location of [undefined, { start: { line: 0, column: 1 }, end: m.location.end },
     { start: { line: 1, column: 1000000 }, end: m.location.end },
     { start: m.location.end, end: m.location.start }, { start: m.location.start, end: m.location.start }]) {
     assert.throws(() => classify([{ ...m, location }]));
   }
   assert.throws(() => classify([{ ...m, replacement: MESSAGE }]), /does not change/);
+  for (const changes of [{ id: " " }, { mutatorName: " " }, { testsCompleted: 0.5 },
+    { testsCompleted: -1 }, { duration: NaN }, { killedBy: [""] }, { coveredBy: ["0", "0"] },
+    { static: "false" }]) assert.throws(() => classify([{ ...m, ...changes }]));
 });
 
 test("CLI binds timeout proof to every live input and never accepts a missing manifest", () => {
@@ -670,12 +742,12 @@ test("CLI binds timeout proof to every live input and never accepts a missing ma
   }
 });
 
-test("CLI returns 0 only for resolved reports; unresolved, missing, or invalid JSON fail", () => {
+test("CLI returns 0 only at the approved score with no fatal blockers; missing or invalid JSON fail", () => {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), "allowly-report-gate-"));
   const script = path.join(__dirname, "mutation_report_gate.cjs");
   const run = (filename) => spawnSync(process.execPath, [script, path.join(directory, filename)], { encoding: "utf8" });
   try {
-    fs.writeFileSync(path.join(directory, "pass.json"), JSON.stringify(report([mutant(), equivalent()])));
+    fs.writeFileSync(path.join(directory, "pass.json"), JSON.stringify(report([...Array.from({ length: 8 }, () => killed()), mutant(), comparatorSurvivor()])));
     fs.writeFileSync(path.join(directory, "blocked.json"), JSON.stringify(report([mutant(MESSAGE, { status: "Timeout" })])));
     fs.writeFileSync(path.join(directory, "invalid.json"), "not JSON");
     const pass = run("pass.json");

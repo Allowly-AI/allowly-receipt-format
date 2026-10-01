@@ -62,7 +62,7 @@ def test_typescript_gate_requires_fresh_classified_report(monkeypatch, tmp_path,
         return subprocess.CompletedProcess(args, 0)
 
     monkeypatch.setattr(gate, "run", run)
-    assert gate.typescript_gate(["verifiers/typescript/verifier.ts"]) == classified_status
+    assert gate.typescript_gate(["verifiers/typescript/verifier.ts"]) == (classified_status or raw_status)
     assert calls[0] == ["npm", "test"]
     assert calls[1] == ["node", "--test", "scripts/test_mutation_report_gate.cjs"]
     assert calls[2] == ["./node_modules/.bin/stryker", "run", "stryker.conf.cjs",

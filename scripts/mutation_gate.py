@@ -149,14 +149,15 @@ def typescript_gate(targets: list[str]) -> int:
         "--reporters", "json", "--concurrency", "2", "--timeoutMS", "20000",
     ]
     result = run(arguments, cwd="verifiers/typescript", check=False)
-    # Stryker returns 1 for its raw score; the stricter evidence gate below
-    # blocks every unresolved survivor/timeout instead of counting text edits.
+    # The report gate applies the approved raw 80% floor and separately blocks
+    # invalid statuses and unproved timeouts. A runner failure cannot pass.
     if result.returncode not in (0, 1):
         return result.returncode
     if not report.is_file():
         print("Stryker did not produce a fresh mutation report.", file=sys.stderr)
         return 2
-    return run(["node", "scripts/mutation_report_gate.cjs", str(report)], check=False).returncode
+    classified = run(["node", "scripts/mutation_report_gate.cjs", str(report)], check=False)
+    return classified.returncode or result.returncode
 
 
 def main() -> int:
