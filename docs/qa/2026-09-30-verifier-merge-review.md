@@ -62,3 +62,24 @@ Reject the three Ponytail cuts for this merge:
 
 All tested assertions, expected results, and production source stay unchanged.
 Finish the merge through the hook's documented unchanged-diff rejection path.
+
+## Checkpoint and key worker merge
+
+The worker's sandbox also blocked its Git index lock. The integrator committed
+only its two owned, tested files on `fix/verifier-checkpoint-20260930`:
+`435bf6f`.
+
+Keep the portable key-comparator laws and native default-sort positive control.
+Normalize numeric zero in the new assertions so a valid comparator may return
+either positive or negative zero. This does not change ordering, antisymmetry,
+or self-equality requirements. Every original assertion remains intact.
+
+The integrated tests need fresh full-gate and timeout evidence. In particular,
+mutant 100's new timeout is not accepted solely from the worker's observation.
+
+Reject the two Ponytail cuts for this merge. No durable CI artifact replaces
+the committed local before/after evidence. Keep the small explicit self-equality
+and reversed-sign assertions alongside the expected-order assertion: they make
+the distinct comparator laws and failure diagnostics clear. These are bounded
+test checks, not production abstractions. The normal combined `npm test` passed
+after the zero normalization and its explicit TypeScript number annotation.
