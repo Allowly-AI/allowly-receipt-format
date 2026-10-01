@@ -195,3 +195,90 @@ table has 129 entries: 47 cosmetic and 82 equivalent. The worker's original
 143 proposals and the previous 132-entry merge remain historical evidence.
 The three removed entries now have explicit rejection fixtures. No production
 source, runtime test, dependency, lockfile, mutation scope or threshold changes.
+
+## Final integrated native run
+
+The repository-owned full-file TypeScript mutation gate ran on frozen commit
+`e1cfcef0f7074dce52c1203f0b50f43c5e0d4246`. It finished on 2026-10-01 at
+05:17:23 UTC in 22 minutes and 35 seconds. The initial restricted invocation
+could not bind Stryker's local logging port and produced no mutation results;
+the unchanged command then ran with approved network/sandbox access:
+
+```text
+/private/tmp/allowly-identity-release-mutation-20260930/bin/python -u -c 'import sys; from scripts.mutation_gate import typescript_gate; sys.exit(typescript_gate(["verifiers/typescript/verifier.ts"]))'
+```
+
+All 2,441 exact mutants ran without incremental results. The raw breaking
+threshold stayed 100, concurrency stayed two, timeout stayed 20,000 ms, and
+the production source, installed dependencies, lockfile and Stryker scope
+stayed unchanged. The native dry run and full `npm test` passed, including the
+generated browser adapter. Every invocation generated fresh ephemeral signing
+keys where the new fixtures require them; production keys and published
+historical vectors were not rotated or rewritten.
+
+Raw report SHA-256:
+`321ec92d98cea87b9c52087a4f315e268f1470148f769a0cee22fa05ffdcf11e`.
+The raw report remains at
+`/private/tmp/allowly-verifier-integrated.q01xCy/native/verifiers/typescript/reports/mutation/mutation.json`.
+Production source SHA-256 remains
+`407d7a2d759706b8fb3f005c61983575d58a891d8b4b0d5e1cffae4240b72691`.
+
+An independent read-only comparison confirmed identical IDs and all 2,441
+exact identities (location, mutator, replacement), with no duplicates, added
+or missing mutations, source differences, or unexpected raw status changes.
+All 1,978 previously Killed mutations stayed Killed, all nine previous Timeouts
+stayed Timeout, 228 Survived mutations became Killed, and only mutation 100
+changed from Survived to Timeout. No previous runtime detection was lost.
+Sorted exact-identity inventory SHA-256 is the same in both reports:
+`c801a474a2ff0ff5e67b1d7b0a7900cea06f9eb464af370d4785801276cd3f7f`.
+Baseline raw report SHA-256:
+`d95ca21a3370ec1ba564481c6af08c66e9b841aa5983f5165f69e197cc4f5ea4`.
+
+| Raw outcome | Before this five-worker pass | Final native run |
+| --- | ---: | ---: |
+| Killed | 1,978 | 2,206 |
+| Survived | 454 | 225 |
+| Timeout | 9 | 10 |
+| NoCoverage / RuntimeError / CompileError / Ignored / Pending | 0 | 0 |
+| Raw score | 81.40% | 90.78% |
+
+Both the native runner and strict classifier return exit code 1. This is a
+failed release gate, not a successful publication or a bypassed threshold.
+The frozen native invocation's earlier classifier counted 54 unresolved cases.
+After the three callback-domain deferrals, the final checked-out classifier at
+`d00dfba792dedb583d0ea6b6e9fd71350cb0333b` was run directly against that same
+raw report. Its runtime verification context still exactly matches the frozen
+run and renewed timeout proofs:
+`aeadc2a678817243c2e07a305d01776e43d3adbe190a8877afceddf6f3548dda`.
+The classifier-only stricter changes did not alter any of those runtime inputs.
+
+The final classification has 85 cosmetic exclusions, 83 claimed-equivalent
+exclusions, ten independently reproduced infinite-loop detections and **57
+unresolved survivors**. Raw statuses were not rewritten. The ten exact timeout
+IDs are 100, 145, 147, 154, 171, 1421, 1437, 1443, 1456 and 1746; the correct
+four-suite corpus completed twice, and each exact mutated version stalled twice.
+Missing, mismatched or unexplained timeout evidence still blocks release.
+
+| Remaining area | Count | Exact IDs |
+| --- | ---: | --- |
+| Receipt / input / base64 / tree / options | 14 | 53, 54, 60, 61, 63, 68, 118, 236, 238, 275, 277, 284, 293, 421 |
+| Policy | 25 | 581, 582, 583, 584, 585, 588, 590, 740, 791, 820, 1224, 1225, 1257, 1267, 1294, 1316, 1317, 1340, 1342, 1343, 1345, 1349, 1351, 1353, 1354 |
+| SEAL | 8 | 1489, 1713, 1716, 1718, 1720, 1739, 1815, 1817 |
+| Key loading / clock | 8 | 2295, 2461, 2472, 2479, 2485, 2494, 2512, 2525 |
+| HMAC reference | 2 | 2526, 2527 |
+
+These 57 cases lack a detecting test or a sound individual equivalence proof;
+they are not 57 confirmed production bugs. The older comparator exemption 106
+is an additional unproved release concern, still awaiting the requested human
+review before changing its original test expectations. Its currently counted
+equivalence must not be used to justify publication.
+
+After the final three deferrals, main's full TypeScript `npm test` and all 28
+classifier tests passed again. The original 21 classifier test bodies remain
+byte-for-byte identical to base `6fc4443`. The five branch commits remain
+available and all five are merged into local main. Nothing was pushed,
+published or deployed in this pass; no GitHub release approval was created.
+
+The bounded QA repair rounds are exhausted. Further survivor-test repairs
+require a new approved pass with fresh test signatures and frozen evidence;
+do not silently start another repair round or weaken existing assertions.
