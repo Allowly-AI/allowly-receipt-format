@@ -89,18 +89,23 @@ def python_gate(base: str, targets: list[str]) -> int:
         "PYTHON_MUTATION_RUNNER",
         f"PYTHONPATH=verifiers/python/src {python} verifiers/python/test_vectors.py test-vectors.json && "
         f"PYTHONPATH=verifiers/python/src {python} verifiers/python/test_exception_types.py test-vectors.json && "
-        f"PYTHONPATH=verifiers/python/src {python} verifiers/python/test_pseudonym_refs.py",
+        f"PYTHONPATH=verifiers/python/src {python} verifiers/python/test_pseudonym_refs.py && "
+        f"PYTHONPATH=verifiers/python/src {python} verifiers/python/test_seal.py "
+        "vectors/seal/profile-v1.json vectors/seal/verification-v1.json && "
+        f"PYTHONPATH=verifiers/python/src {python} -m pytest -q verifiers/python/test_policy_evaluation.py",
     )
     result = run(
         [
             mutmut,
             "run",
+            "--paths-to-mutate",
+            ",".join(targets),
             "--use-patch-file",
             patch_path,
             "--tests-dir",
             "verifiers/python/",
             "--runner",
-            runner,
+            "sh -c " + shlex.quote(runner),
             "--simple-output",
             "--no-progress",
         ],
@@ -127,19 +132,32 @@ def typescript_gate(targets: list[str]) -> int:
     for target in targets:
         print(f"  {target}")
 
-    command = os.environ.get("STRYKER_CMD")
-    if command:
-        return run(shlex.split(command), cwd="verifiers/typescript", check=False).returncode
+    # The generated browser adapter requires exact uninstrumented Node source.
+    # Keep its full build/vector gate before Stryker instruments that source.
+    baseline = run(["npm", "test"], cwd="verifiers/typescript", check=False)
+    if baseline.returncode:
+        return baseline.returncode
 
-    return run(
-        [
-            "./node_modules/.bin/stryker",
-            "run",
-            "stryker.conf.cjs",
-        ],
-        cwd="verifiers/typescript",
-        check=False,
-    ).returncode
+    fixtures = run(["node", "--test", "scripts/test_mutation_report_gate.cjs"], check=False)
+    if fixtures.returncode:
+        return fixtures.returncode
+    report = Path("verifiers/typescript/reports/mutation/mutation.json")
+    report.unlink(missing_ok=True)
+    command = os.environ.get("STRYKER_CMD")
+    arguments = shlex.split(command) if command else [
+        "./node_modules/.bin/stryker", "run", "stryker.conf.cjs",
+        "--reporters", "json", "--concurrency", "2", "--timeoutMS", "20000",
+    ]
+    result = run(arguments, cwd="verifiers/typescript", check=False)
+    # The report gate applies the approved raw 80% floor and separately blocks
+    # invalid statuses and unproved timeouts. A runner failure cannot pass.
+    if result.returncode not in (0, 1):
+        return result.returncode
+    if not report.is_file():
+        print("Stryker did not produce a fresh mutation report.", file=sys.stderr)
+        return 2
+    classified = run(["node", "scripts/mutation_report_gate.cjs", str(report)], check=False)
+    return classified.returncode or result.returncode
 
 
 def main() -> int:
@@ -154,14 +172,27 @@ def main() -> int:
     if dirty_status:
         return dirty_status
 
-    if python_targets:
-        status = python_gate(base, python_targets)
-        if status:
-            return status
-    if typescript_targets:
-        status = typescript_gate(typescript_targets)
-        if status:
-            return status
+    # Mutation tools rewrite source. Test the committed release in a disposable
+    # clone so interrupted runs cannot leave a customer's checkout instrumented.
+    root = Path.cwd()
+    base = run(["git", "rev-parse", base], capture=True).stdout.strip()
+    with tempfile.TemporaryDirectory(prefix="allowly-verifier-mutation-") as sandbox:
+        run(["git", "clone", "--quiet", "--shared", str(root), sandbox])
+        node_modules = Path(sandbox) / "verifiers/typescript/node_modules"
+        if (root / "verifiers/typescript/node_modules").exists():
+            node_modules.symlink_to(root / "verifiers/typescript/node_modules", target_is_directory=True)
+        os.chdir(sandbox)
+        try:
+            if python_targets:
+                status = python_gate(base, python_targets)
+                if status:
+                    return status
+            if typescript_targets:
+                status = typescript_gate(typescript_targets)
+                if status:
+                    return status
+        finally:
+            os.chdir(root)
 
     print("Receipt-format mutation gate passed.")
     return 0

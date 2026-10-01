@@ -768,6 +768,10 @@ The normative cross-language profile vectors are
 
 ## 11. Changelog
 
+- **Verifier packages 4.2.0 (wire format unchanged at 4)** — Added conditional
+  policy replay for engines `2026-09-16.1`, `2026-09-24.1`, and `2026-09-27.1`. The newer engines
+  removes signed identity, customer time, and governed execution fields that
+  the runtime adds after evaluating customer policy context.
 - **Verifier packages 4.1.0 (wire format unchanged at 4)** — Added Appendix
   B's `allowly.seal.jcs-sha256.v1` JSON commitment profile, strict raw hashing,
   structured SEAL verification, and shared Python/TypeScript vectors.

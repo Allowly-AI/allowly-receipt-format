@@ -22,13 +22,42 @@ jobs:
       - name: Require tag commit on main
         run: |
           git fetch origin main
-          if ! git branch -r --contains "$GITHUB_SHA" | grep -q 'origin/main'; then
-            echo "Tagged commit must be reachable from origin/main"
-            exit 1
-          fi
+          git merge-base --is-ancestor "$GITHUB_SHA" origin/main
       - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: "3.12"
+      - name: Check tag matches package version
+        run: |
+          package_version="$(python -c 'import tomllib; print(tomllib.load(open("verifiers/python/pyproject.toml", "rb"))["project"]["version"])')"
+          expected_ref="refs/tags/v$package_version"
+          if [ "$GITHUB_REF" != "$expected_ref" ]; then
+            echo "Publication requires the exact tag $expected_ref"
+            exit 1
+          fi
+      - name: Refuse to overwrite published version
+        run: |
+          python - <<'PY'
+          import tomllib
+          from urllib.error import HTTPError, URLError
+          from urllib.parse import quote
+          from urllib.request import urlopen
+
+          with open("verifiers/python/pyproject.toml", "rb") as file:
+              project = tomllib.load(file)["project"]
+          name, version = project["name"], project["version"]
+          url = f"https://pypi.org/pypi/{quote(name, safe='')}/{quote(version, safe='')}/json"
+          try:
+              with urlopen(url, timeout=30) as response:
+                  status = response.status
+          except HTTPError as error:
+              if error.code != 404:
+                  raise SystemExit(f"Cannot confirm an unpublished version: PyPI returned HTTP {error.code}") from error
+              print(f"PyPI confirms {name}@{version} is unpublished (HTTP 404)")
+          except (URLError, TimeoutError) as error:
+              raise SystemExit("Cannot confirm an unpublished version: PyPI lookup failed") from error
+          else:
+              raise SystemExit(f"Refusing to publish {name}@{version}: PyPI returned HTTP {status}")
+          PY
       - name: Install verifier
         run: pip install -e verifiers/python
       - name: Run against test vectors

@@ -1,0 +1,4128 @@
+{
+  "date": "2026-09-30",
+  "component": "TypeScript verifier conditional policy replay",
+  "ownership": [
+    "verifiers/typescript/test_policy_evaluation.ts",
+    "docs/qa/2026-09-30-verifier-policy.json"
+  ],
+  "baseCommit": "6fc44432e458ffa7e5c3a3c3aafd77c96051c73e",
+  "productionScope": {
+    "path": "verifiers/typescript/verifier.ts",
+    "startLine": 546,
+    "endLine": 1065
+  },
+  "verifierSourceSha256": "407d7a2d759706b8fb3f005c61983575d58a891d8b4b0d5e1cffae4240b72691",
+  "immutableReport": {
+    "path": "/private/tmp/allowly-verifier-repair.DbIBkA/release/verifiers/typescript/reports/mutation/mutation.json",
+    "sha256": "d95ca21a3370ec1ba564481c6af08c66e9b841aa5983f5165f69e197cc4f5ea4",
+    "sourceExactlyEqualsLiveBase": true
+  },
+  "normativeOracle": {
+    "path": "spec/profiles/allowly-conditional-evaluation-v1.md",
+    "sha256": "6fa15f721d858e2fa61dbfe254b3cf43e6d3daa772bfdf53e7dddeeccecb0ca8",
+    "sections": [
+      "§2 evidence authentication and exact snapshot selection",
+      "§4 condition shapes, global limits and JSON scalar types",
+      "§5 precedence and no-condition result",
+      "§6 field projection",
+      "§7 complete equality and public result"
+    ],
+    "implementationIsNotOracle": true
+  },
+  "signingOracle": {
+    "method": "Fresh process-local Ed25519 keypair plus canonicalize package JCS signing for controlled fixtures without control-character strings. No mutated receipt canonicalizer is used for signing.",
+    "publishedVectors": "Unchanged historical policy profile vectors are retained and checked before the generated corpus.",
+    "keyHandling": "No generated private key, secret, live credential or fixed signature is saved in this ledger."
+  },
+  "sourceEvidence": {
+    "graph": "Parent coverage check: graph generation 2026-09-25T00:03:12Z is stale; policy symbol unindexed. No absence/exhaustiveness claim is based on that graph.",
+    "liveReads": [
+      "Workbook.md",
+      "Human-Workbook.md",
+      "CONTRACT-CHECKLIST.md",
+      "allowly-qa/SKILL.md in full",
+      "CONTRIBUTING.md",
+      "spec/profiles/allowly-conditional-evaluation-v1.md in full",
+      "verifiers/typescript/verifier.ts policy scope and linked schema/authentication validators",
+      "verifiers/typescript/test_policy_evaluation.ts in full",
+      "verifiers/typescript/package.json",
+      "verifiers/typescript/stryker.conf.cjs",
+      "scripts/mutation_report_gate.cjs"
+    ],
+    "applicableInstructions": "Workspace instructions apply; no repo-local AGENTS.md was found in the base repo/worktree inventory."
+  },
+  "preservation": {
+    "originalAssertCalls": 31,
+    "currentAssertCalls": 40,
+    "originalAssertCallsMissingOrChanged": 0,
+    "proof": "TypeScript AST multiset comparison of every assert.* call text against the committed base; zero missing or changed calls.",
+    "validBoundariesPreserved": [
+      "ten conditions across all three arrays",
+      "null/empty condition lists",
+      "100 executable grants",
+      "valid unrelated actions",
+      "object member order independence"
+    ],
+    "productionFilesChanged": []
+  },
+  "repairRounds": {
+    "limit": 2,
+    "used": 2,
+    "round1TestSha256": "ba7456acb8a0cb4f4c6cc262018797f65a25fe9b216f2f7efff9b87295efd241",
+    "round2TestSha256": "a509075373908ad28a7d252da7121e1f45cfab3934047164328b090ef13e3c8a",
+    "round1": {
+      "probed": 126,
+      "newlyDetected": 64,
+      "stillPassed": 62
+    },
+    "round2": {
+      "probed": 126,
+      "newlyDetected": 74,
+      "stillPassed": 52
+    }
+  },
+  "normalValidation": [
+    {
+      "command": "npm test",
+      "cwd": "verifiers/typescript",
+      "round": 1,
+      "result": "passed",
+      "suites": "build, Node receipt vectors, Node policy vectors, generated-browser policy vectors, pseudonym refs, SEAL"
+    },
+    {
+      "command": "npm test",
+      "cwd": "verifiers/typescript",
+      "round": 2,
+      "result": "passed",
+      "suites": "build, Node receipt vectors, Node policy vectors, generated-browser policy vectors, pseudonym refs, SEAL"
+    },
+    {
+      "command": "git diff --check",
+      "result": "passed"
+    },
+    {
+      "command": "TypeScript AST assertion-preservation inventory",
+      "result": "passed"
+    }
+  ],
+  "exactProbeProtocol": {
+    "harness": "/private/tmp/allowly-policy-proof.v3skOh/probe.cjs",
+    "correctCopy": "/private/tmp/allowly-policy-proof.v3skOh/correct",
+    "mutantCopy": "/private/tmp/allowly-policy-proof.v3skOh/mutant",
+    "isolation": "Two disposable archives of the frozen base with only this owned test file overlaid. Branch and main production source never mutated. Each exact mutation is applied/restored through apply_patch in the mutant copy.",
+    "sourcePreparation": "Installed @stryker-mutator/instrumenter disableTypeChecks applied to both correct source and the exact report replacement; LogicalOperator replacements parenthesized to retain the report AST semantics.",
+    "preparedCorrectSourceSha256": "a84f2f59eab4ae5966eb12536f530de75e40f52aa2f2a3f01ac54d146ecb853f",
+    "correctCommand": "node /private/tmp/allowly-policy-proof.v3skOh/probe.cjs run /private/tmp/allowly-policy-proof.v3skOh/correct correct",
+    "correctResults": [
+      {
+        "round": 1,
+        "build_exit_code": 0,
+        "test_exit_code": 0
+      },
+      {
+        "round": 2,
+        "build_exit_code": 0,
+        "test_exit_code": 0
+      }
+    ],
+    "mutantCommand": "node /private/tmp/allowly-policy-proof.v3skOh/probe.cjs run /private/tmp/allowly-policy-proof.v3skOh/mutant MUTANT_ID",
+    "buildCommand": "node node_modules/typescript/bin/tsc",
+    "testCommand": "node dist/test_policy_evaluation.js ../../vectors/policy/profile-v1.json",
+    "perChildTimeoutMs": 20000,
+    "timeoutOrCompileErrors": 0,
+    "nativeGate": "No full Stryker pass was run here. Parent owns the integrated native gate and independent candidate review."
+  },
+  "summary": {
+    "scopedRawSurvivors": 128,
+    "alreadyAcceptedCosmetic": 2,
+    "scopedCurrentBlockersProbed": 126,
+    "newlyDetectedRealGaps": 74,
+    "equivalentCandidates": 41,
+    "unresolved": 11,
+    "gateReady": false
+  },
+  "boundaryDefenses": [
+    {
+      "case": "Authentic signed receipts can carry malformed portable authorization/policy snapshots; runtime history or a signer is not proof of supported shape.",
+      "classification": "boundary_defense",
+      "evidence": "Public verification accepts external receipt objects, authenticates all candidates, then applies profile §2/§4 shape support. Signed malformed fixtures exercise that exact ingress.",
+      "recommendation": "Retain snapshot, operator, count and scalar guards."
+    },
+    {
+      "case": "Inherited condition field values must not satisfy an absent own field member.",
+      "classification": "boundary_defense",
+      "evidence": "A public signed replay pair plus reversible Object.prototype.field setup passes on correct code and fails for exact 1039/1040/1042/1044/1045/1047 mutations.",
+      "recommendation": "Retain exact condition-member guards; malformed-state cases are meaningful boundary coverage."
+    },
+    {
+      "case": "Caller-controlled keys/options are not automatically well-typed or immutable.",
+      "classification": "boundary_defense",
+      "evidence": "Public API malformed key/options and SharedArrayBuffer fixtures produce VerificationError on correct code.",
+      "recommendation": "Retain fail-closed caller argument guards and immutable snapshots."
+    }
+  ],
+  "impossibleCaseAssessment": {
+    "provenImpossibleImplementations": [],
+    "invariantLeaks": [],
+    "unprovenLifecycleClaims": "No exhaustive cross-repo writer, rollback, migration, queued-state or stored-data audit was performed. No guard deletion or impossible-state claim is made."
+  },
+  "dependencyFootprint": {
+    "scope": "The policy replay operation and its in-file pure evaluator helpers.",
+    "outboundServiceCalls": 0,
+    "smallestRequiredOutboundServiceCalls": 0,
+    "authenticationCalls": "verifyReceipt(action) followed by verifyReceipt for each supplied authorization candidate, as required by profile §2.",
+    "cleanupCandidates": [],
+    "limitations": "No cross-repo dependency or bootstrap audit; no claim that duplicate cryptographic checks are removable."
+  },
+  "limitations": [
+    "These are exact one-mutant probes of the frozen report, not an integrated mutation score or a full native gate result.",
+    "Equivalent candidates are proposals for independent source-bound review, not new accepted exclusions.",
+    "Eleven unresolved mutations remain after the two allowed test rounds; see their individual reasons. In particular 1257 observes inherited values on absent own fields and must not be called equivalent.",
+    "The 52 passing mutations include private-output and validated-domain candidates; passing probes alone do not prove equivalence.",
+    "No production code, dependency, hook, Stryker configuration/threshold, timeout proof, published vector, or release artifact was edited."
+  ],
+  "entries": [
+    {
+      "id": "581",
+      "mutatorName": "ConditionalExpression",
+      "location": {
+        "end": {
+          "column": 80,
+          "line": 566
+        },
+        "start": {
+          "column": 7,
+          "line": 566
+        }
+      },
+      "replacement": "false",
+      "original": "typeof receipt !== \"object\" || receipt === null || Array.isArray(receipt)",
+      "classification": "unresolved",
+      "reason": "Removing the early receipt-root guard leaves verifyReceipt's later root guard, but it also moves snapshot/keys/options work ahead of that rejection. This audit has not proved equivalence for simultaneous invalid inputs, option accessors, resource failures, or all exception ordering. Retain the early guard.",
+      "specification": "Profile §2/§4/§6 boundaries; remaining evidence limitation described in reason",
+      "source_evidence": "Exact original mutation range above; all production bytes pinned to verifierSourceSha256",
+      "fault_group": null,
+      "case": null,
+      "probe": {
+        "preparedSourceSha256": "a44720bd081cf3c9162b859ac3c9f728a4ee79f06b9c2fef306aa474accb43c7",
+        "build_exit_code": 0,
+        "test_exit_code": 0,
+        "signal": null,
+        "error": null,
+        "first_failure": null
+      },
+      "removal_recommendation": "Retain production guard/behavior. This task changes tests only; any equivalent candidate still requires independent gate-proof review."
+    },
+    {
+      "id": "582",
+      "mutatorName": "LogicalOperator",
+      "location": {
+        "end": {
+          "column": 80,
+          "line": 566
+        },
+        "start": {
+          "column": 7,
+          "line": 566
+        }
+      },
+      "replacement": "(typeof receipt !== \"object\" || receipt === null) && Array.isArray(receipt)",
+      "original": "typeof receipt !== \"object\" || receipt === null || Array.isArray(receipt)",
+      "classification": "unresolved",
+      "reason": "The mutated AND weakens the early combined root guard. Later verifyReceipt still rejects invalid roots in ordinary calls, but prior options/key snapshot work can become observable. No complete exception/order proof was established; retain this boundary check.",
+      "specification": "Profile §2/§4/§6 boundaries; remaining evidence limitation described in reason",
+      "source_evidence": "Exact original mutation range above; all production bytes pinned to verifierSourceSha256",
+      "fault_group": null,
+      "case": null,
+      "probe": {
+        "preparedSourceSha256": "033005e1b850473b0f0d07af14e87d3f176f0d3264f32e57210ecd8138651862",
+        "build_exit_code": 0,
+        "test_exit_code": 0,
+        "signal": null,
+        "error": null,
+        "first_failure": null
+      },
+      "removal_recommendation": "Retain production guard/behavior. This task changes tests only; any equivalent candidate still requires independent gate-proof review."
+    },
+    {
+      "id": "583",
+      "mutatorName": "ConditionalExpression",
+      "location": {
+        "end": {
+          "column": 54,
+          "line": 566
+        },
+        "start": {
+          "column": 7,
+          "line": 566
+        }
+      },
+      "replacement": "false",
+      "original": "typeof receipt !== \"object\" || receipt === null",
+      "classification": "unresolved",
+      "reason": "Disabling the non-object-or-null subpredicate relies on the later verifyReceipt root rejection after keys/options processing. Passing probes do not establish all malformed argument combinations or accessor behavior.",
+      "specification": "Profile §2/§4/§6 boundaries; remaining evidence limitation described in reason",
+      "source_evidence": "Exact original mutation range above; all production bytes pinned to verifierSourceSha256",
+      "fault_group": null,
+      "case": null,
+      "probe": {
+        "preparedSourceSha256": "a9e92ac4c20f086b8f943e08c4e84bf1aee870494be5f6a8e1f9c877dbcb3407",
+        "build_exit_code": 0,
+        "test_exit_code": 0,
+        "signal": null,
+        "error": null,
+        "first_failure": null
+      },
+      "removal_recommendation": "Retain production guard/behavior. This task changes tests only; any equivalent candidate still requires independent gate-proof review."
+    },
+    {
+      "id": "584",
+      "mutatorName": "LogicalOperator",
+      "location": {
+        "end": {
+          "column": 54,
+          "line": 566
+        },
+        "start": {
+          "column": 7,
+          "line": 566
+        }
+      },
+      "replacement": "typeof receipt !== \"object\" && receipt === null",
+      "original": "typeof receipt !== \"object\" || receipt === null",
+      "classification": "unresolved",
+      "reason": "Changing the non-object/null OR to AND makes scalar/null inputs pass this early subguard. Later authentication rejects them for ordinary arguments, but the earlier/later error and side-effect ordering was not exhaustively assessed.",
+      "specification": "Profile §2/§4/§6 boundaries; remaining evidence limitation described in reason",
+      "source_evidence": "Exact original mutation range above; all production bytes pinned to verifierSourceSha256",
+      "fault_group": null,
+      "case": null,
+      "probe": {
+        "preparedSourceSha256": "3d393cdd33d1048bc55b3ca2e2032d7e0c8da83500532e36e77458a485f4271a",
+        "build_exit_code": 0,
+        "test_exit_code": 0,
+        "signal": null,
+        "error": null,
+        "first_failure": null
+      },
+      "removal_recommendation": "Retain production guard/behavior. This task changes tests only; any equivalent candidate still requires independent gate-proof review."
+    },
+    {
+      "id": "585",
+      "mutatorName": "ConditionalExpression",
+      "location": {
+        "end": {
+          "column": 34,
+          "line": 566
+        },
+        "start": {
+          "column": 7,
+          "line": 566
+        }
+      },
+      "replacement": "false",
+      "original": "typeof receipt !== \"object\"",
+      "classification": "unresolved",
+      "reason": "Disabling the early typeof check relies on snapshotJson or verifyReceipt to reject scalar/function receipt values later. This audit did not prove identical error behavior across malformed options, keys, resource failures and caller accessors.",
+      "specification": "Profile §2/§4/§6 boundaries; remaining evidence limitation described in reason",
+      "source_evidence": "Exact original mutation range above; all production bytes pinned to verifierSourceSha256",
+      "fault_group": null,
+      "case": null,
+      "probe": {
+        "preparedSourceSha256": "6a6669fa82147d7988bc99177f592477be1da3b47d76c258222d44429e50353a",
+        "build_exit_code": 0,
+        "test_exit_code": 0,
+        "signal": null,
+        "error": null,
+        "first_failure": null
+      },
+      "removal_recommendation": "Retain production guard/behavior. This task changes tests only; any equivalent candidate still requires independent gate-proof review."
+    },
+    {
+      "id": "588",
+      "mutatorName": "ConditionalExpression",
+      "location": {
+        "end": {
+          "column": 54,
+          "line": 566
+        },
+        "start": {
+          "column": 38,
+          "line": 566
+        }
+      },
+      "replacement": "false",
+      "original": "receipt === null",
+      "classification": "unresolved",
+      "reason": "Disabling the early null check allows null through snapshotJson before later checks. The later verifyReceipt guard normally rejects it, but other malformed caller arguments can be processed first; a blanket equivalence claim is not supported.",
+      "specification": "Profile §2/§4/§6 boundaries; remaining evidence limitation described in reason",
+      "source_evidence": "Exact original mutation range above; all production bytes pinned to verifierSourceSha256",
+      "fault_group": null,
+      "case": null,
+      "probe": {
+        "preparedSourceSha256": "35e3660f8b33020dd9ddbb7453146e21e07a8c3790d76d4e917eaaa0cb208fec",
+        "build_exit_code": 0,
+        "test_exit_code": 0,
+        "signal": null,
+        "error": null,
+        "first_failure": null
+      },
+      "removal_recommendation": "Retain production guard/behavior. This task changes tests only; any equivalent candidate still requires independent gate-proof review."
+    },
+    {
+      "id": "590",
+      "mutatorName": "BlockStatement",
+      "location": {
+        "end": {
+          "column": 4,
+          "line": 568
+        },
+        "start": {
+          "column": 82,
+          "line": 566
+        }
+      },
+      "replacement": "{}",
+      "original": "{\n    throw new VerificationError(\"receipt must be an object\");\n  }",
+      "classification": "unresolved",
+      "reason": "Removing the early rejection changes which keys/options/JSON snapshot work runs before verifyReceipt rejects an invalid root. The local suite still passes, but full exception and side-effect equivalence is unproven.",
+      "specification": "Profile §2/§4/§6 boundaries; remaining evidence limitation described in reason",
+      "source_evidence": "Exact original mutation range above; all production bytes pinned to verifierSourceSha256",
+      "fault_group": null,
+      "case": null,
+      "probe": {
+        "preparedSourceSha256": "98424b454ee89e3ac319b4377a118ae72ae5ee7cc19b21fd0ef5b09f8bbb38fa",
+        "build_exit_code": 0,
+        "test_exit_code": 0,
+        "signal": null,
+        "error": null,
+        "first_failure": null
+      },
+      "removal_recommendation": "Retain production guard/behavior. This task changes tests only; any equivalent candidate still requires independent gate-proof review."
+    },
+    {
+      "id": "592",
+      "mutatorName": "StringLiteral",
+      "location": {
+        "end": {
+          "column": 60,
+          "line": 567
+        },
+        "start": {
+          "column": 33,
+          "line": 567
+        }
+      },
+      "replacement": "\"\"",
+      "original": "\"receipt must be an object\"",
+      "classification": "already_accepted_cosmetic",
+      "reason": "Only a direct sole literal VerificationError message changes; current gate already exempts this exact identity. Not reprobed in this round."
+    },
+    {
+      "id": "606",
+      "mutatorName": "BlockStatement",
+      "location": {
+        "end": {
+          "column": 4,
+          "line": 586
+        },
+        "start": {
+          "column": 11,
+          "line": 584
+        }
+      },
+      "replacement": "{}",
+      "original": "{\n    throw new VerificationError(\"publicKeys must be structured-cloneable data\");\n  }",
+      "classification": "newly_detected_real_gap",
+      "reason": "Reject with VerificationError rather than accepting or leaking TypeError.",
+      "specification": "§2 authenticate evidence before replay; wire verifier errors",
+      "source_evidence": "structuredClone and optional key buffer access, verifier.ts:582–591; findKey:1746–1760",
+      "fault_group": "Malformed or uncloneable selected key",
+      "case": "uncloneable or malformed selected keys produce a verification error",
+      "probe": {
+        "preparedSourceSha256": "ddfd13a60538b4438098b68e46a57ead04f4c0904c0a88502a56092a96f23cc1",
+        "build_exit_code": 0,
+        "test_exit_code": 1,
+        "signal": null,
+        "error": null,
+        "first_failure": "AssertionError [ERR_ASSERTION]: uncloneable or malformed selected keys produce a verification error"
+      },
+      "removal_recommendation": "Retain production guard/behavior. This task changes tests only; any equivalent candidate still requires independent gate-proof review."
+    },
+    {
+      "id": "608",
+      "mutatorName": "StringLiteral",
+      "location": {
+        "end": {
+          "column": 79,
+          "line": 585
+        },
+        "start": {
+          "column": 33,
+          "line": 585
+        }
+      },
+      "replacement": "\"\"",
+      "original": "\"publicKeys must be structured-cloneable data\"",
+      "classification": "already_accepted_cosmetic",
+      "reason": "Only a direct sole literal VerificationError message changes; current gate already exempts this exact identity. Not reprobed in this round."
+    },
+    {
+      "id": "612",
+      "mutatorName": "ConditionalExpression",
+      "location": {
+        "end": {
+          "column": 45,
+          "line": 588
+        },
+        "start": {
+          "column": 5,
+          "line": 588
+        }
+      },
+      "replacement": "true",
+      "original": "typeof SharedArrayBuffer !== \"undefined\"",
+      "classification": "newly_detected_real_gap",
+      "reason": "Ordinary private byte arrays still authenticate when this optional global is unavailable.",
+      "specification": "§2 ordinary trusted Ed25519 key authentication",
+      "source_evidence": "verifier.ts:588–591",
+      "fault_group": "SharedArrayBuffer unavailable",
+      "case": "ordinary keys remain usable when SharedArrayBuffer is unavailable",
+      "probe": {
+        "preparedSourceSha256": "d245ffc1b0e3168418f00815db1de5c59d26907a05f3003d4093852e692af5e8",
+        "build_exit_code": 0,
+        "test_exit_code": 1,
+        "signal": null,
+        "error": null,
+        "first_failure": "TypeError: Right-hand side of 'instanceof' is not an object"
+      },
+      "removal_recommendation": "Retain production guard/behavior. This task changes tests only; any equivalent candidate still requires independent gate-proof review."
+    },
+    {
+      "id": "614",
+      "mutatorName": "StringLiteral",
+      "location": {
+        "end": {
+          "column": 45,
+          "line": 588
+        },
+        "start": {
+          "column": 34,
+          "line": 588
+        }
+      },
+      "replacement": "\"\"",
+      "original": "\"undefined\"",
+      "classification": "newly_detected_real_gap",
+      "reason": "Ordinary private byte arrays still authenticate when this optional global is unavailable.",
+      "specification": "§2 ordinary trusted Ed25519 key authentication",
+      "source_evidence": "verifier.ts:588–591",
+      "fault_group": "SharedArrayBuffer unavailable",
+      "case": "ordinary keys remain usable when SharedArrayBuffer is unavailable",
+      "probe": {
+        "preparedSourceSha256": "169d29d726863ffb9058770f1ce7ab2aae0b51f836a28f91e767768e675a4592",
+        "build_exit_code": 0,
+        "test_exit_code": 1,
+        "signal": null,
+        "error": null,
+        "first_failure": "TypeError: Right-hand side of 'instanceof' is not an object"
+      },
+      "removal_recommendation": "Retain production guard/behavior. This task changes tests only; any equivalent candidate still requires independent gate-proof review."
+    },
+    {
+      "id": "615",
+      "mutatorName": "MethodExpression",
+      "location": {
+        "end": {
+          "column": 93,
+          "line": 589
+        },
+        "start": {
+          "column": 8,
+          "line": 589
+        }
+      },
+      "replacement": "ownPublicKeys.every(key => key?.publicKeyBytes?.buffer instanceof SharedArrayBuffer)",
+      "original": "ownPublicKeys.some((key) => key?.publicKeyBytes?.buffer instanceof SharedArrayBuffer)",
+      "classification": "newly_detected_real_gap",
+      "reason": "Reject shared key memory anywhere in the supplied array.",
+      "specification": "§2 authenticated immutable caller evidence; verifier snapshot boundary",
+      "source_evidence": "verifier.ts:588–591",
+      "fault_group": "Mixed ordinary and shared keys",
+      "case": "an ordinary first key cannot hide shared memory in a later key",
+      "probe": {
+        "preparedSourceSha256": "bd7bf0623b8605aec1224ce6252779a6348037f539eccdb6868629260e196f4c",
+        "build_exit_code": 0,
+        "test_exit_code": 1,
+        "signal": null,
+        "error": null,
+        "first_failure": "AssertionError [ERR_ASSERTION]: Missing expected rejection: an ordinary first key cannot hide shared memory in a later key"
+      },
+      "removal_recommendation": "Retain production guard/behavior. This task changes tests only; any equivalent candidate still requires independent gate-proof review."
+    },
+    {
+      "id": "617",
+      "mutatorName": "OptionalChaining",
+      "location": {
+        "end": {
+          "column": 63,
+          "line": 589
+        },
+        "start": {
+          "column": 36,
+          "line": 589
+        }
+      },
+      "replacement": "key?.publicKeyBytes.buffer",
+      "original": "key?.publicKeyBytes?.buffer",
+      "classification": "newly_detected_real_gap",
+      "reason": "Reject with VerificationError rather than accepting or leaking TypeError.",
+      "specification": "§2 authenticate evidence before replay; wire verifier errors",
+      "source_evidence": "structuredClone and optional key buffer access, verifier.ts:582–591; findKey:1746–1760",
+      "fault_group": "Malformed or uncloneable selected key",
+      "case": "uncloneable or malformed selected keys produce a verification error",
+      "probe": {
+        "preparedSourceSha256": "b7f4c7c8d49af8831d726a45156fb3eaa6c934056a971fc854b64a16bdfa2067",
+        "build_exit_code": 0,
+        "test_exit_code": 1,
+        "signal": null,
+        "error": null,
+        "first_failure": "AssertionError [ERR_ASSERTION]: uncloneable or malformed selected keys produce a verification error"
+      },
+      "removal_recommendation": "Retain production guard/behavior. This task changes tests only; any equivalent candidate still requires independent gate-proof review."
+    },
+    {
+      "id": "618",
+      "mutatorName": "OptionalChaining",
+      "location": {
+        "end": {
+          "column": 55,
+          "line": 589
+        },
+        "start": {
+          "column": 36,
+          "line": 589
+        }
+      },
+      "replacement": "key.publicKeyBytes",
+      "original": "key?.publicKeyBytes",
+      "classification": "newly_detected_real_gap",
+      "reason": "Reject with VerificationError rather than accepting or leaking TypeError.",
+      "specification": "§2 authenticate evidence before replay; wire verifier errors",
+      "source_evidence": "structuredClone and optional key buffer access, verifier.ts:582–591; findKey:1746–1760",
+      "fault_group": "Malformed or uncloneable selected key",
+      "case": "uncloneable or malformed selected keys produce a verification error",
+      "probe": {
+        "preparedSourceSha256": "8a24f6da4bdf2e213b4777c674671c283026d3a632e55543e2c110a90d497f9a",
+        "build_exit_code": 0,
+        "test_exit_code": 1,
+        "signal": null,
+        "error": null,
+        "first_failure": "AssertionError [ERR_ASSERTION]: uncloneable or malformed selected keys produce a verification error"
+      },
+      "removal_recommendation": "Retain production guard/behavior. This task changes tests only; any equivalent candidate still requires independent gate-proof review."
+    },
+    {
+      "id": "629",
+      "mutatorName": "ConditionalExpression",
+      "location": {
+        "end": {
+          "column": 29,
+          "line": 594
+        },
+        "start": {
+          "column": 5,
+          "line": 594
+        }
+      },
+      "replacement": "false",
+      "original": "typeof opts !== \"object\"",
+      "classification": "newly_detected_real_gap",
+      "reason": "Reject callable options/pin containers, wrong-type size and a coercible non-string pin with VerificationError.",
+      "specification": "§2 non-empty expected workspace and trusted Ed25519 fingerprints; public argument validation",
+      "source_evidence": "verifier.ts:593–623",
+      "fault_group": "Malformed options and trust pins",
+      "case": "options/pin rejection loops",
+      "probe": {
+        "preparedSourceSha256": "ef3cf45faf05985cbfe9eb066b73c08a1d777ea19510b5b039fb5009d9d96b0a",
+        "build_exit_code": 0,
+        "test_exit_code": 1,
+        "signal": null,
+        "error": null,
+        "first_failure": "AssertionError [ERR_ASSERTION]: Missing expected rejection."
+      },
+      "removal_recommendation": "Retain production guard/behavior. This task changes tests only; any equivalent candidate still requires independent gate-proof review."
+    },
+    {
+      "id": "651",
+      "mutatorName": "ConditionalExpression",
+      "location": {
+        "end": {
+          "column": 55,
+          "line": 603
+        },
+        "start": {
+          "column": 8,
+          "line": 603
+        }
+      },
+      "replacement": "false",
+      "original": "typeof opts.trustedKeyFingerprints !== \"object\"",
+      "classification": "newly_detected_real_gap",
+      "reason": "Reject callable options/pin containers, wrong-type size and a coercible non-string pin with VerificationError.",
+      "specification": "§2 non-empty expected workspace and trusted Ed25519 fingerprints; public argument validation",
+      "source_evidence": "verifier.ts:593–623",
+      "fault_group": "Malformed options and trust pins",
+      "case": "options/pin rejection loops",
+      "probe": {
+        "preparedSourceSha256": "d83cceb045726ab16de4ce95dd300b5a14f25db0b98ecd6d2f6c8eb78ea266d6",
+        "build_exit_code": 0,
+        "test_exit_code": 1,
+        "signal": null,
+        "error": null,
+        "first_failure": "AssertionError [ERR_ASSERTION]: Missing expected rejection."
+      },
+      "removal_recommendation": "Retain production guard/behavior. This task changes tests only; any equivalent candidate still requires independent gate-proof review."
+    },
+    {
+      "id": "657",
+      "mutatorName": "ConditionalExpression",
+      "location": {
+        "end": {
+          "column": 60,
+          "line": 605
+        },
+        "start": {
+          "column": 8,
+          "line": 605
+        }
+      },
+      "replacement": "false",
+      "original": "typeof opts.trustedKeyFingerprints.size !== \"number\"",
+      "classification": "newly_detected_real_gap",
+      "reason": "Reject callable options/pin containers, wrong-type size and a coercible non-string pin with VerificationError.",
+      "specification": "§2 non-empty expected workspace and trusted Ed25519 fingerprints; public argument validation",
+      "source_evidence": "verifier.ts:593–623",
+      "fault_group": "Malformed options and trust pins",
+      "case": "options/pin rejection loops",
+      "probe": {
+        "preparedSourceSha256": "6a0183e727e82b19b6177db2d8805a44dd1b60fe1537b1357b73b308f578b971",
+        "build_exit_code": 0,
+        "test_exit_code": 1,
+        "signal": null,
+        "error": null,
+        "first_failure": "AssertionError [ERR_ASSERTION]: Missing expected rejection."
+      },
+      "removal_recommendation": "Retain production guard/behavior. This task changes tests only; any equivalent candidate still requires independent gate-proof review."
+    },
+    {
+      "id": "678",
+      "mutatorName": "ConditionalExpression",
+      "location": {
+        "end": {
+          "column": 55,
+          "line": 618
+        },
+        "start": {
+          "column": 24,
+          "line": 618
+        }
+      },
+      "replacement": "false",
+      "original": "typeof fingerprint !== \"string\"",
+      "classification": "newly_detected_real_gap",
+      "reason": "Reject callable options/pin containers, wrong-type size and a coercible non-string pin with VerificationError.",
+      "specification": "§2 non-empty expected workspace and trusted Ed25519 fingerprints; public argument validation",
+      "source_evidence": "verifier.ts:593–623",
+      "fault_group": "Malformed options and trust pins",
+      "case": "options/pin rejection loops",
+      "probe": {
+        "preparedSourceSha256": "21c8b31435a61b70ededb34e18a69d478ff9eaaeba26d5adbd8c1922d5737eea",
+        "build_exit_code": 0,
+        "test_exit_code": 1,
+        "signal": null,
+        "error": null,
+        "first_failure": "AssertionError [ERR_ASSERTION]: Missing expected rejection: one valid pin must not hide a malformed second pin"
+      },
+      "removal_recommendation": "Retain production guard/behavior. This task changes tests only; any equivalent candidate still requires independent gate-proof review."
+    },
+    {
+      "id": "685",
+      "mutatorName": "ConditionalExpression",
+      "location": {
+        "end": {
+          "column": 27,
+          "line": 626
+        },
+        "start": {
+          "column": 7,
+          "line": 626
+        }
+      },
+      "replacement": "true",
+      "original": "ownNow !== undefined",
+      "classification": "newly_detected_real_gap",
+      "reason": "Omitted now uses the current clock; explicitly null now rejects.",
+      "specification": "§2 normal timestamp checks; public now?: Date contract",
+      "source_evidence": "verifier.ts:625–637",
+      "fault_group": "Optional clock boundary",
+      "case": "default clock / now must be a valid Date",
+      "probe": {
+        "preparedSourceSha256": "6b4f0bd6345e79e5c3cd88479467b6d0635765d4f4a8c8a6fa3990d91e4e2a5d",
+        "build_exit_code": 0,
+        "test_exit_code": 1,
+        "signal": null,
+        "error": null,
+        "first_failure": "VerificationError: now must be a valid Date"
+      },
+      "removal_recommendation": "Retain production guard/behavior. This task changes tests only; any equivalent candidate still requires independent gate-proof review."
+    },
+    {
+      "id": "690",
+      "mutatorName": "BlockStatement",
+      "location": {
+        "end": {
+          "column": 6,
+          "line": 631
+        },
+        "start": {
+          "column": 13,
+          "line": 629
+        }
+      },
+      "replacement": "{}",
+      "original": "{\n      throw new VerificationError(\"now must be a valid Date\");\n    }",
+      "classification": "newly_detected_real_gap",
+      "reason": "Omitted now uses the current clock; explicitly null now rejects.",
+      "specification": "§2 normal timestamp checks; public now?: Date contract",
+      "source_evidence": "verifier.ts:625–637",
+      "fault_group": "Optional clock boundary",
+      "case": "default clock / now must be a valid Date",
+      "probe": {
+        "preparedSourceSha256": "91b6b896dfc27c2489245e4d39ba9bcb64fc045389374e2b6ee9d51cbb6a3f78",
+        "build_exit_code": 0,
+        "test_exit_code": 1,
+        "signal": null,
+        "error": null,
+        "first_failure": "AssertionError [ERR_ASSERTION]: Missing expected rejection."
+      },
+      "removal_recommendation": "Retain production guard/behavior. This task changes tests only; any equivalent candidate still requires independent gate-proof review."
+    },
+    {
+      "id": "718",
+      "mutatorName": "ConditionalExpression",
+      "location": {
+        "end": {
+          "column": 74,
+          "line": 676
+        },
+        "start": {
+          "column": 7,
+          "line": 676
+        }
+      },
+      "replacement": "false",
+      "original": "typeof authorizationId !== \"string\" || authorizationId.length === 0",
+      "classification": "newly_detected_real_gap",
+      "reason": "Return not_checked/authorization_receipt_not_found even when both signed IDs are empty.",
+      "specification": "§2 select only a non-empty exact authorization ID",
+      "source_evidence": "verifier.ts:675–678",
+      "fault_group": "Empty authorization ID",
+      "case": "an empty authorization ID never selects a matching creation snapshot",
+      "probe": {
+        "preparedSourceSha256": "4aa306b4fcb6f5b4c2f673ff3b46a86513123878888c606a6aa551621fff6c87",
+        "build_exit_code": 0,
+        "test_exit_code": 1,
+        "signal": null,
+        "error": null,
+        "first_failure": "AssertionError [ERR_ASSERTION]: an empty authorization ID never selects a matching creation snapshot"
+      },
+      "removal_recommendation": "Retain production guard/behavior. This task changes tests only; any equivalent candidate still requires independent gate-proof review."
+    },
+    {
+      "id": "723",
+      "mutatorName": "ConditionalExpression",
+      "location": {
+        "end": {
+          "column": 74,
+          "line": 676
+        },
+        "start": {
+          "column": 46,
+          "line": 676
+        }
+      },
+      "replacement": "false",
+      "original": "authorizationId.length === 0",
+      "classification": "newly_detected_real_gap",
+      "reason": "Return not_checked/authorization_receipt_not_found even when both signed IDs are empty.",
+      "specification": "§2 select only a non-empty exact authorization ID",
+      "source_evidence": "verifier.ts:675–678",
+      "fault_group": "Empty authorization ID",
+      "case": "an empty authorization ID never selects a matching creation snapshot",
+      "probe": {
+        "preparedSourceSha256": "b9ae26eba1281ce7d8be6f29da1d95c92482aa57b72866a7d88a326d48a70a59",
+        "build_exit_code": 0,
+        "test_exit_code": 1,
+        "signal": null,
+        "error": null,
+        "first_failure": "AssertionError [ERR_ASSERTION]: an empty authorization ID never selects a matching creation snapshot"
+      },
+      "removal_recommendation": "Retain production guard/behavior. This task changes tests only; any equivalent candidate still requires independent gate-proof review."
+    },
+    {
+      "id": "725",
+      "mutatorName": "BlockStatement",
+      "location": {
+        "end": {
+          "column": 4,
+          "line": 678
+        },
+        "start": {
+          "column": 76,
+          "line": 676
+        }
+      },
+      "replacement": "{}",
+      "original": "{\n    return result(null, \"not_checked\", \"authorization_receipt_not_found\");\n  }",
+      "classification": "newly_detected_real_gap",
+      "reason": "Return not_checked/authorization_receipt_not_found even when both signed IDs are empty.",
+      "specification": "§2 select only a non-empty exact authorization ID",
+      "source_evidence": "verifier.ts:675–678",
+      "fault_group": "Empty authorization ID",
+      "case": "an empty authorization ID never selects a matching creation snapshot",
+      "probe": {
+        "preparedSourceSha256": "297896da52e82c7030713ce286148cb8b62f374dcc89d14ebc3b1ce570a28073",
+        "build_exit_code": 0,
+        "test_exit_code": 1,
+        "signal": null,
+        "error": null,
+        "first_failure": "AssertionError [ERR_ASSERTION]: an empty authorization ID never selects a matching creation snapshot"
+      },
+      "removal_recommendation": "Retain production guard/behavior. This task changes tests only; any equivalent candidate still requires independent gate-proof review."
+    },
+    {
+      "id": "740",
+      "mutatorName": "ConditionalExpression",
+      "location": {
+        "end": {
+          "column": 60,
+          "line": 682
+        },
+        "start": {
+          "column": 10,
+          "line": 682
+        }
+      },
+      "replacement": "true",
+      "original": "candidate.workspace_id === ownReceipt.workspace_id",
+      "classification": "unresolved",
+      "reason": "For stable data options, expectedWorkspaceId authenticates every receipt to one workspace and implies the candidate/action equality. However options are read more than once before receiptOptions is captured, and accessors are not prohibited. This audit did not prove that the required non-empty value survives every read; retain the comparison.",
+      "specification": "Profile §2/§4/§6 boundaries; remaining evidence limitation described in reason",
+      "source_evidence": "Exact original mutation range above; all production bytes pinned to verifierSourceSha256",
+      "fault_group": null,
+      "case": null,
+      "probe": {
+        "preparedSourceSha256": "235bf3d2c489c56d27a61c107edd6d03bb780617bd11c325d5e8996b8d33b2f0",
+        "build_exit_code": 0,
+        "test_exit_code": 0,
+        "signal": null,
+        "error": null,
+        "first_failure": null
+      },
+      "removal_recommendation": "Retain production guard/behavior. This task changes tests only; any equivalent candidate still requires independent gate-proof review."
+    },
+    {
+      "id": "789",
+      "mutatorName": "OptionalChaining",
+      "location": {
+        "end": {
+          "column": 102,
+          "line": 734
+        },
+        "start": {
+          "column": 28,
+          "line": 734
+        }
+      },
+      "replacement": "evaluatePolicyConditions(snapshot.constraints!, replayContext).policyEval",
+      "original": "evaluatePolicyConditions(snapshot.constraints!, replayContext)?.policyEval",
+      "classification": "newly_detected_real_gap",
+      "reason": "Return mismatch/policy_evaluation_mismatch with calculated_evaluation null for an authenticated recorded object.",
+      "specification": "§5.6 no evaluator result; §7 mismatch comparison",
+      "source_evidence": "verifier.ts:734,851–859,1018–1021,1061",
+      "fault_group": "Recorded evaluation without any conditions",
+      "case": "no conditions produce no calculated object",
+      "probe": {
+        "preparedSourceSha256": "e2b6eab4a56d81ff71164c70caf5ca3904109bad4f9e3c74ea0b6c81a384a8a4",
+        "build_exit_code": 0,
+        "test_exit_code": 1,
+        "signal": null,
+        "error": null,
+        "first_failure": "TypeError: Cannot read properties of null (reading 'policyEval')"
+      },
+      "removal_recommendation": "Retain production guard/behavior. This task changes tests only; any equivalent candidate still requires independent gate-proof review."
+    },
+    {
+      "id": "791",
+      "mutatorName": "ConditionalExpression",
+      "location": {
+        "end": {
+          "column": 48,
+          "line": 736
+        },
+        "start": {
+          "column": 9,
+          "line": 736
+        }
+      },
+      "replacement": "true",
+      "original": "error instanceof UnsupportedPolicyError",
+      "classification": "unresolved",
+      "reason": "The pure evaluator normally throws only UnsupportedPolicyError after strict JSON authentication. It still reads object fields, including absent-field/inherited lookups, so ambient inherited accessors can throw another error. Changing the catch to unconditional may hide such errors; no complete exclusion proof is claimed.",
+      "specification": "Profile §2/§4/§6 boundaries; remaining evidence limitation described in reason",
+      "source_evidence": "Exact original mutation range above; all production bytes pinned to verifierSourceSha256",
+      "fault_group": null,
+      "case": null,
+      "probe": {
+        "preparedSourceSha256": "d70e18df57583a64866c34028984e600e9fdac475969af19d1f41acc8775e152",
+        "build_exit_code": 0,
+        "test_exit_code": 0,
+        "signal": null,
+        "error": null,
+        "first_failure": null
+      },
+      "removal_recommendation": "Retain production guard/behavior. This task changes tests only; any equivalent candidate still requires independent gate-proof review."
+    },
+    {
+      "id": "807",
+      "mutatorName": "ConditionalExpression",
+      "location": {
+        "end": {
+          "column": 34,
+          "line": 764
+        },
+        "start": {
+          "column": 7,
+          "line": 764
+        }
+      },
+      "replacement": "false",
+      "original": "!isPlainJsonObject(context)",
+      "classification": "equivalent_candidate",
+      "reason": "The selected creation context has already passed checkSchema at lines 1486–1492 on the same immutable snapshot. That check rejects non-object, null and array contexts, exactly the predicate tested here. No private replay caller bypasses verifyPolicyEvaluation authentication.",
+      "specification": "Profile §§2,4–7 plus the exact original validators/control flow described in reason",
+      "source_evidence": "Exact original mutation range above; all production bytes pinned to verifierSourceSha256",
+      "fault_group": null,
+      "case": null,
+      "probe": {
+        "preparedSourceSha256": "bd5b150138a37b12cdd188426fbb275ef4a8e0cb9fcc0f54edbf497af68b3da1",
+        "build_exit_code": 0,
+        "test_exit_code": 0,
+        "signal": null,
+        "error": null,
+        "first_failure": null
+      },
+      "removal_recommendation": "Retain production guard/behavior. This task changes tests only; any equivalent candidate still requires independent gate-proof review."
+    },
+    {
+      "id": "808",
+      "mutatorName": "BlockStatement",
+      "location": {
+        "end": {
+          "column": 4,
+          "line": 766
+        },
+        "start": {
+          "column": 36,
+          "line": 764
+        }
+      },
+      "replacement": "{}",
+      "original": "{\n    return { constraints: null, diagnostic: \"unsupported_authorization_snapshot\" };\n  }",
+      "classification": "equivalent_candidate",
+      "reason": "Removing this return does not affect execution: verifyReceipt/checkSchema already excludes every value that would enter the !isPlainJsonObject(context) branch before this private helper runs on the owned snapshot.",
+      "specification": "Profile §§2,4–7 plus the exact original validators/control flow described in reason",
+      "source_evidence": "Exact original mutation range above; all production bytes pinned to verifierSourceSha256",
+      "fault_group": null,
+      "case": null,
+      "probe": {
+        "preparedSourceSha256": "c3071964443b8d8c0704a8a7b07d58fa9b2ce357c9e93a70560060429c5e7ccd",
+        "build_exit_code": 0,
+        "test_exit_code": 0,
+        "signal": null,
+        "error": null,
+        "first_failure": null
+      },
+      "removal_recommendation": "Retain production guard/behavior. This task changes tests only; any equivalent candidate still requires independent gate-proof review."
+    },
+    {
+      "id": "809",
+      "mutatorName": "ObjectLiteral",
+      "location": {
+        "end": {
+          "column": 83,
+          "line": 765
+        },
+        "start": {
+          "column": 12,
+          "line": 765
+        }
+      },
+      "replacement": "{}",
+      "original": "{ constraints: null, diagnostic: \"unsupported_authorization_snapshot\" }",
+      "classification": "equivalent_candidate",
+      "reason": "The changed object literal is inside the context-type rejection branch. Authentication's checkSchema rejects exactly those context values first; supported or unsupported action entries inside an object use different branches.",
+      "specification": "Profile §§2,4–7 plus the exact original validators/control flow described in reason",
+      "source_evidence": "Exact original mutation range above; all production bytes pinned to verifierSourceSha256",
+      "fault_group": null,
+      "case": null,
+      "probe": {
+        "preparedSourceSha256": "237be47b2025abcd87ef7722b2c1dc37b3d74f0d7cd91ceb3beba41d1d48a3f8",
+        "build_exit_code": 0,
+        "test_exit_code": 0,
+        "signal": null,
+        "error": null,
+        "first_failure": null
+      },
+      "removal_recommendation": "Retain production guard/behavior. This task changes tests only; any equivalent candidate still requires independent gate-proof review."
+    },
+    {
+      "id": "810",
+      "mutatorName": "StringLiteral",
+      "location": {
+        "end": {
+          "column": 81,
+          "line": 765
+        },
+        "start": {
+          "column": 45,
+          "line": 765
+        }
+      },
+      "replacement": "\"\"",
+      "original": "\"unsupported_authorization_snapshot\"",
+      "classification": "equivalent_candidate",
+      "reason": "This diagnostic is not generally cosmetic. Its particular branch is unreachable after mandatory checkSchema context validation on the immutable authenticated creation receipt, so this exact replacement has no reachable public result.",
+      "specification": "Profile §§2,4–7 plus the exact original validators/control flow described in reason",
+      "source_evidence": "Exact original mutation range above; all production bytes pinned to verifierSourceSha256",
+      "fault_group": null,
+      "case": null,
+      "probe": {
+        "preparedSourceSha256": "84f6bb7be192f3f416c9943bd11bc1abd732c5c0b827fc56b6cff9e707bf3b41",
+        "build_exit_code": 0,
+        "test_exit_code": 0,
+        "signal": null,
+        "error": null,
+        "first_failure": null
+      },
+      "removal_recommendation": "Retain production guard/behavior. This task changes tests only; any equivalent candidate still requires independent gate-proof review."
+    },
+    {
+      "id": "812",
+      "mutatorName": "ConditionalExpression",
+      "location": {
+        "end": {
+          "column": 54,
+          "line": 768
+        },
+        "start": {
+          "column": 7,
+          "line": 768
+        }
+      },
+      "replacement": "false",
+      "original": "!Array.isArray(actions) || actions.length === 0",
+      "classification": "newly_detected_real_gap",
+      "reason": "Return not_checked/unsupported_authorization_snapshot for missing, empty, non-array or malformed actions/constraints.",
+      "specification": "§2 non-empty action array, exact action entry shape and object constraints",
+      "source_evidence": "verifier.ts:767–789; isPlainJsonObject:1048–1050",
+      "fault_group": "Unsupported snapshot shape",
+      "case": "an authenticated malformed actions snapshot is unsupported",
+      "probe": {
+        "preparedSourceSha256": "24b32e54c056257a72e6de6f9f7566f6552e68c163e28e510803eaa2192ef9a6",
+        "build_exit_code": 0,
+        "test_exit_code": 1,
+        "signal": null,
+        "error": null,
+        "first_failure": "TypeError: actions is not iterable"
+      },
+      "removal_recommendation": "Retain production guard/behavior. This task changes tests only; any equivalent candidate still requires independent gate-proof review."
+    },
+    {
+      "id": "813",
+      "mutatorName": "LogicalOperator",
+      "location": {
+        "end": {
+          "column": 54,
+          "line": 768
+        },
+        "start": {
+          "column": 7,
+          "line": 768
+        }
+      },
+      "replacement": "!Array.isArray(actions) && actions.length === 0",
+      "original": "!Array.isArray(actions) || actions.length === 0",
+      "classification": "newly_detected_real_gap",
+      "reason": "Return not_checked/unsupported_authorization_snapshot for missing, empty, non-array or malformed actions/constraints.",
+      "specification": "§2 non-empty action array, exact action entry shape and object constraints",
+      "source_evidence": "verifier.ts:767–789; isPlainJsonObject:1048–1050",
+      "fault_group": "Unsupported snapshot shape",
+      "case": "an authenticated malformed actions snapshot is unsupported",
+      "probe": {
+        "preparedSourceSha256": "35aea3fb0fc3c97c6fda58dc4e32e908e342acbee21857dda63af182e4a3c641",
+        "build_exit_code": 0,
+        "test_exit_code": 1,
+        "signal": null,
+        "error": null,
+        "first_failure": "TypeError: Cannot read properties of undefined (reading 'length')"
+      },
+      "removal_recommendation": "Retain production guard/behavior. This task changes tests only; any equivalent candidate still requires independent gate-proof review."
+    },
+    {
+      "id": "815",
+      "mutatorName": "ConditionalExpression",
+      "location": {
+        "end": {
+          "column": 54,
+          "line": 768
+        },
+        "start": {
+          "column": 34,
+          "line": 768
+        }
+      },
+      "replacement": "false",
+      "original": "actions.length === 0",
+      "classification": "newly_detected_real_gap",
+      "reason": "Return not_checked/unsupported_authorization_snapshot for missing, empty, non-array or malformed actions/constraints.",
+      "specification": "§2 non-empty action array, exact action entry shape and object constraints",
+      "source_evidence": "verifier.ts:767–789; isPlainJsonObject:1048–1050",
+      "fault_group": "Unsupported snapshot shape",
+      "case": "an authenticated malformed actions snapshot is unsupported",
+      "probe": {
+        "preparedSourceSha256": "96d095c95b741c4962c1bea63d43fd8d5ec15203cc48c255b80ed2081cc91f2f",
+        "build_exit_code": 0,
+        "test_exit_code": 1,
+        "signal": null,
+        "error": null,
+        "first_failure": "AssertionError [ERR_ASSERTION]: an authenticated malformed actions snapshot is unsupported: []"
+      },
+      "removal_recommendation": "Retain production guard/behavior. This task changes tests only; any equivalent candidate still requires independent gate-proof review."
+    },
+    {
+      "id": "817",
+      "mutatorName": "BlockStatement",
+      "location": {
+        "end": {
+          "column": 4,
+          "line": 770
+        },
+        "start": {
+          "column": 56,
+          "line": 768
+        }
+      },
+      "replacement": "{}",
+      "original": "{\n    return { constraints: null, diagnostic: \"unsupported_authorization_snapshot\" };\n  }",
+      "classification": "newly_detected_real_gap",
+      "reason": "Return not_checked/unsupported_authorization_snapshot for missing, empty, non-array or malformed actions/constraints.",
+      "specification": "§2 non-empty action array, exact action entry shape and object constraints",
+      "source_evidence": "verifier.ts:767–789; isPlainJsonObject:1048–1050",
+      "fault_group": "Unsupported snapshot shape",
+      "case": "an authenticated malformed actions snapshot is unsupported",
+      "probe": {
+        "preparedSourceSha256": "5837c38e7e4e0baea188ed9ee68c7f1327a5d70bba16d2ba94252a189fc7e227",
+        "build_exit_code": 0,
+        "test_exit_code": 1,
+        "signal": null,
+        "error": null,
+        "first_failure": "TypeError: actions is not iterable"
+      },
+      "removal_recommendation": "Retain production guard/behavior. This task changes tests only; any equivalent candidate still requires independent gate-proof review."
+    },
+    {
+      "id": "818",
+      "mutatorName": "ObjectLiteral",
+      "location": {
+        "end": {
+          "column": 83,
+          "line": 769
+        },
+        "start": {
+          "column": 12,
+          "line": 769
+        }
+      },
+      "replacement": "{}",
+      "original": "{ constraints: null, diagnostic: \"unsupported_authorization_snapshot\" }",
+      "classification": "newly_detected_real_gap",
+      "reason": "Return not_checked/unsupported_authorization_snapshot for missing, empty, non-array or malformed actions/constraints.",
+      "specification": "§2 non-empty action array, exact action entry shape and object constraints",
+      "source_evidence": "verifier.ts:767–789; isPlainJsonObject:1048–1050",
+      "fault_group": "Unsupported snapshot shape",
+      "case": "an authenticated malformed actions snapshot is unsupported",
+      "probe": {
+        "preparedSourceSha256": "8916114e5c4faa1c7807a8de71d8f7d87d762712e5ddf7058c2bc9f89a65d4b5",
+        "build_exit_code": 0,
+        "test_exit_code": 1,
+        "signal": null,
+        "error": null,
+        "first_failure": "AssertionError [ERR_ASSERTION]: an authenticated malformed actions snapshot is unsupported: undefined"
+      },
+      "removal_recommendation": "Retain production guard/behavior. This task changes tests only; any equivalent candidate still requires independent gate-proof review."
+    },
+    {
+      "id": "819",
+      "mutatorName": "StringLiteral",
+      "location": {
+        "end": {
+          "column": 81,
+          "line": 769
+        },
+        "start": {
+          "column": 45,
+          "line": 769
+        }
+      },
+      "replacement": "\"\"",
+      "original": "\"unsupported_authorization_snapshot\"",
+      "classification": "newly_detected_real_gap",
+      "reason": "Return not_checked/unsupported_authorization_snapshot for missing, empty, non-array or malformed actions/constraints.",
+      "specification": "§2 non-empty action array, exact action entry shape and object constraints",
+      "source_evidence": "verifier.ts:767–789; isPlainJsonObject:1048–1050",
+      "fault_group": "Unsupported snapshot shape",
+      "case": "an authenticated malformed actions snapshot is unsupported",
+      "probe": {
+        "preparedSourceSha256": "46a00bf8f9fec60600500bf3f4e75c79ab78f5207b71ef5e9478d3bed10be2f4",
+        "build_exit_code": 0,
+        "test_exit_code": 1,
+        "signal": null,
+        "error": null,
+        "first_failure": "AssertionError [ERR_ASSERTION]: an authenticated malformed actions snapshot is unsupported: undefined"
+      },
+      "removal_recommendation": "Retain production guard/behavior. This task changes tests only; any equivalent candidate still requires independent gate-proof review."
+    },
+    {
+      "id": "820",
+      "mutatorName": "ArrayDeclaration",
+      "location": {
+        "end": {
+          "column": 90,
+          "line": 771
+        },
+        "start": {
+          "column": 88,
+          "line": 771
+        }
+      },
+      "replacement": "[\"Stryker was here\"]",
+      "original": "[]",
+      "classification": "unresolved",
+      "reason": "For default prototypes the added string has name undefined and adds one unique unrelated sentinel, which preserves ordinary selection. A string can inherit name from Object/String prototypes, though; this audit did not rule out an inherited selected or duplicate name. The passing probe is supporting evidence only.",
+      "specification": "Profile §2/§4/§6 boundaries; remaining evidence limitation described in reason",
+      "source_evidence": "Exact original mutation range above; all production bytes pinned to verifierSourceSha256",
+      "fault_group": null,
+      "case": null,
+      "probe": {
+        "preparedSourceSha256": "3238e90a77f21dc0d574414b21dc3841e0a83bfdd2e3d6484b33ff923488d999",
+        "build_exit_code": 0,
+        "test_exit_code": 0,
+        "signal": null,
+        "error": null,
+        "first_failure": null
+      },
+      "removal_recommendation": "Retain production guard/behavior. This task changes tests only; any equivalent candidate still requires independent gate-proof review."
+    },
+    {
+      "id": "864",
+      "mutatorName": "MethodExpression",
+      "location": {
+        "end": {
+          "column": 46,
+          "line": 796
+        },
+        "start": {
+          "column": 26,
+          "line": 795
+        }
+      },
+      "replacement": "parsedActions",
+      "original": "parsedActions\n    .filter((entry) => entry.name !== action)",
+      "classification": "equivalent_candidate",
+      "reason": "Before unrelatedNames is built, matchingActions has exactly one selected action; zero or multiple selections already return. Adding that selected name once to the uniqueness check cannot collide with any name whose name !== action, so duplicate-unrelated-name detection is unchanged.",
+      "specification": "Profile §§2,4–7 plus the exact original validators/control flow described in reason",
+      "source_evidence": "Exact original mutation range above; all production bytes pinned to verifierSourceSha256",
+      "fault_group": null,
+      "case": null,
+      "probe": {
+        "preparedSourceSha256": "2bff4f5db10ac15e5d0df3814d38115da116656e3fbf7bf3e0770b936d2efa20",
+        "build_exit_code": 0,
+        "test_exit_code": 0,
+        "signal": null,
+        "error": null,
+        "first_failure": null
+      },
+      "removal_recommendation": "Retain production guard/behavior. This task changes tests only; any equivalent candidate still requires independent gate-proof review."
+    },
+    {
+      "id": "866",
+      "mutatorName": "ConditionalExpression",
+      "location": {
+        "end": {
+          "column": 45,
+          "line": 796
+        },
+        "start": {
+          "column": 24,
+          "line": 796
+        }
+      },
+      "replacement": "true",
+      "original": "entry.name !== action",
+      "classification": "equivalent_candidate",
+      "reason": "The predicate replacement includes the one selected name along with unrelated names. The preceding zero/multiple-match checks guarantee exactly one selected name; it is different from every unrelated name, leaving the equality of Set.size and array length unchanged.",
+      "specification": "Profile §§2,4–7 plus the exact original validators/control flow described in reason",
+      "source_evidence": "Exact original mutation range above; all production bytes pinned to verifierSourceSha256",
+      "fault_group": null,
+      "case": null,
+      "probe": {
+        "preparedSourceSha256": "80cc3db0838c1c6457c8c8be31821b300d0cd46f44d5209c09161f58a06c1978",
+        "build_exit_code": 0,
+        "test_exit_code": 0,
+        "signal": null,
+        "error": null,
+        "first_failure": null
+      },
+      "removal_recommendation": "Retain production guard/behavior. This task changes tests only; any equivalent candidate still requires independent gate-proof review."
+    },
+    {
+      "id": "869",
+      "mutatorName": "ArrowFunction",
+      "location": {
+        "end": {
+          "column": 31,
+          "line": 797
+        },
+        "start": {
+          "column": 10,
+          "line": 797
+        }
+      },
+      "replacement": "() => undefined",
+      "original": "(entry) => entry.name",
+      "classification": "newly_detected_real_gap",
+      "reason": "Several distinct unrelated actions preserve the exact selected supported policy.",
+      "specification": "§2 exact selected action and unique action names",
+      "source_evidence": "verifier.ts:794–801",
+      "fault_group": "Distinct unrelated action names",
+      "case": "several different unrelated actions do not change the selected policy",
+      "probe": {
+        "preparedSourceSha256": "068b479216b5885c40da7e0f0886d71e697e03c3b069d7af4763de6ff22c9aaa",
+        "build_exit_code": 0,
+        "test_exit_code": 1,
+        "signal": null,
+        "error": null,
+        "first_failure": "AssertionError [ERR_ASSERTION]: several different unrelated actions do not change the selected policy"
+      },
+      "removal_recommendation": "Retain production guard/behavior. This task changes tests only; any equivalent candidate still requires independent gate-proof review."
+    },
+    {
+      "id": "936",
+      "mutatorName": "CallExpression",
+      "location": {
+        "end": {
+          "column": 41,
+          "line": 821
+        },
+        "start": {
+          "column": 3,
+          "line": 821
+        }
+      },
+      "replacement": ";",
+      "original": "validatePolicyConditions(constraints);",
+      "classification": "newly_detected_real_gap",
+      "reason": "Reject eleven total conditions even when the first deny already matches.",
+      "specification": "§4 at most ten conditions across all three lists",
+      "source_evidence": "verifier.ts:821; validatePolicyConditions:912–922",
+      "fault_group": "Global condition limit",
+      "case": "eleven conditions are unsupported",
+      "probe": {
+        "preparedSourceSha256": "ff5a992d31446bf784be13b367de4c7b8e55557228eb2c64c6a4c89244b44bfa",
+        "build_exit_code": 0,
+        "test_exit_code": 1,
+        "signal": null,
+        "error": null,
+        "first_failure": "AssertionError [ERR_ASSERTION]: eleven conditions are unsupported: 11/0/0"
+      },
+      "removal_recommendation": "Retain production guard/behavior. This task changes tests only; any equivalent candidate still requires independent gate-proof review."
+    },
+    {
+      "id": "937",
+      "mutatorName": "StringLiteral",
+      "location": {
+        "end": {
+          "column": 11,
+          "line": 823
+        },
+        "start": {
+          "column": 5,
+          "line": 823
+        }
+      },
+      "replacement": "\"\"",
+      "original": "\"deny\"",
+      "classification": "equivalent_candidate",
+      "reason": "Only the private PolicyConditionResult.kind value changes. The deny control-flow check uses reason === deny_condition_matched; verifyPolicyEvaluation projects only .policyEval. All private kind fields are unused outside construction.",
+      "specification": "Profile §§2,4–7 plus the exact original validators/control flow described in reason",
+      "source_evidence": "Exact original mutation range above; all production bytes pinned to verifierSourceSha256",
+      "fault_group": null,
+      "case": null,
+      "probe": {
+        "preparedSourceSha256": "573390663130dce885b06467e7cb83fd95d0d037591c0644cb94ae1cce3e9418",
+        "build_exit_code": 0,
+        "test_exit_code": 0,
+        "signal": null,
+        "error": null,
+        "first_failure": null
+      },
+      "removal_recommendation": "Retain production guard/behavior. This task changes tests only; any equivalent candidate still requires independent gate-proof review."
+    },
+    {
+      "id": "939",
+      "mutatorName": "StringLiteral",
+      "location": {
+        "end": {
+          "column": 14,
+          "line": 827
+        },
+        "start": {
+          "column": 5,
+          "line": 827
+        }
+      },
+      "replacement": "\"\"",
+      "original": "\"confirm\"",
+      "classification": "equivalent_candidate",
+      "reason": "missingKind changes from confirm to an empty string, but both are defined values. The missingKind === undefined branch is unchanged, so deny still remembers its first missing field and continues; only the unused private kind differs.",
+      "specification": "Profile §§2,4–7 plus the exact original validators/control flow described in reason",
+      "source_evidence": "Exact original mutation range above; all production bytes pinned to verifierSourceSha256",
+      "fault_group": null,
+      "case": null,
+      "probe": {
+        "preparedSourceSha256": "a0e5ab83d81f09d17a8da8f73c0b2ebc9fb69728d177d444b2b666e78a012de4",
+        "build_exit_code": 0,
+        "test_exit_code": 0,
+        "signal": null,
+        "error": null,
+        "first_failure": null
+      },
+      "removal_recommendation": "Retain production guard/behavior. This task changes tests only; any equivalent candidate still requires independent gate-proof review."
+    },
+    {
+      "id": "949",
+      "mutatorName": "StringLiteral",
+      "location": {
+        "end": {
+          "column": 15,
+          "line": 835
+        },
+        "start": {
+          "column": 5,
+          "line": 835
+        }
+      },
+      "replacement": "\"\"",
+      "original": "\"escalate\"",
+      "classification": "equivalent_candidate",
+      "reason": "The escalate result's private kind changes. evaluatePolicyConditions returns any non-null escalate result and verifyPolicyEvaluation extracts only policyEval; no path branches on the kind.",
+      "specification": "Profile §§2,4–7 plus the exact original validators/control flow described in reason",
+      "source_evidence": "Exact original mutation range above; all production bytes pinned to verifierSourceSha256",
+      "fault_group": null,
+      "case": null,
+      "probe": {
+        "preparedSourceSha256": "ae0413345578b10412de4abec08d3ca4277f3b7d3ab5ba356066231603a7fde8",
+        "build_exit_code": 0,
+        "test_exit_code": 0,
+        "signal": null,
+        "error": null,
+        "first_failure": null
+      },
+      "removal_recommendation": "Retain production guard/behavior. This task changes tests only; any equivalent candidate still requires independent gate-proof review."
+    },
+    {
+      "id": "950",
+      "mutatorName": "StringLiteral",
+      "location": {
+        "end": {
+          "column": 33,
+          "line": 836
+        },
+        "start": {
+          "column": 5,
+          "line": 836
+        }
+      },
+      "replacement": "\"\"",
+      "original": "\"escalate_condition_matched\"",
+      "classification": "equivalent_candidate",
+      "reason": "The escalate match reason changes, but no caller reads an escalate result's reason. The only reason comparison belongs to the separate denyResult. The public replay extracts only policyEval.",
+      "specification": "Profile §§2,4–7 plus the exact original validators/control flow described in reason",
+      "source_evidence": "Exact original mutation range above; all production bytes pinned to verifierSourceSha256",
+      "fault_group": null,
+      "case": null,
+      "probe": {
+        "preparedSourceSha256": "f04f4eff9e2b3f217406405c705213a1abc6e5aaa9e81cb0dfb7e3a7fe3a6e8e",
+        "build_exit_code": 0,
+        "test_exit_code": 0,
+        "signal": null,
+        "error": null,
+        "first_failure": null
+      },
+      "removal_recommendation": "Retain production guard/behavior. This task changes tests only; any equivalent candidate still requires independent gate-proof review."
+    },
+    {
+      "id": "954",
+      "mutatorName": "StringLiteral",
+      "location": {
+        "end": {
+          "column": 14,
+          "line": 843
+        },
+        "start": {
+          "column": 5,
+          "line": 843
+        }
+      },
+      "replacement": "\"\"",
+      "original": "\"confirm\"",
+      "classification": "equivalent_candidate",
+      "reason": "The confirm result's private kind changes; confirm handling only checks null and public replay reads only policyEval.",
+      "specification": "Profile §§2,4–7 plus the exact original validators/control flow described in reason",
+      "source_evidence": "Exact original mutation range above; all production bytes pinned to verifierSourceSha256",
+      "fault_group": null,
+      "case": null,
+      "probe": {
+        "preparedSourceSha256": "086d3eb6d97a32adeba5ee25b7cfa54badc6a77159f753e0a1d427000d5c0029",
+        "build_exit_code": 0,
+        "test_exit_code": 0,
+        "signal": null,
+        "error": null,
+        "first_failure": null
+      },
+      "removal_recommendation": "Retain production guard/behavior. This task changes tests only; any equivalent candidate still requires independent gate-proof review."
+    },
+    {
+      "id": "955",
+      "mutatorName": "StringLiteral",
+      "location": {
+        "end": {
+          "column": 32,
+          "line": 844
+        },
+        "start": {
+          "column": 5,
+          "line": 844
+        }
+      },
+      "replacement": "\"\"",
+      "original": "\"confirm_condition_matched\"",
+      "classification": "equivalent_candidate",
+      "reason": "The confirm result's private match reason changes. No branch reads that reason after the confirm list returns; only policyEval reaches the public result.",
+      "specification": "Profile §§2,4–7 plus the exact original validators/control flow described in reason",
+      "source_evidence": "Exact original mutation range above; all production bytes pinned to verifierSourceSha256",
+      "fault_group": null,
+      "case": null,
+      "probe": {
+        "preparedSourceSha256": "d1b2bb2021539b66341086b659e86ea854cd650f62ad5f68f92c18de364a5573",
+        "build_exit_code": 0,
+        "test_exit_code": 0,
+        "signal": null,
+        "error": null,
+        "first_failure": null
+      },
+      "removal_recommendation": "Retain production guard/behavior. This task changes tests only; any equivalent candidate still requires independent gate-proof review."
+    },
+    {
+      "id": "962",
+      "mutatorName": "ConditionalExpression",
+      "location": {
+        "end": {
+          "column": 39,
+          "line": 851
+        },
+        "start": {
+          "column": 7,
+          "line": 851
+        }
+      },
+      "replacement": "true",
+      "original": "hasPolicyConditions(constraints)",
+      "classification": "newly_detected_real_gap",
+      "reason": "Return mismatch/policy_evaluation_mismatch with calculated_evaluation null for an authenticated recorded object.",
+      "specification": "§5.6 no evaluator result; §7 mismatch comparison",
+      "source_evidence": "verifier.ts:734,851–859,1018–1021,1061",
+      "fault_group": "Recorded evaluation without any conditions",
+      "case": "no conditions produce no calculated object",
+      "probe": {
+        "preparedSourceSha256": "f4cd39f6b7356023c1c0497b3220158e0621b7ef0c8757916deae79bbb9d8664",
+        "build_exit_code": 0,
+        "test_exit_code": 1,
+        "signal": null,
+        "error": null,
+        "first_failure": "AssertionError [ERR_ASSERTION]: no conditions produce no calculated object: {}"
+      },
+      "removal_recommendation": "Retain production guard/behavior. This task changes tests only; any equivalent candidate still requires independent gate-proof review."
+    },
+    {
+      "id": "966",
+      "mutatorName": "StringLiteral",
+      "location": {
+        "end": {
+          "column": 19,
+          "line": 853
+        },
+        "start": {
+          "column": 13,
+          "line": 853
+        }
+      },
+      "replacement": "\"\"",
+      "original": "\"none\"",
+      "classification": "equivalent_candidate",
+      "reason": "The no-match private kind changes. This object is returned directly from evaluatePolicyConditions and public replay reads only .policyEval; no private caller consumes this kind.",
+      "specification": "Profile §§2,4–7 plus the exact original validators/control flow described in reason",
+      "source_evidence": "Exact original mutation range above; all production bytes pinned to verifierSourceSha256",
+      "fault_group": null,
+      "case": null,
+      "probe": {
+        "preparedSourceSha256": "7c944ef102a4906575432e0a69c3c89a68e884e57209ce337ebd55ce3265bd10",
+        "build_exit_code": 0,
+        "test_exit_code": 0,
+        "signal": null,
+        "error": null,
+        "first_failure": null
+      },
+      "removal_recommendation": "Retain production guard/behavior. This task changes tests only; any equivalent candidate still requires independent gate-proof review."
+    },
+    {
+      "id": "967",
+      "mutatorName": "StringLiteral",
+      "location": {
+        "end": {
+          "column": 46,
+          "line": 854
+        },
+        "start": {
+          "column": 15,
+          "line": 854
+        }
+      },
+      "replacement": "\"\"",
+      "original": "\"policy_conditions_not_matched\"",
+      "classification": "equivalent_candidate",
+      "reason": "The no-match private reason changes. This bottom-of-evaluator result is never used as denyResult and public replay reads only .policyEval, so the only reason-sensitive deny branch is unaffected.",
+      "specification": "Profile §§2,4–7 plus the exact original validators/control flow described in reason",
+      "source_evidence": "Exact original mutation range above; all production bytes pinned to verifierSourceSha256",
+      "fault_group": null,
+      "case": null,
+      "probe": {
+        "preparedSourceSha256": "2c7084b43960e92df0508a10a49732cdc0bb447bf5312d1a51bc362040db5a86",
+        "build_exit_code": 0,
+        "test_exit_code": 0,
+        "signal": null,
+        "error": null,
+        "first_failure": null
+      },
+      "removal_recommendation": "Retain production guard/behavior. This task changes tests only; any equivalent candidate still requires independent gate-proof review."
+    },
+    {
+      "id": "990",
+      "mutatorName": "LogicalOperator",
+      "location": {
+        "end": {
+          "column": 34,
+          "line": 899
+        },
+        "start": {
+          "column": 15,
+          "line": 899
+        }
+      },
+      "replacement": "missingKind && kind",
+      "original": "missingKind ?? kind",
+      "classification": "equivalent_candidate",
+      "reason": "The replacement changes only the private result.kind expression. Missing-list early return/deferred fallback decisions still use missingKind === undefined and reason is unchanged; callers discard kind and read policyEval.",
+      "specification": "Profile §§2,4–7 plus the exact original validators/control flow described in reason",
+      "source_evidence": "Exact original mutation range above; all production bytes pinned to verifierSourceSha256",
+      "fault_group": null,
+      "case": null,
+      "probe": {
+        "preparedSourceSha256": "85ddd332f2669ebb19648ad466d7fa564c59684bb6a14e865a32f5c7f326b12d",
+        "build_exit_code": 0,
+        "test_exit_code": 0,
+        "signal": null,
+        "error": null,
+        "first_failure": null
+      },
+      "removal_recommendation": "Retain production guard/behavior. This task changes tests only; any equivalent candidate still requires independent gate-proof review."
+    },
+    {
+      "id": "991",
+      "mutatorName": "StringLiteral",
+      "location": {
+        "end": {
+          "column": 40,
+          "line": 900
+        },
+        "start": {
+          "column": 17,
+          "line": 900
+        }
+      },
+      "replacement": "\"\"",
+      "original": "\"context_field_missing\"",
+      "classification": "equivalent_candidate",
+      "reason": "Changing context_field_missing to an empty private reason preserves its inequality to deny_condition_matched, which is the only reason test. Escalate/confirm result reasons are not inspected, and the public result uses only policyEval.",
+      "specification": "Profile §§2,4–7 plus the exact original validators/control flow described in reason",
+      "source_evidence": "Exact original mutation range above; all production bytes pinned to verifierSourceSha256",
+      "fault_group": null,
+      "case": null,
+      "probe": {
+        "preparedSourceSha256": "fc5c98da1595595a992f30e1a98e941dbac4dbef05a30360368c130a87531483",
+        "build_exit_code": 0,
+        "test_exit_code": 0,
+        "signal": null,
+        "error": null,
+        "first_failure": null
+      },
+      "removal_recommendation": "Retain production guard/behavior. This task changes tests only; any equivalent candidate still requires independent gate-proof review."
+    },
+    {
+      "id": "993",
+      "mutatorName": "ConditionalExpression",
+      "location": {
+        "end": {
+          "column": 36,
+          "line": 903
+        },
+        "start": {
+          "column": 11,
+          "line": 903
+        }
+      },
+      "replacement": "false",
+      "original": "missingKind === undefined",
+      "classification": "newly_detected_real_gap",
+      "reason": "The first missing field wins over a later matching escalate/confirm condition.",
+      "specification": "§5.2–5.3 first absent/uncomparable escalate or confirm field returns immediately",
+      "source_evidence": "verifier.ts:894–907",
+      "fault_group": "First missing later-list condition",
+      "case": "returns its first missing field before a later match",
+      "probe": {
+        "preparedSourceSha256": "d5e5b8aa420706bee073f0c402582b56f4031943fd26307284f74592135be7e5",
+        "build_exit_code": 0,
+        "test_exit_code": 1,
+        "signal": null,
+        "error": null,
+        "first_failure": "AssertionError [ERR_ASSERTION]: escalate_when returns its first missing field before a later match"
+      },
+      "removal_recommendation": "Retain production guard/behavior. This task changes tests only; any equivalent candidate still requires independent gate-proof review."
+    },
+    {
+      "id": "999",
+      "mutatorName": "BlockStatement",
+      "location": {
+        "end": {
+          "column": 2,
+          "line": 922
+        },
+        "start": {
+          "column": 79,
+          "line": 912
+        }
+      },
+      "replacement": "{}",
+      "original": "{\n  let total = 0;\n  for (const key of POLICY_CONDITION_KEYS) {\n    const value = constraints[key];\n    if (value === undefined || value === null) continue;\n    if (!Array.isArray(value)) throw new UnsupportedPolicyError();\n    total += value.length;\n    if (total > MAX_POLICY_CONDITIONS) throw new UnsupportedPolicyError();\n    for (const condition of value) normalizePolicyCondition(condition);\n  }\n}",
+      "classification": "newly_detected_real_gap",
+      "reason": "Reject eleven total conditions even when the first deny already matches.",
+      "specification": "§4 at most ten conditions across all three lists",
+      "source_evidence": "verifier.ts:821; validatePolicyConditions:912–922",
+      "fault_group": "Global condition limit",
+      "case": "eleven conditions are unsupported",
+      "probe": {
+        "preparedSourceSha256": "a7fd0c950348be4e51438b5c7adc8b6165cb19497dcc9123a63d4356cad78b02",
+        "build_exit_code": 0,
+        "test_exit_code": 1,
+        "signal": null,
+        "error": null,
+        "first_failure": "AssertionError [ERR_ASSERTION]: eleven conditions are unsupported: 11/0/0"
+      },
+      "removal_recommendation": "Retain production guard/behavior. This task changes tests only; any equivalent candidate still requires independent gate-proof review."
+    },
+    {
+      "id": "1000",
+      "mutatorName": "BlockStatement",
+      "location": {
+        "end": {
+          "column": 4,
+          "line": 921
+        },
+        "start": {
+          "column": 44,
+          "line": 914
+        }
+      },
+      "replacement": "{}",
+      "original": "{\n    const value = constraints[key];\n    if (value === undefined || value === null) continue;\n    if (!Array.isArray(value)) throw new UnsupportedPolicyError();\n    total += value.length;\n    if (total > MAX_POLICY_CONDITIONS) throw new UnsupportedPolicyError();\n    for (const condition of value) normalizePolicyCondition(condition);\n  }",
+      "classification": "newly_detected_real_gap",
+      "reason": "Reject eleven total conditions even when the first deny already matches.",
+      "specification": "§4 at most ten conditions across all three lists",
+      "source_evidence": "verifier.ts:821; validatePolicyConditions:912–922",
+      "fault_group": "Global condition limit",
+      "case": "eleven conditions are unsupported",
+      "probe": {
+        "preparedSourceSha256": "9a1efb963a98454aa2fc1c664db1c5fbc2a999a1e0e122c92a9f25aa253f79cc",
+        "build_exit_code": 0,
+        "test_exit_code": 1,
+        "signal": null,
+        "error": null,
+        "first_failure": "AssertionError [ERR_ASSERTION]: eleven conditions are unsupported: 11/0/0"
+      },
+      "removal_recommendation": "Retain production guard/behavior. This task changes tests only; any equivalent candidate still requires independent gate-proof review."
+    },
+    {
+      "id": "1001",
+      "mutatorName": "ConditionalExpression",
+      "location": {
+        "end": {
+          "column": 46,
+          "line": 916
+        },
+        "start": {
+          "column": 9,
+          "line": 916
+        }
+      },
+      "replacement": "true",
+      "original": "value === undefined || value === null",
+      "classification": "newly_detected_real_gap",
+      "reason": "Reject eleven total conditions even when the first deny already matches.",
+      "specification": "§4 at most ten conditions across all three lists",
+      "source_evidence": "verifier.ts:821; validatePolicyConditions:912–922",
+      "fault_group": "Global condition limit",
+      "case": "eleven conditions are unsupported",
+      "probe": {
+        "preparedSourceSha256": "0b98fba702726f11a35ddf76d87d534cd45d4732e4ebf3db74cae2f02f1fbc40",
+        "build_exit_code": 0,
+        "test_exit_code": 1,
+        "signal": null,
+        "error": null,
+        "first_failure": "AssertionError [ERR_ASSERTION]: eleven conditions are unsupported: 11/0/0"
+      },
+      "removal_recommendation": "Retain production guard/behavior. This task changes tests only; any equivalent candidate still requires independent gate-proof review."
+    },
+    {
+      "id": "1006",
+      "mutatorName": "ConditionalExpression",
+      "location": {
+        "end": {
+          "column": 46,
+          "line": 916
+        },
+        "start": {
+          "column": 32,
+          "line": 916
+        }
+      },
+      "replacement": "false",
+      "original": "value === null",
+      "classification": "newly_detected_real_gap",
+      "reason": "A null list beside valid conditions remains replayable.",
+      "specification": "§4 a present member is null or an array",
+      "source_evidence": "verifier.ts:916",
+      "fault_group": "Null condition-list boundary",
+      "case": "may be null beside valid conditions",
+      "probe": {
+        "preparedSourceSha256": "cf7fa19c37ef9c747c0beb231bdfa12c1cc346a2bc58abf75ba9eae10f0509ce",
+        "build_exit_code": 0,
+        "test_exit_code": 1,
+        "signal": null,
+        "error": null,
+        "first_failure": "AssertionError [ERR_ASSERTION]: deny_when may be null beside valid conditions"
+      },
+      "removal_recommendation": "Retain production guard/behavior. This task changes tests only; any equivalent candidate still requires independent gate-proof review."
+    },
+    {
+      "id": "1007",
+      "mutatorName": "EqualityOperator",
+      "location": {
+        "end": {
+          "column": 46,
+          "line": 916
+        },
+        "start": {
+          "column": 32,
+          "line": 916
+        }
+      },
+      "replacement": "value !== null",
+      "original": "value === null",
+      "classification": "newly_detected_real_gap",
+      "reason": "Reject eleven total conditions even when the first deny already matches.",
+      "specification": "§4 at most ten conditions across all three lists",
+      "source_evidence": "verifier.ts:821; validatePolicyConditions:912–922",
+      "fault_group": "Global condition limit",
+      "case": "eleven conditions are unsupported",
+      "probe": {
+        "preparedSourceSha256": "00738b2ecfeca1af4c0a223d1115cb97e40a077403697aacf98b7b73d184f0a2",
+        "build_exit_code": 0,
+        "test_exit_code": 1,
+        "signal": null,
+        "error": null,
+        "first_failure": "AssertionError [ERR_ASSERTION]: eleven conditions are unsupported: 11/0/0"
+      },
+      "removal_recommendation": "Retain production guard/behavior. This task changes tests only; any equivalent candidate still requires independent gate-proof review."
+    },
+    {
+      "id": "1010",
+      "mutatorName": "ConditionalExpression",
+      "location": {
+        "end": {
+          "column": 30,
+          "line": 917
+        },
+        "start": {
+          "column": 9,
+          "line": 917
+        }
+      },
+      "replacement": "false",
+      "original": "!Array.isArray(value)",
+      "classification": "newly_detected_real_gap",
+      "reason": "Return not_checked/unsupported_policy rather than a thrown iteration error or a calculated result.",
+      "specification": "§4 a present list must be null or an array",
+      "source_evidence": "verifier.ts:917",
+      "fault_group": "Malformed condition-list type",
+      "case": "must be null or an array",
+      "probe": {
+        "preparedSourceSha256": "4e66119e00dda597b0001d56461132863fbde273a33e2e984e3048a1e3a5b0bc",
+        "build_exit_code": 0,
+        "test_exit_code": 1,
+        "signal": null,
+        "error": null,
+        "first_failure": "TypeError: value is not iterable"
+      },
+      "removal_recommendation": "Retain production guard/behavior. This task changes tests only; any equivalent candidate still requires independent gate-proof review."
+    },
+    {
+      "id": "1011",
+      "mutatorName": "CallExpression",
+      "location": {
+        "end": {
+          "column": 67,
+          "line": 917
+        },
+        "start": {
+          "column": 32,
+          "line": 917
+        }
+      },
+      "replacement": ";",
+      "original": "throw new UnsupportedPolicyError();",
+      "classification": "newly_detected_real_gap",
+      "reason": "Return not_checked/unsupported_policy rather than a thrown iteration error or a calculated result.",
+      "specification": "§4 a present list must be null or an array",
+      "source_evidence": "verifier.ts:917",
+      "fault_group": "Malformed condition-list type",
+      "case": "must be null or an array",
+      "probe": {
+        "preparedSourceSha256": "5b4b7c90028dfe4ee723a12422baff32f688349954ca5426a9fe96df349facd2",
+        "build_exit_code": 0,
+        "test_exit_code": 1,
+        "signal": null,
+        "error": null,
+        "first_failure": "TypeError: value is not iterable"
+      },
+      "removal_recommendation": "Retain production guard/behavior. This task changes tests only; any equivalent candidate still requires independent gate-proof review."
+    },
+    {
+      "id": "1012",
+      "mutatorName": "AssignmentOperator",
+      "location": {
+        "end": {
+          "column": 26,
+          "line": 918
+        },
+        "start": {
+          "column": 5,
+          "line": 918
+        }
+      },
+      "replacement": "total -= value.length",
+      "original": "total += value.length",
+      "classification": "newly_detected_real_gap",
+      "reason": "Reject eleven total conditions even when the first deny already matches.",
+      "specification": "§4 at most ten conditions across all three lists",
+      "source_evidence": "verifier.ts:821; validatePolicyConditions:912–922",
+      "fault_group": "Global condition limit",
+      "case": "eleven conditions are unsupported",
+      "probe": {
+        "preparedSourceSha256": "a50ba6116714e8128d222d55a823077c812e0be8f9cc89a79adf8bbd82d42c3c",
+        "build_exit_code": 0,
+        "test_exit_code": 1,
+        "signal": null,
+        "error": null,
+        "first_failure": "AssertionError [ERR_ASSERTION]: eleven conditions are unsupported: 11/0/0"
+      },
+      "removal_recommendation": "Retain production guard/behavior. This task changes tests only; any equivalent candidate still requires independent gate-proof review."
+    },
+    {
+      "id": "1014",
+      "mutatorName": "ConditionalExpression",
+      "location": {
+        "end": {
+          "column": 38,
+          "line": 919
+        },
+        "start": {
+          "column": 9,
+          "line": 919
+        }
+      },
+      "replacement": "false",
+      "original": "total > MAX_POLICY_CONDITIONS",
+      "classification": "newly_detected_real_gap",
+      "reason": "Reject eleven total conditions even when the first deny already matches.",
+      "specification": "§4 at most ten conditions across all three lists",
+      "source_evidence": "verifier.ts:821; validatePolicyConditions:912–922",
+      "fault_group": "Global condition limit",
+      "case": "eleven conditions are unsupported",
+      "probe": {
+        "preparedSourceSha256": "2df002211dea2a3fe3e8d9c29990e43658ac345fd49ccbadf435cf37bfb2cff0",
+        "build_exit_code": 0,
+        "test_exit_code": 1,
+        "signal": null,
+        "error": null,
+        "first_failure": "AssertionError [ERR_ASSERTION]: eleven conditions are unsupported: 11/0/0"
+      },
+      "removal_recommendation": "Retain production guard/behavior. This task changes tests only; any equivalent candidate still requires independent gate-proof review."
+    },
+    {
+      "id": "1015",
+      "mutatorName": "EqualityOperator",
+      "location": {
+        "end": {
+          "column": 38,
+          "line": 919
+        },
+        "start": {
+          "column": 9,
+          "line": 919
+        }
+      },
+      "replacement": "total >= MAX_POLICY_CONDITIONS",
+      "original": "total > MAX_POLICY_CONDITIONS",
+      "classification": "newly_detected_real_gap",
+      "reason": "Exactly ten conditions replay, including splits across several lists.",
+      "specification": "§4 at most ten includes ten",
+      "source_evidence": "verifier.ts:919",
+      "fault_group": "Valid ten-condition boundary",
+      "case": "exactly ten conditions are supported",
+      "probe": {
+        "preparedSourceSha256": "f7920f5173707c1b98ecc2b631ee075049454fa1a6c14cf19dc9b87d13aa0d24",
+        "build_exit_code": 0,
+        "test_exit_code": 1,
+        "signal": null,
+        "error": null,
+        "first_failure": "AssertionError [ERR_ASSERTION]: exactly ten conditions are supported: 10/0/0"
+      },
+      "removal_recommendation": "Retain production guard/behavior. This task changes tests only; any equivalent candidate still requires independent gate-proof review."
+    },
+    {
+      "id": "1017",
+      "mutatorName": "CallExpression",
+      "location": {
+        "end": {
+          "column": 75,
+          "line": 919
+        },
+        "start": {
+          "column": 40,
+          "line": 919
+        }
+      },
+      "replacement": ";",
+      "original": "throw new UnsupportedPolicyError();",
+      "classification": "newly_detected_real_gap",
+      "reason": "Reject eleven total conditions even when the first deny already matches.",
+      "specification": "§4 at most ten conditions across all three lists",
+      "source_evidence": "verifier.ts:821; validatePolicyConditions:912–922",
+      "fault_group": "Global condition limit",
+      "case": "eleven conditions are unsupported",
+      "probe": {
+        "preparedSourceSha256": "82029db73f44f93d55e9fb816eaab635cfdd59cf97c82c7b234a2084de5a89ab",
+        "build_exit_code": 0,
+        "test_exit_code": 1,
+        "signal": null,
+        "error": null,
+        "first_failure": "AssertionError [ERR_ASSERTION]: eleven conditions are unsupported: 11/0/0"
+      },
+      "removal_recommendation": "Retain production guard/behavior. This task changes tests only; any equivalent candidate still requires independent gate-proof review."
+    },
+    {
+      "id": "1018",
+      "mutatorName": "CallExpression",
+      "location": {
+        "end": {
+          "column": 72,
+          "line": 920
+        },
+        "start": {
+          "column": 36,
+          "line": 920
+        }
+      },
+      "replacement": ";",
+      "original": "normalizePolicyCondition(condition);",
+      "classification": "newly_detected_real_gap",
+      "reason": "An earlier match cannot hide a later malformed condition or mixed scalar/object membership list.",
+      "specification": "§4 malformed values are unsupported; §5 precedence applies only to supported policies",
+      "source_evidence": "verifier.ts:920,941–949",
+      "fault_group": "Complete prevalidation",
+      "case": "an early deny_when match cannot hide its later malformed condition",
+      "probe": {
+        "preparedSourceSha256": "1b05d290a5acd7544dc6e9959143e8292cf7e4d6bb2db0b718cd87aa68dd01f6",
+        "build_exit_code": 0,
+        "test_exit_code": 1,
+        "signal": null,
+        "error": null,
+        "first_failure": "AssertionError [ERR_ASSERTION]: an early deny_when match cannot hide its later malformed condition"
+      },
+      "removal_recommendation": "Retain production guard/behavior. This task changes tests only; any equivalent candidate still requires independent gate-proof review."
+    },
+    {
+      "id": "1039",
+      "mutatorName": "LogicalOperator",
+      "location": {
+        "end": {
+          "column": 33,
+          "line": 932
+        },
+        "start": {
+          "column": 5,
+          "line": 931
+        }
+      },
+      "replacement": "keys.length !== 2 && operatorKeys.length !== 1",
+      "original": "keys.length !== 2\n    || operatorKeys.length !== 1",
+      "classification": "newly_detected_real_gap",
+      "reason": "Missing own field, two operators or an unknown member remain unsupported even with an inherited field string.",
+      "specification": "§4 object with exactly field plus one supported operator",
+      "source_evidence": "verifier.ts:924–938",
+      "fault_group": "Own exact condition members",
+      "case": "an inherited field cannot repair condition members",
+      "probe": {
+        "preparedSourceSha256": "94b06b6b4bcc31666513539d9bf22b95b983061beba619abaa44b9347370cf76",
+        "build_exit_code": 0,
+        "test_exit_code": 1,
+        "signal": null,
+        "error": null,
+        "first_failure": "AssertionError [ERR_ASSERTION]: an inherited field cannot repair condition members: {\"eq\":\"blocked\"}"
+      },
+      "removal_recommendation": "Retain production guard/behavior. This task changes tests only; any equivalent candidate still requires independent gate-proof review."
+    },
+    {
+      "id": "1040",
+      "mutatorName": "ConditionalExpression",
+      "location": {
+        "end": {
+          "column": 22,
+          "line": 931
+        },
+        "start": {
+          "column": 5,
+          "line": 931
+        }
+      },
+      "replacement": "false",
+      "original": "keys.length !== 2",
+      "classification": "newly_detected_real_gap",
+      "reason": "Missing own field, two operators or an unknown member remain unsupported even with an inherited field string.",
+      "specification": "§4 object with exactly field plus one supported operator",
+      "source_evidence": "verifier.ts:924–938",
+      "fault_group": "Own exact condition members",
+      "case": "an inherited field cannot repair condition members",
+      "probe": {
+        "preparedSourceSha256": "a6ee5b16d4af3ce2c169800f5151cb61f8f1b1b63e6bd9b0ece7edf2d5d3b51a",
+        "build_exit_code": 0,
+        "test_exit_code": 1,
+        "signal": null,
+        "error": null,
+        "first_failure": "AssertionError [ERR_ASSERTION]: an inherited field cannot repair condition members: {\"eq\":\"blocked\"}"
+      },
+      "removal_recommendation": "Retain production guard/behavior. This task changes tests only; any equivalent candidate still requires independent gate-proof review."
+    },
+    {
+      "id": "1042",
+      "mutatorName": "ConditionalExpression",
+      "location": {
+        "end": {
+          "column": 33,
+          "line": 932
+        },
+        "start": {
+          "column": 8,
+          "line": 932
+        }
+      },
+      "replacement": "false",
+      "original": "operatorKeys.length !== 1",
+      "classification": "newly_detected_real_gap",
+      "reason": "Missing own field, two operators or an unknown member remain unsupported even with an inherited field string.",
+      "specification": "§4 object with exactly field plus one supported operator",
+      "source_evidence": "verifier.ts:924–938",
+      "fault_group": "Own exact condition members",
+      "case": "an inherited field cannot repair condition members",
+      "probe": {
+        "preparedSourceSha256": "fe5d79eda74dabe7563a1ed3470252cd8dcebd51a21a589b9ce89d8953923b60",
+        "build_exit_code": 0,
+        "test_exit_code": 1,
+        "signal": null,
+        "error": null,
+        "first_failure": "AssertionError [ERR_ASSERTION]: an inherited field cannot repair condition members: {\"eq\":\"blocked\",\"gte\":1}"
+      },
+      "removal_recommendation": "Retain production guard/behavior. This task changes tests only; any equivalent candidate still requires independent gate-proof review."
+    },
+    {
+      "id": "1044",
+      "mutatorName": "MethodExpression",
+      "location": {
+        "end": {
+          "column": 73,
+          "line": 933
+        },
+        "start": {
+          "column": 8,
+          "line": 933
+        }
+      },
+      "replacement": "keys.every(key => key !== \"field\" && !POLICY_OPERATORS.has(key))",
+      "original": "keys.some((key) => key !== \"field\" && !POLICY_OPERATORS.has(key))",
+      "classification": "newly_detected_real_gap",
+      "reason": "Missing own field, two operators or an unknown member remain unsupported even with an inherited field string.",
+      "specification": "§4 object with exactly field plus one supported operator",
+      "source_evidence": "verifier.ts:924–938",
+      "fault_group": "Own exact condition members",
+      "case": "an inherited field cannot repair condition members",
+      "probe": {
+        "preparedSourceSha256": "c0b1ae7d957202e660b54bdf75190d4f51675d21d0b5a8868a74f70af561cccd",
+        "build_exit_code": 0,
+        "test_exit_code": 1,
+        "signal": null,
+        "error": null,
+        "first_failure": "AssertionError [ERR_ASSERTION]: an inherited field cannot repair condition members: {\"eq\":\"blocked\",\"unexpected\":1}"
+      },
+      "removal_recommendation": "Retain production guard/behavior. This task changes tests only; any equivalent candidate still requires independent gate-proof review."
+    },
+    {
+      "id": "1045",
+      "mutatorName": "ArrowFunction",
+      "location": {
+        "end": {
+          "column": 72,
+          "line": 933
+        },
+        "start": {
+          "column": 18,
+          "line": 933
+        }
+      },
+      "replacement": "() => undefined",
+      "original": "(key) => key !== \"field\" && !POLICY_OPERATORS.has(key)",
+      "classification": "newly_detected_real_gap",
+      "reason": "Missing own field, two operators or an unknown member remain unsupported even with an inherited field string.",
+      "specification": "§4 object with exactly field plus one supported operator",
+      "source_evidence": "verifier.ts:924–938",
+      "fault_group": "Own exact condition members",
+      "case": "an inherited field cannot repair condition members",
+      "probe": {
+        "preparedSourceSha256": "e72a517a650995fa7980c68f80830cccac5c6728b771f42aa77b818982dabf50",
+        "build_exit_code": 0,
+        "test_exit_code": 1,
+        "signal": null,
+        "error": null,
+        "first_failure": "AssertionError [ERR_ASSERTION]: an inherited field cannot repair condition members: {\"eq\":\"blocked\",\"unexpected\":1}"
+      },
+      "removal_recommendation": "Retain production guard/behavior. This task changes tests only; any equivalent candidate still requires independent gate-proof review."
+    },
+    {
+      "id": "1047",
+      "mutatorName": "ConditionalExpression",
+      "location": {
+        "end": {
+          "column": 72,
+          "line": 933
+        },
+        "start": {
+          "column": 27,
+          "line": 933
+        }
+      },
+      "replacement": "false",
+      "original": "key !== \"field\" && !POLICY_OPERATORS.has(key)",
+      "classification": "newly_detected_real_gap",
+      "reason": "Missing own field, two operators or an unknown member remain unsupported even with an inherited field string.",
+      "specification": "§4 object with exactly field plus one supported operator",
+      "source_evidence": "verifier.ts:924–938",
+      "fault_group": "Own exact condition members",
+      "case": "an inherited field cannot repair condition members",
+      "probe": {
+        "preparedSourceSha256": "3f69905b8066fd83195255541eb454fd90d8b53873ac6fb2b99b743418f8f67a",
+        "build_exit_code": 0,
+        "test_exit_code": 1,
+        "signal": null,
+        "error": null,
+        "first_failure": "AssertionError [ERR_ASSERTION]: an inherited field cannot repair condition members: {\"eq\":\"blocked\",\"unexpected\":1}"
+      },
+      "removal_recommendation": "Retain production guard/behavior. This task changes tests only; any equivalent candidate still requires independent gate-proof review."
+    },
+    {
+      "id": "1086",
+      "mutatorName": "MethodExpression",
+      "location": {
+        "end": {
+          "column": 62,
+          "line": 945
+        },
+        "start": {
+          "column": 10,
+          "line": 945
+        }
+      },
+      "replacement": "expected.every(item => !isStrictPolicyScalar(item))",
+      "original": "expected.some((item) => !isStrictPolicyScalar(item))",
+      "classification": "newly_detected_real_gap",
+      "reason": "An earlier match cannot hide a later malformed condition or mixed scalar/object membership list.",
+      "specification": "§4 malformed values are unsupported; §5 precedence applies only to supported policies",
+      "source_evidence": "verifier.ts:920,941–949",
+      "fault_group": "Complete prevalidation",
+      "case": "an early deny_when match cannot hide its later malformed condition",
+      "probe": {
+        "preparedSourceSha256": "71366253f3b181e10325668b1606d0ead0191ad979c86730ae4b64cc03b0a872",
+        "build_exit_code": 0,
+        "test_exit_code": 1,
+        "signal": null,
+        "error": null,
+        "first_failure": "AssertionError [ERR_ASSERTION]: an early deny_when match cannot hide its later malformed condition"
+      },
+      "removal_recommendation": "Retain production guard/behavior. This task changes tests only; any equivalent candidate still requires independent gate-proof review."
+    },
+    {
+      "id": "1142",
+      "mutatorName": "ConditionalExpression",
+      "location": {
+        "end": {
+          "column": 75,
+          "line": 963
+        },
+        "start": {
+          "column": 9,
+          "line": 963
+        }
+      },
+      "replacement": "false",
+      "original": "!isStrictPolicyInteger(actual) || !isStrictPolicyInteger(expected)",
+      "classification": "newly_detected_real_gap",
+      "reason": "lt of string 10 against integer 10 is uncomparable, not a no-match calculation.",
+      "specification": "§4.1–4.2 no string/boolean/array coercion",
+      "source_evidence": "verifier.ts:963",
+      "fault_group": "Numeric comparison type boundary",
+      "case": "lt: \"10\" against 10",
+      "probe": {
+        "preparedSourceSha256": "c6708acbe5c3b4b832c63becd7e1437c3f02243257f36b4bbdc2880d9b3d060e",
+        "build_exit_code": 0,
+        "test_exit_code": 1,
+        "signal": null,
+        "error": null,
+        "first_failure": "AssertionError [ERR_ASSERTION]: lt: \"10\" against 10"
+      },
+      "removal_recommendation": "Retain production guard/behavior. This task changes tests only; any equivalent candidate still requires independent gate-proof review."
+    },
+    {
+      "id": "1143",
+      "mutatorName": "LogicalOperator",
+      "location": {
+        "end": {
+          "column": 75,
+          "line": 963
+        },
+        "start": {
+          "column": 9,
+          "line": 963
+        }
+      },
+      "replacement": "!isStrictPolicyInteger(actual) && !isStrictPolicyInteger(expected)",
+      "original": "!isStrictPolicyInteger(actual) || !isStrictPolicyInteger(expected)",
+      "classification": "newly_detected_real_gap",
+      "reason": "lt of string 10 against integer 10 is uncomparable, not a no-match calculation.",
+      "specification": "§4.1–4.2 no string/boolean/array coercion",
+      "source_evidence": "verifier.ts:963",
+      "fault_group": "Numeric comparison type boundary",
+      "case": "lt: \"10\" against 10",
+      "probe": {
+        "preparedSourceSha256": "d54d96569804c3170c026367349df9986427fda7018a3539776589a744c9cc97",
+        "build_exit_code": 0,
+        "test_exit_code": 1,
+        "signal": null,
+        "error": null,
+        "first_failure": "AssertionError [ERR_ASSERTION]: lt: \"10\" against 10"
+      },
+      "removal_recommendation": "Retain production guard/behavior. This task changes tests only; any equivalent candidate still requires independent gate-proof review."
+    },
+    {
+      "id": "1186",
+      "mutatorName": "ConditionalExpression",
+      "location": {
+        "end": {
+          "column": 33,
+          "line": 970
+        },
+        "start": {
+          "column": 9,
+          "line": 970
+        }
+      },
+      "replacement": "false",
+      "original": "!Array.isArray(expected)",
+      "classification": "equivalent_candidate",
+      "reason": "normalizePolicyCondition has already required Array.isArray(expected) for in/nin during complete prevalidation and again when reading each condition. Expected is the owned signed array and cannot change during synchronous calculation, so this second array check always passes.",
+      "specification": "Profile §§2,4–7 plus the exact original validators/control flow described in reason",
+      "source_evidence": "Exact original mutation range above; all production bytes pinned to verifierSourceSha256",
+      "fault_group": null,
+      "case": null,
+      "probe": {
+        "preparedSourceSha256": "906668744d8745294de39c61f7f9c295a606726270e308a17c87592309c6bda4",
+        "build_exit_code": 0,
+        "test_exit_code": 0,
+        "signal": null,
+        "error": null,
+        "first_failure": null
+      },
+      "removal_recommendation": "Retain production guard/behavior. This task changes tests only; any equivalent candidate still requires independent gate-proof review."
+    },
+    {
+      "id": "1192",
+      "mutatorName": "MethodExpression",
+      "location": {
+        "end": {
+          "column": 64,
+          "line": 973
+        },
+        "start": {
+          "column": 22,
+          "line": 973
+        }
+      },
+      "replacement": "comparable.every(item => item === actual)",
+      "original": "comparable.some((item) => item === actual)",
+      "classification": "newly_detected_real_gap",
+      "reason": "True belongs to [false,true] even though not every comparable item equals true.",
+      "specification": "§4.2 in/nin use typed membership, not all-equal membership",
+      "source_evidence": "verifier.ts:971–974",
+      "fault_group": "Membership any comparable item",
+      "case": "in: true against [false,true]",
+      "probe": {
+        "preparedSourceSha256": "5f21c94fb21a6a0d5c17e722aad39423a1f6096ab7efbb8880da1511e95e333b",
+        "build_exit_code": 0,
+        "test_exit_code": 1,
+        "signal": null,
+        "error": null,
+        "first_failure": "AssertionError [ERR_ASSERTION]: in: true against [false,true]"
+      },
+      "removal_recommendation": "Retain production guard/behavior. This task changes tests only; any equivalent candidate still requires independent gate-proof review."
+    },
+    {
+      "id": "1224",
+      "mutatorName": "MethodExpression",
+      "location": {
+        "end": {
+          "column": 62,
+          "line": 981
+        },
+        "start": {
+          "column": 10,
+          "line": 981
+        }
+      },
+      "replacement": "expected.every(item => !isStrictPolicyScalar(item))",
+      "original": "expected.some((item) => !isStrictPolicyScalar(item))",
+      "classification": "equivalent_candidate",
+      "reason": "All expected contains_any/contains_none items have already passed normalizePolicyCondition's strict scalar validation. The owned array is not exposed to callers and evaluation is synchronous; this later some/every invalid-item check is false in either version.",
+      "specification": "Profile §§2,4–7 plus the exact original validators/control flow described in reason",
+      "source_evidence": "Exact original mutation range above; all production bytes pinned to verifierSourceSha256",
+      "fault_group": null,
+      "case": null,
+      "probe": {
+        "preparedSourceSha256": "1e5cb4bae8af533fecd98c2e1da949d96701c1d76170b8cd284fbba3f934d359",
+        "build_exit_code": 0,
+        "test_exit_code": 0,
+        "signal": null,
+        "error": null,
+        "first_failure": null
+      },
+      "removal_recommendation": "Retain production guard/behavior. This task changes tests only; any equivalent candidate still requires independent gate-proof review."
+    },
+    {
+      "id": "1225",
+      "mutatorName": "ArrowFunction",
+      "location": {
+        "end": {
+          "column": 61,
+          "line": 981
+        },
+        "start": {
+          "column": 24,
+          "line": 981
+        }
+      },
+      "replacement": "() => undefined",
+      "original": "(item) => !isStrictPolicyScalar(item)",
+      "classification": "equivalent_candidate",
+      "reason": "The expected-array invalid-item callback can only inspect scalars already accepted by normalizePolicyCondition. Replacing it with undefined keeps .some false; malformed policy items are rejected by the earlier unchanged validator.",
+      "specification": "Profile §§2,4–7 plus the exact original validators/control flow described in reason",
+      "source_evidence": "Exact original mutation range above; all production bytes pinned to verifierSourceSha256",
+      "fault_group": null,
+      "case": null,
+      "probe": {
+        "preparedSourceSha256": "837bb475b29a9b67b18c2569d633abf64b4f5fd303816fbc3f596bccf0cf2fa6",
+        "build_exit_code": 0,
+        "test_exit_code": 0,
+        "signal": null,
+        "error": null,
+        "first_failure": null
+      },
+      "removal_recommendation": "Retain production guard/behavior. This task changes tests only; any equivalent candidate still requires independent gate-proof review."
+    },
+    {
+      "id": "1235",
+      "mutatorName": "ConditionalExpression",
+      "location": {
+        "end": {
+          "column": 21,
+          "line": 989
+        },
+        "start": {
+          "column": 7,
+          "line": 989
+        }
+      },
+      "replacement": "true",
+      "original": "op === \"empty\"",
+      "classification": "equivalent_candidate",
+      "reason": "With the original normalizer, only supported operators reach policyConditionMatches. eq/neq, four numeric operators, in/nin and contains_any/contains_none all return before this point; exists is handled by evaluateConditionList before the call. Therefore the only reachable op here is empty and the predicate is already true.",
+      "specification": "Profile §§2,4–7 plus the exact original validators/control flow described in reason",
+      "source_evidence": "Exact original mutation range above; all production bytes pinned to verifierSourceSha256",
+      "fault_group": null,
+      "case": null,
+      "probe": {
+        "preparedSourceSha256": "4a8c5cd670588a2cadec076261b9008c358dbac672a78d1451f6b05b17ec8371",
+        "build_exit_code": 0,
+        "test_exit_code": 0,
+        "signal": null,
+        "error": null,
+        "first_failure": null
+      },
+      "removal_recommendation": "Retain production guard/behavior. This task changes tests only; any equivalent candidate still requires independent gate-proof review."
+    },
+    {
+      "id": "1241",
+      "mutatorName": "ConditionalExpression",
+      "location": {
+        "end": {
+          "column": 64,
+          "line": 990
+        },
+        "start": {
+          "column": 9,
+          "line": 990
+        }
+      },
+      "replacement": "false",
+      "original": "!Array.isArray(actual) || typeof expected !== \"boolean\"",
+      "classification": "newly_detected_real_gap",
+      "reason": "A non-empty string/object produces the evaluated missing/uncomparable condition, not no-match.",
+      "specification": "§4.2 empty on a non-array is uncomparable",
+      "source_evidence": "verifier.ts:989–991",
+      "fault_group": "Empty requires an array",
+      "case": "empty: \"not-an-array\" against true",
+      "probe": {
+        "preparedSourceSha256": "a4f549144fdeace3122fa088dc07d1de2a0dae457e580f3985acae793217a8d2",
+        "build_exit_code": 0,
+        "test_exit_code": 1,
+        "signal": null,
+        "error": null,
+        "first_failure": "AssertionError [ERR_ASSERTION]: empty: \"not-an-array\" against true"
+      },
+      "removal_recommendation": "Retain production guard/behavior. This task changes tests only; any equivalent candidate still requires independent gate-proof review."
+    },
+    {
+      "id": "1242",
+      "mutatorName": "LogicalOperator",
+      "location": {
+        "end": {
+          "column": 64,
+          "line": 990
+        },
+        "start": {
+          "column": 9,
+          "line": 990
+        }
+      },
+      "replacement": "!Array.isArray(actual) && typeof expected !== \"boolean\"",
+      "original": "!Array.isArray(actual) || typeof expected !== \"boolean\"",
+      "classification": "newly_detected_real_gap",
+      "reason": "A non-empty string/object produces the evaluated missing/uncomparable condition, not no-match.",
+      "specification": "§4.2 empty on a non-array is uncomparable",
+      "source_evidence": "verifier.ts:989–991",
+      "fault_group": "Empty requires an array",
+      "case": "empty: \"not-an-array\" against true",
+      "probe": {
+        "preparedSourceSha256": "c70b213e3d66347e922a961aabfb48446b3bed89099f3a50153fc62d58d82c91",
+        "build_exit_code": 0,
+        "test_exit_code": 1,
+        "signal": null,
+        "error": null,
+        "first_failure": "AssertionError [ERR_ASSERTION]: empty: \"not-an-array\" against true"
+      },
+      "removal_recommendation": "Retain production guard/behavior. This task changes tests only; any equivalent candidate still requires independent gate-proof review."
+    },
+    {
+      "id": "1244",
+      "mutatorName": "ConditionalExpression",
+      "location": {
+        "end": {
+          "column": 64,
+          "line": 990
+        },
+        "start": {
+          "column": 35,
+          "line": 990
+        }
+      },
+      "replacement": "false",
+      "original": "typeof expected !== \"boolean\"",
+      "classification": "equivalent_candidate",
+      "reason": "An empty condition's expected value is already a boolean because the unchanged normalizer requires it. Removing this later typeof check does not remove the actual-array check and cannot change a valid or uncomparable empty result.",
+      "specification": "Profile §§2,4–7 plus the exact original validators/control flow described in reason",
+      "source_evidence": "Exact original mutation range above; all production bytes pinned to verifierSourceSha256",
+      "fault_group": null,
+      "case": null,
+      "probe": {
+        "preparedSourceSha256": "06b5a89a5276ff016d42ceb9d24dd78215157e7ebb2f886cac00003f1015f24c",
+        "build_exit_code": 0,
+        "test_exit_code": 0,
+        "signal": null,
+        "error": null,
+        "first_failure": null
+      },
+      "removal_recommendation": "Retain production guard/behavior. This task changes tests only; any equivalent candidate still requires independent gate-proof review."
+    },
+    {
+      "id": "1253",
+      "mutatorName": "BooleanLiteral",
+      "location": {
+        "end": {
+          "column": 15,
+          "line": 993
+        },
+        "start": {
+          "column": 10,
+          "line": 993
+        }
+      },
+      "replacement": "true",
+      "original": "false",
+      "classification": "equivalent_candidate",
+      "reason": "The final fallback is unreachable for every supported normalized operator: all twelve operators are handled by an earlier return or by the caller's exists branch. Unsupported operators fail the original normalizer before this private function runs.",
+      "specification": "Profile §§2,4–7 plus the exact original validators/control flow described in reason",
+      "source_evidence": "Exact original mutation range above; all production bytes pinned to verifierSourceSha256",
+      "fault_group": null,
+      "case": null,
+      "probe": {
+        "preparedSourceSha256": "8c109cc9be88cf7ffbe9b0ff3d0087f38c6e0f6208a73f692174683f076854ba",
+        "build_exit_code": 0,
+        "test_exit_code": 0,
+        "signal": null,
+        "error": null,
+        "first_failure": null
+      },
+      "removal_recommendation": "Retain production guard/behavior. This task changes tests only; any equivalent candidate still requires independent gate-proof review."
+    },
+    {
+      "id": "1257",
+      "mutatorName": "ConditionalExpression",
+      "location": {
+        "end": {
+          "column": 15,
+          "line": 1002
+        },
+        "start": {
+          "column": 7,
+          "line": 1002
+        }
+      },
+      "replacement": "false",
+      "original": "!present",
+      "classification": "unresolved",
+      "reason": "The guard makes absent own fields project null even when context[condition.field] reads an inherited scalar or array. Without it, an inherited scalar can be recorded for an absent field. The current cases still pass, but inherited-state behavior is a concrete missing boundary probe; the two-round repair cap prevents another test round.",
+      "specification": "Profile §2/§4/§6 boundaries; remaining evidence limitation described in reason",
+      "source_evidence": "Exact original mutation range above; all production bytes pinned to verifierSourceSha256",
+      "fault_group": null,
+      "case": null,
+      "probe": {
+        "preparedSourceSha256": "c4b78e0f2004ced16e192a22d306132af4fe9d7b5e72ef5e852d10b71a0bfa8e",
+        "build_exit_code": 0,
+        "test_exit_code": 0,
+        "signal": null,
+        "error": null,
+        "first_failure": null
+      },
+      "removal_recommendation": "Retain production guard/behavior. This task changes tests only; any equivalent candidate still requires independent gate-proof review."
+    },
+    {
+      "id": "1262",
+      "mutatorName": "LogicalOperator",
+      "location": {
+        "end": {
+          "column": 53,
+          "line": 1003
+        },
+        "start": {
+          "column": 7,
+          "line": 1003
+        }
+      },
+      "replacement": "op === \"contains_any\" || Array.isArray(actual)",
+      "original": "op === \"contains_any\" && Array.isArray(actual)",
+      "classification": "newly_detected_real_gap",
+      "reason": "Malformed context arrays retain the specified projection; contains_none on a scalar projects null.",
+      "specification": "§6 input-order contains_any; contains_none/empty field_value null",
+      "source_evidence": "verifier.ts:1003–1015",
+      "fault_group": "Exact field projection",
+      "case": "contains_any/contains_none scalar and malformed-array operator cases",
+      "probe": {
+        "preparedSourceSha256": "347c2a2cb4a4d8df5dc38cd638dc7259a088b55d300ceb4764ad58a61dfecf15",
+        "build_exit_code": 0,
+        "test_exit_code": 1,
+        "signal": null,
+        "error": null,
+        "first_failure": "AssertionError [ERR_ASSERTION]: contains_none: [\"a\",{}] against [\"a\"]"
+      },
+      "removal_recommendation": "Retain production guard/behavior. This task changes tests only; any equivalent candidate still requires independent gate-proof review."
+    },
+    {
+      "id": "1263",
+      "mutatorName": "ConditionalExpression",
+      "location": {
+        "end": {
+          "column": 28,
+          "line": 1003
+        },
+        "start": {
+          "column": 7,
+          "line": 1003
+        }
+      },
+      "replacement": "true",
+      "original": "op === \"contains_any\"",
+      "classification": "newly_detected_real_gap",
+      "reason": "Malformed context arrays retain the specified projection; contains_none on a scalar projects null.",
+      "specification": "§6 input-order contains_any; contains_none/empty field_value null",
+      "source_evidence": "verifier.ts:1003–1015",
+      "fault_group": "Exact field projection",
+      "case": "contains_any/contains_none scalar and malformed-array operator cases",
+      "probe": {
+        "preparedSourceSha256": "f5dc855d79da03917cb04497e90661ab95ea088de1926495a302e3fa28c12fcb",
+        "build_exit_code": 0,
+        "test_exit_code": 1,
+        "signal": null,
+        "error": null,
+        "first_failure": "AssertionError [ERR_ASSERTION]: contains_none: [\"a\",{}] against [\"a\"]"
+      },
+      "removal_recommendation": "Retain production guard/behavior. This task changes tests only; any equivalent candidate still requires independent gate-proof review."
+    },
+    {
+      "id": "1267",
+      "mutatorName": "MethodExpression",
+      "location": {
+        "end": {
+          "column": 44,
+          "line": 1005
+        },
+        "start": {
+          "column": 7,
+          "line": 1005
+        }
+      },
+      "replacement": "expected",
+      "original": "expected.filter(isStrictPolicyScalar)",
+      "classification": "equivalent_candidate",
+      "reason": "Complete policy normalization guarantees every expected contains_any item is a strict scalar. Removing the scalar filter preserves the sequence passed to typedPolicyScalarKey, the resulting set, and input-order field projection. No caller can mutate this owned array during synchronous evaluation.",
+      "specification": "Profile §§2,4–7 plus the exact original validators/control flow described in reason",
+      "source_evidence": "Exact original mutation range above; all production bytes pinned to verifierSourceSha256",
+      "fault_group": null,
+      "case": null,
+      "probe": {
+        "preparedSourceSha256": "805d1ac020478012fa3ac31b71242bb27945f8c96991884fd876abe459cb6c56",
+        "build_exit_code": 0,
+        "test_exit_code": 0,
+        "signal": null,
+        "error": null,
+        "first_failure": null
+      },
+      "removal_recommendation": "Retain production guard/behavior. This task changes tests only; any equivalent candidate still requires independent gate-proof review."
+    },
+    {
+      "id": "1271",
+      "mutatorName": "LogicalOperator",
+      "location": {
+        "end": {
+          "column": 85,
+          "line": 1008
+        },
+        "start": {
+          "column": 11,
+          "line": 1008
+        }
+      },
+      "replacement": "isStrictPolicyScalar(item) || expectedKeys.has(typedPolicyScalarKey(item))",
+      "original": "isStrictPolicyScalar(item) && expectedKeys.has(typedPolicyScalarKey(item))",
+      "classification": "newly_detected_real_gap",
+      "reason": "Malformed context arrays retain the specified projection; contains_none on a scalar projects null.",
+      "specification": "§6 input-order contains_any; contains_none/empty field_value null",
+      "source_evidence": "verifier.ts:1003–1015",
+      "fault_group": "Exact field projection",
+      "case": "contains_any/contains_none scalar and malformed-array operator cases",
+      "probe": {
+        "preparedSourceSha256": "1ad5aa71a6181afca9f1f2c9fac23844fe03aec7052bd57f717d13a0b6c1245f",
+        "build_exit_code": 0,
+        "test_exit_code": 1,
+        "signal": null,
+        "error": null,
+        "first_failure": "AssertionError [ERR_ASSERTION]: contains_any: [\"a\",{}] against [\"b\"]"
+      },
+      "removal_recommendation": "Retain production guard/behavior. This task changes tests only; any equivalent candidate still requires independent gate-proof review."
+    },
+    {
+      "id": "1276",
+      "mutatorName": "ConditionalExpression",
+      "location": {
+        "end": {
+          "column": 29,
+          "line": 1014
+        },
+        "start": {
+          "column": 7,
+          "line": 1014
+        }
+      },
+      "replacement": "false",
+      "original": "op === \"contains_none\"",
+      "classification": "newly_detected_real_gap",
+      "reason": "Malformed context arrays retain the specified projection; contains_none on a scalar projects null.",
+      "specification": "§6 input-order contains_any; contains_none/empty field_value null",
+      "source_evidence": "verifier.ts:1003–1015",
+      "fault_group": "Exact field projection",
+      "case": "contains_any/contains_none scalar and malformed-array operator cases",
+      "probe": {
+        "preparedSourceSha256": "f4d59ec966bdbee2ab4f450be897e4111c25f22e4175c0546e9ce3b87f98372b",
+        "build_exit_code": 0,
+        "test_exit_code": 1,
+        "signal": null,
+        "error": null,
+        "first_failure": "AssertionError [ERR_ASSERTION]: contains_none: \"a\" against [\"a\"]"
+      },
+      "removal_recommendation": "Retain production guard/behavior. This task changes tests only; any equivalent candidate still requires independent gate-proof review."
+    },
+    {
+      "id": "1278",
+      "mutatorName": "StringLiteral",
+      "location": {
+        "end": {
+          "column": 29,
+          "line": 1014
+        },
+        "start": {
+          "column": 14,
+          "line": 1014
+        }
+      },
+      "replacement": "\"\"",
+      "original": "\"contains_none\"",
+      "classification": "newly_detected_real_gap",
+      "reason": "Malformed context arrays retain the specified projection; contains_none on a scalar projects null.",
+      "specification": "§6 input-order contains_any; contains_none/empty field_value null",
+      "source_evidence": "verifier.ts:1003–1015",
+      "fault_group": "Exact field projection",
+      "case": "contains_any/contains_none scalar and malformed-array operator cases",
+      "probe": {
+        "preparedSourceSha256": "f4d4329d4b6f0f988adf5d061e9f3429d03ae08eb7587fe06adb4114d145891b",
+        "build_exit_code": 0,
+        "test_exit_code": 1,
+        "signal": null,
+        "error": null,
+        "first_failure": "AssertionError [ERR_ASSERTION]: contains_none: \"a\" against [\"a\"]"
+      },
+      "removal_recommendation": "Retain production guard/behavior. This task changes tests only; any equivalent candidate still requires independent gate-proof review."
+    },
+    {
+      "id": "1285",
+      "mutatorName": "ConditionalExpression",
+      "location": {
+        "end": {
+          "column": 91,
+          "line": 1020
+        },
+        "start": {
+          "column": 14,
+          "line": 1020
+        }
+      },
+      "replacement": "true",
+      "original": "Array.isArray(constraints[key]) && (constraints[key] as unknown[]).length > 0",
+      "classification": "newly_detected_real_gap",
+      "reason": "Return mismatch/policy_evaluation_mismatch with calculated_evaluation null for an authenticated recorded object.",
+      "specification": "§5.6 no evaluator result; §7 mismatch comparison",
+      "source_evidence": "verifier.ts:734,851–859,1018–1021,1061",
+      "fault_group": "Recorded evaluation without any conditions",
+      "case": "no conditions produce no calculated object",
+      "probe": {
+        "preparedSourceSha256": "087163ea568ece35c8712bb9eadf6e9c3cbe09050adec3ae037ec2d7c9b1c8fa",
+        "build_exit_code": 0,
+        "test_exit_code": 1,
+        "signal": null,
+        "error": null,
+        "first_failure": "AssertionError [ERR_ASSERTION]: no conditions produce no calculated object: {}"
+      },
+      "removal_recommendation": "Retain production guard/behavior. This task changes tests only; any equivalent candidate still requires independent gate-proof review."
+    },
+    {
+      "id": "1288",
+      "mutatorName": "ConditionalExpression",
+      "location": {
+        "end": {
+          "column": 91,
+          "line": 1020
+        },
+        "start": {
+          "column": 49,
+          "line": 1020
+        }
+      },
+      "replacement": "true",
+      "original": "(constraints[key] as unknown[]).length > 0",
+      "classification": "newly_detected_real_gap",
+      "reason": "Return mismatch/policy_evaluation_mismatch with calculated_evaluation null for an authenticated recorded object.",
+      "specification": "§5.6 no evaluator result; §7 mismatch comparison",
+      "source_evidence": "verifier.ts:734,851–859,1018–1021,1061",
+      "fault_group": "Recorded evaluation without any conditions",
+      "case": "no conditions produce no calculated object",
+      "probe": {
+        "preparedSourceSha256": "3a1832a15db6ef7ce3fc9c53cdce348908f4aa645ec80be8b81d97aaeaf785c8",
+        "build_exit_code": 0,
+        "test_exit_code": 1,
+        "signal": null,
+        "error": null,
+        "first_failure": "AssertionError [ERR_ASSERTION]: no conditions produce no calculated object: {\"deny_when\":[]}"
+      },
+      "removal_recommendation": "Retain production guard/behavior. This task changes tests only; any equivalent candidate still requires independent gate-proof review."
+    },
+    {
+      "id": "1289",
+      "mutatorName": "EqualityOperator",
+      "location": {
+        "end": {
+          "column": 91,
+          "line": 1020
+        },
+        "start": {
+          "column": 49,
+          "line": 1020
+        }
+      },
+      "replacement": "(constraints[key] as unknown[]).length >= 0",
+      "original": "(constraints[key] as unknown[]).length > 0",
+      "classification": "newly_detected_real_gap",
+      "reason": "Return mismatch/policy_evaluation_mismatch with calculated_evaluation null for an authenticated recorded object.",
+      "specification": "§5.6 no evaluator result; §7 mismatch comparison",
+      "source_evidence": "verifier.ts:734,851–859,1018–1021,1061",
+      "fault_group": "Recorded evaluation without any conditions",
+      "case": "no conditions produce no calculated object",
+      "probe": {
+        "preparedSourceSha256": "00518b983916f8ffcb451f65a45e2ba513deae4876d32fecbd5099e986f4d023",
+        "build_exit_code": 0,
+        "test_exit_code": 1,
+        "signal": null,
+        "error": null,
+        "first_failure": "AssertionError [ERR_ASSERTION]: no conditions produce no calculated object: {\"deny_when\":[]}"
+      },
+      "removal_recommendation": "Retain production guard/behavior. This task changes tests only; any equivalent candidate still requires independent gate-proof review."
+    },
+    {
+      "id": "1294",
+      "mutatorName": "LogicalOperator",
+      "location": {
+        "end": {
+          "column": 66,
+          "line": 1025
+        },
+        "start": {
+          "column": 10,
+          "line": 1025
+        }
+      },
+      "replacement": "typeof value === \"number\" || Number.isSafeInteger(value)",
+      "original": "typeof value === \"number\" && Number.isSafeInteger(value)",
+      "classification": "equivalent_candidate",
+      "reason": "Every numeric value in the action/creation snapshots has passed canonicalize/validateTree before signature authentication. That unchanged wire validator forbids non-integer and unsafe numbers. For any remaining JSON value, typeof number || Number.isSafeInteger and typeof number && Number.isSafeInteger agree; non-numbers make both terms false.",
+      "specification": "Profile §§2,4–7 plus the exact original validators/control flow described in reason",
+      "source_evidence": "Exact original mutation range above; all production bytes pinned to verifierSourceSha256",
+      "fault_group": null,
+      "case": null,
+      "probe": {
+        "preparedSourceSha256": "89faa11075a79f96e7c0ad4959cc9325560377a615d7cc01e5441e04464e21c2",
+        "build_exit_code": 0,
+        "test_exit_code": 0,
+        "signal": null,
+        "error": null,
+        "first_failure": null
+      },
+      "removal_recommendation": "Retain production guard/behavior. This task changes tests only; any equivalent candidate still requires independent gate-proof review."
+    },
+    {
+      "id": "1295",
+      "mutatorName": "ConditionalExpression",
+      "location": {
+        "end": {
+          "column": 35,
+          "line": 1025
+        },
+        "start": {
+          "column": 10,
+          "line": 1025
+        }
+      },
+      "replacement": "true",
+      "original": "typeof value === \"number\"",
+      "classification": "equivalent_candidate",
+      "reason": "ECMAScript Number.isSafeInteger returns false for every non-number without coercion. Therefore true && Number.isSafeInteger(value) is exactly the original number-type conjunction for all values, even before applying the wire-number invariant.",
+      "specification": "Profile §§2,4–7 plus the exact original validators/control flow described in reason",
+      "source_evidence": "Exact original mutation range above; all production bytes pinned to verifierSourceSha256",
+      "fault_group": null,
+      "case": null,
+      "probe": {
+        "preparedSourceSha256": "d7cc50181fc45120472707d6421ae9cc05a7b45492db4730e5948e61c9c7e4b0",
+        "build_exit_code": 0,
+        "test_exit_code": 0,
+        "signal": null,
+        "error": null,
+        "first_failure": null
+      },
+      "removal_recommendation": "Retain production guard/behavior. This task changes tests only; any equivalent candidate still requires independent gate-proof review."
+    },
+    {
+      "id": "1316",
+      "mutatorName": "ConditionalExpression",
+      "location": {
+        "end": {
+          "column": 66,
+          "line": 1036
+        },
+        "start": {
+          "column": 7,
+          "line": 1036
+        }
+      },
+      "replacement": "false",
+      "original": "!isStrictPolicyScalar(left) || !isStrictPolicyScalar(right)",
+      "classification": "equivalent_candidate",
+      "reason": "Expected is a normalized strict scalar. For authenticated JSON actual values, the later null/type branches already reject every non-scalar actual: objects/arrays differ from non-null scalar types, and null-versus-object returns false. Authenticated numbers are safe integers. Removing this preliminary scalar check leaves the same comparison result.",
+      "specification": "Profile §§2,4–7 plus the exact original validators/control flow described in reason",
+      "source_evidence": "Exact original mutation range above; all production bytes pinned to verifierSourceSha256",
+      "fault_group": null,
+      "case": null,
+      "probe": {
+        "preparedSourceSha256": "b4176c5d8feee6f69416fb644905d478999c2b15cd17469e847772b569763656",
+        "build_exit_code": 0,
+        "test_exit_code": 0,
+        "signal": null,
+        "error": null,
+        "first_failure": null
+      },
+      "removal_recommendation": "Retain production guard/behavior. This task changes tests only; any equivalent candidate still requires independent gate-proof review."
+    },
+    {
+      "id": "1317",
+      "mutatorName": "LogicalOperator",
+      "location": {
+        "end": {
+          "column": 66,
+          "line": 1036
+        },
+        "start": {
+          "column": 7,
+          "line": 1036
+        }
+      },
+      "replacement": "!isStrictPolicyScalar(left) && !isStrictPolicyScalar(right)",
+      "original": "!isStrictPolicyScalar(left) || !isStrictPolicyScalar(right)",
+      "classification": "equivalent_candidate",
+      "reason": "Expected is always a normalized strict scalar, so the mutated invalid-left && invalid-right condition is never true. The remaining null/type checks still reject all non-scalar JSON actual values, as in the original; wire validation has already excluded unsafe/fractional numbers.",
+      "specification": "Profile §§2,4–7 plus the exact original validators/control flow described in reason",
+      "source_evidence": "Exact original mutation range above; all production bytes pinned to verifierSourceSha256",
+      "fault_group": null,
+      "case": null,
+      "probe": {
+        "preparedSourceSha256": "36bf2b77c89ceba9efde1b19e5785260eb02372da5adc179ffac10e539223458",
+        "build_exit_code": 0,
+        "test_exit_code": 0,
+        "signal": null,
+        "error": null,
+        "first_failure": null
+      },
+      "removal_recommendation": "Retain production guard/behavior. This task changes tests only; any equivalent candidate still requires independent gate-proof review."
+    },
+    {
+      "id": "1320",
+      "mutatorName": "BooleanLiteral",
+      "location": {
+        "end": {
+          "column": 80,
+          "line": 1036
+        },
+        "start": {
+          "column": 75,
+          "line": 1036
+        }
+      },
+      "replacement": "true",
+      "original": "false",
+      "classification": "newly_detected_real_gap",
+      "reason": "Null is comparable only to null; object/array and unlike scalar types stay uncomparable.",
+      "specification": "§4.1 JSON scalar types and uncomparable fields",
+      "source_evidence": "verifier.ts:1036–1038",
+      "fault_group": "Typed scalar comparison",
+      "case": "eq: {} against null / null against x / x against null",
+      "probe": {
+        "preparedSourceSha256": "4171d72eae2d39c6f783a8bc781bb10c53d6fda3e339346b5ae9545766683665",
+        "build_exit_code": 0,
+        "test_exit_code": 1,
+        "signal": null,
+        "error": null,
+        "first_failure": "AssertionError [ERR_ASSERTION]: eq: {} against null"
+      },
+      "removal_recommendation": "Retain production guard/behavior. This task changes tests only; any equivalent candidate still requires independent gate-proof review."
+    },
+    {
+      "id": "1322",
+      "mutatorName": "ConditionalExpression",
+      "location": {
+        "end": {
+          "column": 38,
+          "line": 1037
+        },
+        "start": {
+          "column": 7,
+          "line": 1037
+        }
+      },
+      "replacement": "false",
+      "original": "left === null || right === null",
+      "classification": "equivalent_candidate",
+      "reason": "Both operands have passed the unchanged strict-scalar guard. Of those scalars only null has typeof object. Falling through to typeof equality therefore distinguishes exactly the same both-null, one-null and neither-null cases as the removed special branch.",
+      "specification": "Profile §§2,4–7 plus the exact original validators/control flow described in reason",
+      "source_evidence": "Exact original mutation range above; all production bytes pinned to verifierSourceSha256",
+      "fault_group": null,
+      "case": null,
+      "probe": {
+        "preparedSourceSha256": "5b03d9a61ca420ac49fdc81f0b40a7766f691e88b82ed59b531ffe9ddf1234d8",
+        "build_exit_code": 0,
+        "test_exit_code": 0,
+        "signal": null,
+        "error": null,
+        "first_failure": null
+      },
+      "removal_recommendation": "Retain production guard/behavior. This task changes tests only; any equivalent candidate still requires independent gate-proof review."
+    },
+    {
+      "id": "1323",
+      "mutatorName": "LogicalOperator",
+      "location": {
+        "end": {
+          "column": 38,
+          "line": 1037
+        },
+        "start": {
+          "column": 7,
+          "line": 1037
+        }
+      },
+      "replacement": "left === null && right === null",
+      "original": "left === null || right === null",
+      "classification": "equivalent_candidate",
+      "reason": "The narrower both-null predicate returns true for two nulls. Exactly-one-null cases fall through to typeof equality and remain false because the other accepted scalar is not an object. Neither-null comparison is unchanged.",
+      "specification": "Profile §§2,4–7 plus the exact original validators/control flow described in reason",
+      "source_evidence": "Exact original mutation range above; all production bytes pinned to verifierSourceSha256",
+      "fault_group": null,
+      "case": null,
+      "probe": {
+        "preparedSourceSha256": "4f76b468e2841cf50f31313a16b966bf3c724c369332cd795768ad0dab2a39b2",
+        "build_exit_code": 0,
+        "test_exit_code": 0,
+        "signal": null,
+        "error": null,
+        "first_failure": null
+      },
+      "removal_recommendation": "Retain production guard/behavior. This task changes tests only; any equivalent candidate still requires independent gate-proof review."
+    },
+    {
+      "id": "1324",
+      "mutatorName": "ConditionalExpression",
+      "location": {
+        "end": {
+          "column": 20,
+          "line": 1037
+        },
+        "start": {
+          "column": 7,
+          "line": 1037
+        }
+      },
+      "replacement": "false",
+      "original": "left === null",
+      "classification": "equivalent_candidate",
+      "reason": "When left alone is null, the branch now falls through, but typeof null differs from every non-null accepted scalar. Right-null/both-null cases still use the original branch, so typed comparability is unchanged.",
+      "specification": "Profile §§2,4–7 plus the exact original validators/control flow described in reason",
+      "source_evidence": "Exact original mutation range above; all production bytes pinned to verifierSourceSha256",
+      "fault_group": null,
+      "case": null,
+      "probe": {
+        "preparedSourceSha256": "42cb084642a87ac45c2c7536845db49900cf3d0af49f443dc7df0d22be7381ad",
+        "build_exit_code": 0,
+        "test_exit_code": 0,
+        "signal": null,
+        "error": null,
+        "first_failure": null
+      },
+      "removal_recommendation": "Retain production guard/behavior. This task changes tests only; any equivalent candidate still requires independent gate-proof review."
+    },
+    {
+      "id": "1326",
+      "mutatorName": "ConditionalExpression",
+      "location": {
+        "end": {
+          "column": 38,
+          "line": 1037
+        },
+        "start": {
+          "column": 24,
+          "line": 1037
+        }
+      },
+      "replacement": "false",
+      "original": "right === null",
+      "classification": "equivalent_candidate",
+      "reason": "When right alone is null, the branch now falls through, but typeof null differs from every non-null accepted scalar. Left-null/both-null cases still use the original branch, so typed comparability is unchanged.",
+      "specification": "Profile §§2,4–7 plus the exact original validators/control flow described in reason",
+      "source_evidence": "Exact original mutation range above; all production bytes pinned to verifierSourceSha256",
+      "fault_group": null,
+      "case": null,
+      "probe": {
+        "preparedSourceSha256": "0b60539680083bd9824e653158f13e6e28a987a1fd9498bfc2b7f86583093adc",
+        "build_exit_code": 0,
+        "test_exit_code": 0,
+        "signal": null,
+        "error": null,
+        "first_failure": null
+      },
+      "removal_recommendation": "Retain production guard/behavior. This task changes tests only; any equivalent candidate still requires independent gate-proof review."
+    },
+    {
+      "id": "1328",
+      "mutatorName": "ConditionalExpression",
+      "location": {
+        "end": {
+          "column": 78,
+          "line": 1037
+        },
+        "start": {
+          "column": 47,
+          "line": 1037
+        }
+      },
+      "replacement": "true",
+      "original": "left === null && right === null",
+      "classification": "newly_detected_real_gap",
+      "reason": "Null is comparable only to null; object/array and unlike scalar types stay uncomparable.",
+      "specification": "§4.1 JSON scalar types and uncomparable fields",
+      "source_evidence": "verifier.ts:1036–1038",
+      "fault_group": "Typed scalar comparison",
+      "case": "eq: {} against null / null against x / x against null",
+      "probe": {
+        "preparedSourceSha256": "39a15422fde4f56f76c5d368c3331167d74376542f1f01b08599e49e69b315c1",
+        "build_exit_code": 0,
+        "test_exit_code": 1,
+        "signal": null,
+        "error": null,
+        "first_failure": "AssertionError [ERR_ASSERTION]: eq: null against \"x\""
+      },
+      "removal_recommendation": "Retain production guard/behavior. This task changes tests only; any equivalent candidate still requires independent gate-proof review."
+    },
+    {
+      "id": "1330",
+      "mutatorName": "LogicalOperator",
+      "location": {
+        "end": {
+          "column": 78,
+          "line": 1037
+        },
+        "start": {
+          "column": 47,
+          "line": 1037
+        }
+      },
+      "replacement": "left === null || right === null",
+      "original": "left === null && right === null",
+      "classification": "newly_detected_real_gap",
+      "reason": "Null is comparable only to null; object/array and unlike scalar types stay uncomparable.",
+      "specification": "§4.1 JSON scalar types and uncomparable fields",
+      "source_evidence": "verifier.ts:1036–1038",
+      "fault_group": "Typed scalar comparison",
+      "case": "eq: {} against null / null against x / x against null",
+      "probe": {
+        "preparedSourceSha256": "547c740337ee1923137dc5d30f45f0fe57c57fc4621971c72ed96bf2f4f42ec3",
+        "build_exit_code": 0,
+        "test_exit_code": 1,
+        "signal": null,
+        "error": null,
+        "first_failure": "AssertionError [ERR_ASSERTION]: eq: null against \"x\""
+      },
+      "removal_recommendation": "Retain production guard/behavior. This task changes tests only; any equivalent candidate still requires independent gate-proof review."
+    },
+    {
+      "id": "1331",
+      "mutatorName": "ConditionalExpression",
+      "location": {
+        "end": {
+          "column": 60,
+          "line": 1037
+        },
+        "start": {
+          "column": 47,
+          "line": 1037
+        }
+      },
+      "replacement": "true",
+      "original": "left === null",
+      "classification": "newly_detected_real_gap",
+      "reason": "Null is comparable only to null; object/array and unlike scalar types stay uncomparable.",
+      "specification": "§4.1 JSON scalar types and uncomparable fields",
+      "source_evidence": "verifier.ts:1036–1038",
+      "fault_group": "Typed scalar comparison",
+      "case": "eq: {} against null / null against x / x against null",
+      "probe": {
+        "preparedSourceSha256": "6d2ac6a0355e021c03a4d2b046d2ab3cd6539ab297cc170b56489711637f14f1",
+        "build_exit_code": 0,
+        "test_exit_code": 1,
+        "signal": null,
+        "error": null,
+        "first_failure": "AssertionError [ERR_ASSERTION]: eq: \"x\" against null"
+      },
+      "removal_recommendation": "Retain production guard/behavior. This task changes tests only; any equivalent candidate still requires independent gate-proof review."
+    },
+    {
+      "id": "1333",
+      "mutatorName": "ConditionalExpression",
+      "location": {
+        "end": {
+          "column": 78,
+          "line": 1037
+        },
+        "start": {
+          "column": 64,
+          "line": 1037
+        }
+      },
+      "replacement": "true",
+      "original": "right === null",
+      "classification": "newly_detected_real_gap",
+      "reason": "Null is comparable only to null; object/array and unlike scalar types stay uncomparable.",
+      "specification": "§4.1 JSON scalar types and uncomparable fields",
+      "source_evidence": "verifier.ts:1036–1038",
+      "fault_group": "Typed scalar comparison",
+      "case": "eq: {} against null / null against x / x against null",
+      "probe": {
+        "preparedSourceSha256": "6472a4dba57a2cbc35409550372fd5078b4c77684b5d061178fc6ef61758ef27",
+        "build_exit_code": 0,
+        "test_exit_code": 1,
+        "signal": null,
+        "error": null,
+        "first_failure": "AssertionError [ERR_ASSERTION]: eq: null against \"x\""
+      },
+      "removal_recommendation": "Retain production guard/behavior. This task changes tests only; any equivalent candidate still requires independent gate-proof review."
+    },
+    {
+      "id": "1340",
+      "mutatorName": "ConditionalExpression",
+      "location": {
+        "end": {
+          "column": 21,
+          "line": 1042
+        },
+        "start": {
+          "column": 7,
+          "line": 1042
+        }
+      },
+      "replacement": "false",
+      "original": "value === null",
+      "classification": "equivalent_candidate",
+      "reason": "Null is remapped from null: to integer:null. A safe integer's String form is never null; string keys still start string: and boolean keys boolean:. The mapping remains injective over JSON scalar type/value classes, and these keys never appear in a public policy_eval.",
+      "specification": "Profile §§2,4–7 plus the exact original validators/control flow described in reason",
+      "source_evidence": "Exact original mutation range above; all production bytes pinned to verifierSourceSha256",
+      "fault_group": null,
+      "case": null,
+      "probe": {
+        "preparedSourceSha256": "a9e2cba99818ec3b5c88814de23cd49fff181c3e88aa14fd07e2ce4327d3b06a",
+        "build_exit_code": 0,
+        "test_exit_code": 0,
+        "signal": null,
+        "error": null,
+        "first_failure": null
+      },
+      "removal_recommendation": "Retain production guard/behavior. This task changes tests only; any equivalent candidate still requires independent gate-proof review."
+    },
+    {
+      "id": "1342",
+      "mutatorName": "StringLiteral",
+      "location": {
+        "end": {
+          "column": 37,
+          "line": 1042
+        },
+        "start": {
+          "column": 30,
+          "line": 1042
+        }
+      },
+      "replacement": "\"\"",
+      "original": "\"null:\"",
+      "classification": "equivalent_candidate",
+      "reason": "Null is remapped from null: to an empty key. Every non-null scalar key retains a non-empty type prefix, so null remains distinct and the typed-set equality relation is unchanged. Internal keys are not returned.",
+      "specification": "Profile §§2,4–7 plus the exact original validators/control flow described in reason",
+      "source_evidence": "Exact original mutation range above; all production bytes pinned to verifierSourceSha256",
+      "fault_group": null,
+      "case": null,
+      "probe": {
+        "preparedSourceSha256": "4e87b3e4627d9b9ca0673f54da06eabf93cab685a25fd36b703a8f73164c1605",
+        "build_exit_code": 0,
+        "test_exit_code": 0,
+        "signal": null,
+        "error": null,
+        "first_failure": null
+      },
+      "removal_recommendation": "Retain production guard/behavior. This task changes tests only; any equivalent candidate still requires independent gate-proof review."
+    },
+    {
+      "id": "1343",
+      "mutatorName": "ConditionalExpression",
+      "location": {
+        "end": {
+          "column": 32,
+          "line": 1043
+        },
+        "start": {
+          "column": 7,
+          "line": 1043
+        }
+      },
+      "replacement": "true",
+      "original": "typeof value === \"string\"",
+      "classification": "equivalent_candidate",
+      "reason": "All non-null scalars are remapped to string:${JSON.stringify(value)}. Valid scalar JSON encodings distinguish quoted strings, boolean literals and safe integer literals; -0 and 0 are equal in both implementations. Null keeps a separate prefix. The mapping preserves typed equality without exposing keys.",
+      "specification": "Profile §§2,4–7 plus the exact original validators/control flow described in reason",
+      "source_evidence": "Exact original mutation range above; all production bytes pinned to verifierSourceSha256",
+      "fault_group": null,
+      "case": null,
+      "probe": {
+        "preparedSourceSha256": "c772ba75d315c8d7d954ab6264c4d03b51cb93d8af963bed523e606ffcd082c9",
+        "build_exit_code": 0,
+        "test_exit_code": 0,
+        "signal": null,
+        "error": null,
+        "first_failure": null
+      },
+      "removal_recommendation": "Retain production guard/behavior. This task changes tests only; any equivalent candidate still requires independent gate-proof review."
+    },
+    {
+      "id": "1344",
+      "mutatorName": "ConditionalExpression",
+      "location": {
+        "end": {
+          "column": 32,
+          "line": 1043
+        },
+        "start": {
+          "column": 7,
+          "line": 1043
+        }
+      },
+      "replacement": "false",
+      "original": "typeof value === \"string\"",
+      "classification": "newly_detected_real_gap",
+      "reason": "String 1 versus integer 1, true versus false, and integer 1 versus integer 2 do not intersect.",
+      "specification": "§4.1–4.2 scalar type and value equality",
+      "source_evidence": "verifier.ts:1041–1046",
+      "fault_group": "Typed set elements remain distinct",
+      "case": "contains_any truth-table cases for different string/integer/boolean values",
+      "probe": {
+        "preparedSourceSha256": "511dd055ac867f92e18f653887f1185b806caee278500d0c535b5c3a2bd1bac3",
+        "build_exit_code": 0,
+        "test_exit_code": 1,
+        "signal": null,
+        "error": null,
+        "first_failure": "AssertionError [ERR_ASSERTION]: contains_any: [\"1\"] against [1]"
+      },
+      "removal_recommendation": "Retain production guard/behavior. This task changes tests only; any equivalent candidate still requires independent gate-proof review."
+    },
+    {
+      "id": "1345",
+      "mutatorName": "EqualityOperator",
+      "location": {
+        "end": {
+          "column": 32,
+          "line": 1043
+        },
+        "start": {
+          "column": 7,
+          "line": 1043
+        }
+      },
+      "replacement": "typeof value !== \"string\"",
+      "original": "typeof value === \"string\"",
+      "classification": "equivalent_candidate",
+      "reason": "Non-string non-null scalars use string:<JSON scalar>, while strings use integer:<raw string>. These prefixes separate the domains; JSON literal encoding distinguishes integers and booleans within the first domain, and String preserves strings within the second. Null retains its own prefix, so the equality relation is unchanged.",
+      "specification": "Profile §§2,4–7 plus the exact original validators/control flow described in reason",
+      "source_evidence": "Exact original mutation range above; all production bytes pinned to verifierSourceSha256",
+      "fault_group": null,
+      "case": null,
+      "probe": {
+        "preparedSourceSha256": "7283837784b54af0874c058112b72d59268f2b683c38c60e57429063c76c69db",
+        "build_exit_code": 0,
+        "test_exit_code": 0,
+        "signal": null,
+        "error": null,
+        "first_failure": null
+      },
+      "removal_recommendation": "Retain production guard/behavior. This task changes tests only; any equivalent candidate still requires independent gate-proof review."
+    },
+    {
+      "id": "1346",
+      "mutatorName": "StringLiteral",
+      "location": {
+        "end": {
+          "column": 32,
+          "line": 1043
+        },
+        "start": {
+          "column": 24,
+          "line": 1043
+        }
+      },
+      "replacement": "\"\"",
+      "original": "\"string\"",
+      "classification": "newly_detected_real_gap",
+      "reason": "String 1 versus integer 1, true versus false, and integer 1 versus integer 2 do not intersect.",
+      "specification": "§4.1–4.2 scalar type and value equality",
+      "source_evidence": "verifier.ts:1041–1046",
+      "fault_group": "Typed set elements remain distinct",
+      "case": "contains_any truth-table cases for different string/integer/boolean values",
+      "probe": {
+        "preparedSourceSha256": "bd86623511f6e71dfd335b90ada0082e726c3b627377fb8430b9e97dbf3c86bc",
+        "build_exit_code": 0,
+        "test_exit_code": 1,
+        "signal": null,
+        "error": null,
+        "first_failure": "AssertionError [ERR_ASSERTION]: contains_any: [\"1\"] against [1]"
+      },
+      "removal_recommendation": "Retain production guard/behavior. This task changes tests only; any equivalent candidate still requires independent gate-proof review."
+    },
+    {
+      "id": "1349",
+      "mutatorName": "ConditionalExpression",
+      "location": {
+        "end": {
+          "column": 33,
+          "line": 1044
+        },
+        "start": {
+          "column": 7,
+          "line": 1044
+        }
+      },
+      "replacement": "false",
+      "original": "typeof value === \"boolean\"",
+      "classification": "equivalent_candidate",
+      "reason": "Booleans fall through to integer:true and integer:false. Safe integer String forms cannot be true/false, string keys retain string: plus a quoted encoding, and null retains null:. The scalar key mapping stays injective.",
+      "specification": "Profile §§2,4–7 plus the exact original validators/control flow described in reason",
+      "source_evidence": "Exact original mutation range above; all production bytes pinned to verifierSourceSha256",
+      "fault_group": null,
+      "case": null,
+      "probe": {
+        "preparedSourceSha256": "d9f4d41034fe3c75e71d085627390e271272a0c9db9cc7d3ce012506010528b0",
+        "build_exit_code": 0,
+        "test_exit_code": 0,
+        "signal": null,
+        "error": null,
+        "first_failure": null
+      },
+      "removal_recommendation": "Retain production guard/behavior. This task changes tests only; any equivalent candidate still requires independent gate-proof review."
+    },
+    {
+      "id": "1350",
+      "mutatorName": "EqualityOperator",
+      "location": {
+        "end": {
+          "column": 33,
+          "line": 1044
+        },
+        "start": {
+          "column": 7,
+          "line": 1044
+        }
+      },
+      "replacement": "typeof value !== \"boolean\"",
+      "original": "typeof value === \"boolean\"",
+      "classification": "newly_detected_real_gap",
+      "reason": "String 1 versus integer 1, true versus false, and integer 1 versus integer 2 do not intersect.",
+      "specification": "§4.1–4.2 scalar type and value equality",
+      "source_evidence": "verifier.ts:1041–1046",
+      "fault_group": "Typed set elements remain distinct",
+      "case": "contains_any truth-table cases for different string/integer/boolean values",
+      "probe": {
+        "preparedSourceSha256": "7a7468fae7fa79d22b8093a6f447c8c8d3097b6328ac7ed2adefd1ee1e426726",
+        "build_exit_code": 0,
+        "test_exit_code": 1,
+        "signal": null,
+        "error": null,
+        "first_failure": "AssertionError [ERR_ASSERTION]: contains_any: [1] against [2]"
+      },
+      "removal_recommendation": "Retain production guard/behavior. This task changes tests only; any equivalent candidate still requires independent gate-proof review."
+    },
+    {
+      "id": "1351",
+      "mutatorName": "StringLiteral",
+      "location": {
+        "end": {
+          "column": 33,
+          "line": 1044
+        },
+        "start": {
+          "column": 24,
+          "line": 1044
+        }
+      },
+      "replacement": "\"\"",
+      "original": "\"boolean\"",
+      "classification": "equivalent_candidate",
+      "reason": "No scalar's typeof equals the empty string, so boolean values fall through to integer:true/integer:false. Those keys cannot collide with safe integer decimal forms or other type prefixes; boolean values remain distinct.",
+      "specification": "Profile §§2,4–7 plus the exact original validators/control flow described in reason",
+      "source_evidence": "Exact original mutation range above; all production bytes pinned to verifierSourceSha256",
+      "fault_group": null,
+      "case": null,
+      "probe": {
+        "preparedSourceSha256": "6d0fcfeab451e69bd51b6ff3b2b588a4a981f781511d0c947b46a3c7663bd7f7",
+        "build_exit_code": 0,
+        "test_exit_code": 0,
+        "signal": null,
+        "error": null,
+        "first_failure": null
+      },
+      "removal_recommendation": "Retain production guard/behavior. This task changes tests only; any equivalent candidate still requires independent gate-proof review."
+    },
+    {
+      "id": "1352",
+      "mutatorName": "StringLiteral",
+      "location": {
+        "end": {
+          "column": 79,
+          "line": 1044
+        },
+        "start": {
+          "column": 42,
+          "line": 1044
+        }
+      },
+      "replacement": "``",
+      "original": "`boolean:${value ? \"true\" : \"false\"}`",
+      "classification": "newly_detected_real_gap",
+      "reason": "String 1 versus integer 1, true versus false, and integer 1 versus integer 2 do not intersect.",
+      "specification": "§4.1–4.2 scalar type and value equality",
+      "source_evidence": "verifier.ts:1041–1046",
+      "fault_group": "Typed set elements remain distinct",
+      "case": "contains_any truth-table cases for different string/integer/boolean values",
+      "probe": {
+        "preparedSourceSha256": "015a6d83b3afbe9f3acfbccd1f7f51e40fe30c9d628e02264e0a236c9aa65cd9",
+        "build_exit_code": 0,
+        "test_exit_code": 1,
+        "signal": null,
+        "error": null,
+        "first_failure": "AssertionError [ERR_ASSERTION]: contains_any: [false] against [true]"
+      },
+      "removal_recommendation": "Retain production guard/behavior. This task changes tests only; any equivalent candidate still requires independent gate-proof review."
+    },
+    {
+      "id": "1353",
+      "mutatorName": "StringLiteral",
+      "location": {
+        "end": {
+          "column": 67,
+          "line": 1044
+        },
+        "start": {
+          "column": 61,
+          "line": 1044
+        }
+      },
+      "replacement": "\"\"",
+      "original": "\"true\"",
+      "classification": "equivalent_candidate",
+      "reason": "The true boolean key becomes boolean:, while false remains boolean:false. No other domain uses the boolean: prefix, so true/false and all other scalar classes remain distinct. This private key spelling is not a public diagnostic or recorded value.",
+      "specification": "Profile §§2,4–7 plus the exact original validators/control flow described in reason",
+      "source_evidence": "Exact original mutation range above; all production bytes pinned to verifierSourceSha256",
+      "fault_group": null,
+      "case": null,
+      "probe": {
+        "preparedSourceSha256": "dc7fe28f9c215883365398fe12dd12dd97f52edae83462248b085767866a5add",
+        "build_exit_code": 0,
+        "test_exit_code": 0,
+        "signal": null,
+        "error": null,
+        "first_failure": null
+      },
+      "removal_recommendation": "Retain production guard/behavior. This task changes tests only; any equivalent candidate still requires independent gate-proof review."
+    },
+    {
+      "id": "1354",
+      "mutatorName": "StringLiteral",
+      "location": {
+        "end": {
+          "column": 77,
+          "line": 1044
+        },
+        "start": {
+          "column": 70,
+          "line": 1044
+        }
+      },
+      "replacement": "\"\"",
+      "original": "\"false\"",
+      "classification": "equivalent_candidate",
+      "reason": "The false boolean key becomes boolean:, while true remains boolean:true. The two boolean keys stay distinct and no other scalar type uses that prefix. Public output still records actual values, not set keys.",
+      "specification": "Profile §§2,4–7 plus the exact original validators/control flow described in reason",
+      "source_evidence": "Exact original mutation range above; all production bytes pinned to verifierSourceSha256",
+      "fault_group": null,
+      "case": null,
+      "probe": {
+        "preparedSourceSha256": "b339f1c2e2f3ea477d362b45308d641236caafc8ad8c8cbb8343bc2a5368556a",
+        "build_exit_code": 0,
+        "test_exit_code": 0,
+        "signal": null,
+        "error": null,
+        "first_failure": null
+      },
+      "removal_recommendation": "Retain production guard/behavior. This task changes tests only; any equivalent candidate still requires independent gate-proof review."
+    },
+    {
+      "id": "1355",
+      "mutatorName": "StringLiteral",
+      "location": {
+        "end": {
+          "column": 36,
+          "line": 1045
+        },
+        "start": {
+          "column": 10,
+          "line": 1045
+        }
+      },
+      "replacement": "``",
+      "original": "`integer:${String(value)}`",
+      "classification": "newly_detected_real_gap",
+      "reason": "String 1 versus integer 1, true versus false, and integer 1 versus integer 2 do not intersect.",
+      "specification": "§4.1–4.2 scalar type and value equality",
+      "source_evidence": "verifier.ts:1041–1046",
+      "fault_group": "Typed set elements remain distinct",
+      "case": "contains_any truth-table cases for different string/integer/boolean values",
+      "probe": {
+        "preparedSourceSha256": "b9c363af98c6ee409664f788c878a2b6ed978c3c05b8ec16aafeb105cb4bc17d",
+        "build_exit_code": 0,
+        "test_exit_code": 1,
+        "signal": null,
+        "error": null,
+        "first_failure": "AssertionError [ERR_ASSERTION]: contains_any: [1] against [2]"
+      },
+      "removal_recommendation": "Retain production guard/behavior. This task changes tests only; any equivalent candidate still requires independent gate-proof review."
+    },
+    {
+      "id": "1362",
+      "mutatorName": "ConditionalExpression",
+      "location": {
+        "end": {
+          "column": 35,
+          "line": 1049
+        },
+        "start": {
+          "column": 10,
+          "line": 1049
+        }
+      },
+      "replacement": "true",
+      "original": "typeof value === \"object\"",
+      "classification": "newly_detected_real_gap",
+      "reason": "Return not_checked/unsupported_authorization_snapshot for missing, empty, non-array or malformed actions/constraints.",
+      "specification": "§2 non-empty action array, exact action entry shape and object constraints",
+      "source_evidence": "verifier.ts:767–789; isPlainJsonObject:1048–1050",
+      "fault_group": "Unsupported snapshot shape",
+      "case": "an authenticated malformed actions snapshot is unsupported",
+      "probe": {
+        "preparedSourceSha256": "5fef83dbf5572d609a91986ae16ddecd1900eaa52e2a0c280b34d0c9cef46182",
+        "build_exit_code": 0,
+        "test_exit_code": 1,
+        "signal": null,
+        "error": null,
+        "first_failure": "AssertionError [ERR_ASSERTION]: an authenticated malformed actions snapshot is unsupported: [{\"name\":\"records.review\",\"constraints\":false}]"
+      },
+      "removal_recommendation": "Retain production guard/behavior. This task changes tests only; any equivalent candidate still requires independent gate-proof review."
+    },
+    {
+      "id": "1374",
+      "mutatorName": "MethodExpression",
+      "location": {
+        "end": {
+          "column": 95,
+          "line": 1054
+        },
+        "start": {
+          "column": 45,
+          "line": 1054
+        }
+      },
+      "replacement": "expected.some(key => Object.hasOwn(value, key))",
+      "original": "expected.every((key) => Object.hasOwn(value, key))",
+      "classification": "newly_detected_real_gap",
+      "reason": "Replacing provider_id with an unknown field of the same overall key count remains unsupported.",
+      "specification": "§2 2026-09-27.1 action metadata has exactly six named grant fields",
+      "source_evidence": "verifier.ts:805–815; hasExactKeys:1052–1055",
+      "fault_group": "Exact executable-operation grant members",
+      "case": "executable snapshot support must be false; entries: 1",
+      "probe": {
+        "preparedSourceSha256": "ee139350a4db35dca5fa98676dc70c2f3b7123631478b3206941b63666506800",
+        "build_exit_code": 0,
+        "test_exit_code": 1,
+        "signal": null,
+        "error": null,
+        "first_failure": "AssertionError [ERR_ASSERTION]: executable snapshot support must be false; entries: 1"
+      },
+      "removal_recommendation": "Retain production guard/behavior. This task changes tests only; any equivalent candidate still requires independent gate-proof review."
+    },
+    {
+      "id": "1378",
+      "mutatorName": "ConditionalExpression",
+      "location": {
+        "end": {
+          "column": 26,
+          "line": 1061
+        },
+        "start": {
+          "column": 7,
+          "line": 1061
+        }
+      },
+      "replacement": "false",
+      "original": "calculated === null",
+      "classification": "equivalent_candidate",
+      "reason": "Calculated null is canonicalized as the four-byte JSON text null after the guard removal. Recorded evaluation has already passed checkPolicyEval and is an object whose canonical bytes start with {. Its bytes cannot equal null, so the later byte comparison still returns false and public mismatch/calculated null are preserved.",
+      "specification": "Profile §§2,4–7 plus the exact original validators/control flow described in reason",
+      "source_evidence": "Exact original mutation range above; all production bytes pinned to verifierSourceSha256",
+      "fault_group": null,
+      "case": null,
+      "probe": {
+        "preparedSourceSha256": "b581b3bcb0c7eb5aafc14c155b4c9ba231b8149693b4bd1434601c7ff7604f93",
+        "build_exit_code": 0,
+        "test_exit_code": 0,
+        "signal": null,
+        "error": null,
+        "first_failure": null
+      },
+      "removal_recommendation": "Retain production guard/behavior. This task changes tests only; any equivalent candidate still requires independent gate-proof review."
+    },
+    {
+      "id": "1380",
+      "mutatorName": "BooleanLiteral",
+      "location": {
+        "end": {
+          "column": 40,
+          "line": 1061
+        },
+        "start": {
+          "column": 35,
+          "line": 1061
+        }
+      },
+      "replacement": "true",
+      "original": "false",
+      "classification": "newly_detected_real_gap",
+      "reason": "Return mismatch/policy_evaluation_mismatch with calculated_evaluation null for an authenticated recorded object.",
+      "specification": "§5.6 no evaluator result; §7 mismatch comparison",
+      "source_evidence": "verifier.ts:734,851–859,1018–1021,1061",
+      "fault_group": "Recorded evaluation without any conditions",
+      "case": "no conditions produce no calculated object",
+      "probe": {
+        "preparedSourceSha256": "f707f5845137771e05881299ac906c80519723ee5783544721b92c2957c73566",
+        "build_exit_code": 0,
+        "test_exit_code": 1,
+        "signal": null,
+        "error": null,
+        "first_failure": "AssertionError [ERR_ASSERTION]: no conditions produce no calculated object: {}"
+      },
+      "removal_recommendation": "Retain production guard/behavior. This task changes tests only; any equivalent candidate still requires independent gate-proof review."
+    },
+    {
+      "id": "1383",
+      "mutatorName": "LogicalOperator",
+      "location": {
+        "end": {
+          "column": 92,
+          "line": 1064
+        },
+        "start": {
+          "column": 10,
+          "line": 1064
+        }
+      },
+      "replacement": "left.length === right.length || left.every((byte, index) => byte === right[index])",
+      "original": "left.length === right.length && left.every((byte, index) => byte === right[index])",
+      "classification": "newly_detected_real_gap",
+      "reason": "A different recorded value of identical canonical byte length is mismatch, with the correct calculated object.",
+      "specification": "§7 complete typed JSON equality including array order",
+      "source_evidence": "verifier.ts:1057–1065",
+      "fault_group": "Complete recorded comparison",
+      "case": "a different field value of the same byte length is a mismatch",
+      "probe": {
+        "preparedSourceSha256": "779ef5e0247b2ebe63859bbd41b466f73e964d8aecef5a934470a0d9a3d18788",
+        "build_exit_code": 0,
+        "test_exit_code": 1,
+        "signal": null,
+        "error": null,
+        "first_failure": "AssertionError [ERR_ASSERTION]: a different field value of the same byte length is a mismatch"
+      },
+      "removal_recommendation": "Retain production guard/behavior. This task changes tests only; any equivalent candidate still requires independent gate-proof review."
+    },
+    {
+      "id": "1384",
+      "mutatorName": "ConditionalExpression",
+      "location": {
+        "end": {
+          "column": 38,
+          "line": 1064
+        },
+        "start": {
+          "column": 10,
+          "line": 1064
+        }
+      },
+      "replacement": "true",
+      "original": "left.length === right.length",
+      "classification": "equivalent_candidate",
+      "reason": "Canonicalize returns complete canonical JSON values without trailing bytes. A complete recorded object cannot be a strict byte prefix of another complete canonical JSON object: its closing brace would terminate the outer value. The unchanged every-byte check already rejects either unequal-length case; length equality is redundant for this exact recorded/calculated object domain.",
+      "specification": "Profile §§2,4–7 plus the exact original validators/control flow described in reason",
+      "source_evidence": "Exact original mutation range above; all production bytes pinned to verifierSourceSha256",
+      "fault_group": null,
+      "case": null,
+      "probe": {
+        "preparedSourceSha256": "1c09346827620fdc5424883dabebf29b697f3a1fc0835972bce3cbd37a5bda6b",
+        "build_exit_code": 0,
+        "test_exit_code": 0,
+        "signal": null,
+        "error": null,
+        "first_failure": null
+      },
+      "removal_recommendation": "Retain production guard/behavior. This task changes tests only; any equivalent candidate still requires independent gate-proof review."
+    },
+    {
+      "id": "1386",
+      "mutatorName": "MethodExpression",
+      "location": {
+        "end": {
+          "column": 92,
+          "line": 1064
+        },
+        "start": {
+          "column": 42,
+          "line": 1064
+        }
+      },
+      "replacement": "left.some((byte, index) => byte === right[index])",
+      "original": "left.every((byte, index) => byte === right[index])",
+      "classification": "newly_detected_real_gap",
+      "reason": "A different recorded value of identical canonical byte length is mismatch, with the correct calculated object.",
+      "specification": "§7 complete typed JSON equality including array order",
+      "source_evidence": "verifier.ts:1057–1065",
+      "fault_group": "Complete recorded comparison",
+      "case": "a different field value of the same byte length is a mismatch",
+      "probe": {
+        "preparedSourceSha256": "1523c41c6a3bd14a54bdbbbfc34e73258643d66dc17f6e280fb5581d3cd1eca8",
+        "build_exit_code": 0,
+        "test_exit_code": 1,
+        "signal": null,
+        "error": null,
+        "first_failure": "AssertionError [ERR_ASSERTION]: a different field value of the same byte length is a mismatch"
+      },
+      "removal_recommendation": "Retain production guard/behavior. This task changes tests only; any equivalent candidate still requires independent gate-proof review."
+    },
+    {
+      "id": "1388",
+      "mutatorName": "ConditionalExpression",
+      "location": {
+        "end": {
+          "column": 91,
+          "line": 1064
+        },
+        "start": {
+          "column": 70,
+          "line": 1064
+        }
+      },
+      "replacement": "true",
+      "original": "byte === right[index]",
+      "classification": "newly_detected_real_gap",
+      "reason": "A different recorded value of identical canonical byte length is mismatch, with the correct calculated object.",
+      "specification": "§7 complete typed JSON equality including array order",
+      "source_evidence": "verifier.ts:1057–1065",
+      "fault_group": "Complete recorded comparison",
+      "case": "a different field value of the same byte length is a mismatch",
+      "probe": {
+        "preparedSourceSha256": "d90801a8ccf18e78e4d9fbc9b830b24de354b091b38ccf85adf6f4dd5a7c1b30",
+        "build_exit_code": 0,
+        "test_exit_code": 1,
+        "signal": null,
+        "error": null,
+        "first_failure": "AssertionError [ERR_ASSERTION]: a different field value of the same byte length is a mismatch"
+      },
+      "removal_recommendation": "Retain production guard/behavior. This task changes tests only; any equivalent candidate still requires independent gate-proof review."
+    }
+  ]
+}
