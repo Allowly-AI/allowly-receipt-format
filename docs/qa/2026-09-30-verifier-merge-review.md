@@ -41,3 +41,24 @@ that cut for this merge: these probes ran locally, and no durable CI artifact
 has replaced the committed evidence. Keep exact mutation identities, hashes,
 commands, outcomes, and the source arguments needed to review the proposed
 exclusions. Production code and every test assertion remain unchanged.
+
+## SEAL worker merge
+
+The worker could not create its Git index lock in its restricted sandbox. The
+integrator staged only the two tested owned files and committed them normally
+on `fix/verifier-seal-20260930`: `d3de670`.
+
+Reject the three Ponytail cuts for this merge:
+
+- Keep the local exact-probe evidence. The generated Stryker report does not
+  contain these independent before/after commands, observations, or source
+  arguments and is not a replacement for this committed record.
+- Keep the current/renewed authorization pair as an adjacent positive control
+  and changed-input check for the authorization-independent SEAL contract.
+- Keep the common rejection tables through both public methods,
+  `verifySealJson` and `verifySealValue`. They promise the same result fields
+  through different input boundaries; do not assume shared internals are a
+  substitute for checking both public contracts.
+
+All tested assertions, expected results, and production source stay unchanged.
+Finish the merge through the hook's documented unchanged-diff rejection path.
