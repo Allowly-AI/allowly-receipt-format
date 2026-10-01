@@ -8,7 +8,9 @@
  * Usage: node --experimental-strip-types test_pseudonym_refs.ts
  *    or after build: node dist/test_pseudonym_refs.js
  */
-import { matchesRef } from "./verifier.js";
+import assert from "node:assert/strict";
+import { createHmac, generateKeyPairSync, randomBytes, sign } from "node:crypto";
+import { matchesRef, VerificationError, verifyReceipt } from "./verifier.js";
 
 const KEY = new Uint8Array(Array.from({ length: 32 }, (_, i) => i));
 const RECORD_REF =
@@ -62,6 +64,102 @@ function throws(fn: () => void, needle: string): boolean {
 }
 check("rejects_weak_key", throws(() => matchesRef(new Uint8Array(8), "record", "MRN-48291", RECORD_REF), "128 bits"));
 check("rejects_unknown_field", throws(() => matchesRef(KEY, "unknown", "MRN-48291", RECORD_REF), "field name"));
+
+// Independent Appendix A.2 oracle: feed each framing component separately to
+// Node, rather than copying the verifier's Buffer.concat construction.
+function reference(key: Uint8Array, field: string, value: string): string {
+  return "hmac-v1:" + createHmac("sha256", key)
+    .update(Buffer.from(field, "ascii"))
+    .update(new Uint8Array([0]))
+    .update(Buffer.from(value, "utf8"))
+    .digest("hex");
+}
+
+const fields = ["project", "record", "actor", "full_tuple"] as const;
+const values = ["", " MRN-48291 ", "mrn-48291", "José", "Jose\u0301", "项目🙂", "a\u0000b"];
+const ephemeralKey = new Uint8Array(randomBytes(32));
+for (const length of [16, 32, 64]) {
+  const key = new Uint8Array(randomBytes(length));
+  for (const field of fields) {
+    for (const value of values) {
+      const ref = reference(key, field, value);
+      assert.equal(matchesRef(key, field, value, ref), true, `${length}-byte ${field}: ${JSON.stringify(value)}`);
+      assert.equal(matchesRef(ephemeralKey, field, value, ref), false, "independent keys do not match");
+      assert.equal(matchesRef(key, field, value + "x", ref), false, "values are exact");
+      for (const other of fields.filter((name) => name !== field)) {
+        assert.equal(matchesRef(key, other, value, ref), false, `${field}/${other} separation`);
+      }
+    }
+  }
+}
+
+// A.2 full_tuple uses four literal 0x1F bytes; missing components are empty.
+for (const components of [
+  ["MRN-48291", "baseline_arm_1", "demographics", "demographics", "2"],
+  ["记录🙂", "", "instrument", "", ""],
+  ["", "", "", "", ""],
+]) {
+  const framed = Buffer.from(components.flatMap((part, index) =>
+    [...(index === 0 ? [] : [0x1f]), ...Buffer.from(part, "utf8")]));
+  const ref = "hmac-v1:" + createHmac("sha256", ephemeralKey)
+    .update(Buffer.from("full_tuple", "ascii")).update(new Uint8Array([0]))
+    .update(framed).digest("hex");
+  assert.equal(matchesRef(ephemeralKey, "full_tuple", components.join("\x1f"), ref), true);
+  assert.equal(matchesRef(ephemeralKey, "project", components.join("\x1f"), ref), false);
+  assert.equal(matchesRef(ephemeralKey, "full_tuple", components.join("|"), ref), false);
+}
+
+const boundaryValue = "boundary José🙂";
+const validRef = reference(ephemeralKey, "record", boundaryValue);
+for (const key of [null, undefined, "0123456789abcdef", Array(32).fill(1),
+  new Uint16Array(16), new ArrayBuffer(32), new DataView(new ArrayBuffer(32))]) {
+  assert.throws(() => matchesRef(key as unknown as Uint8Array, "record", boundaryValue, validRef), TypeError);
+}
+for (const length of [0, 8, 15]) {
+  assert.throws(() => matchesRef(new Uint8Array(randomBytes(length)), "record", boundaryValue, validRef), RangeError);
+}
+for (const field of ["", "Record", "unknown", "record\u0000", "prоject", null, undefined, 0,
+  new String("record"), [], Symbol("record")]) {
+  assert.throws(() => matchesRef(ephemeralKey, field as unknown as string, boundaryValue, validRef), RangeError);
+}
+for (const value of [null, undefined, 0, false, [], {}, new String(boundaryValue)]) {
+  assert.throws(() => matchesRef(ephemeralKey, "record", value as unknown as string, validRef), TypeError);
+}
+for (const value of ["\ud800", "\udc00", "a\ud800b", "\udc00\ud800"]) {
+  assert.throws(() => matchesRef(ephemeralKey, "record", value, validRef), RangeError);
+}
+for (const ref of [null, undefined, 0, false, {}, [], Buffer.from(validRef), new String(validRef)]) {
+  assert.equal(matchesRef(ephemeralKey, "record", boundaryValue, ref as unknown as string), false);
+}
+for (const ref of ["", "prefix" + validRef, validRef + "suffix", validRef + "\n", validRef + "\r",
+  validRef + "\u0000", validRef.slice(0, -1), validRef + "0", validRef.toUpperCase(),
+  validRef.replace("hmac-v1:", "hmac-v2:"), validRef.replace("h", "\u0168")]) {
+  assert.equal(matchesRef(ephemeralKey, "record", boundaryValue, ref), false, `noncanonical ${JSON.stringify(ref)}`);
+}
+
+// name is public exception metadata. Exercise the constructor and a real
+// verification failure with an ephemeral signing key and hand-written bytes.
+const diagnostic = new VerificationError("test diagnostic");
+assert.equal(diagnostic.name, "VerificationError");
+assert.equal(diagnostic.message, "test diagnostic");
+assert.equal(diagnostic instanceof Error, true);
+const canonicalReceipt = '{"action":"test","agent_id":"agent","alg":"Ed25519",' +
+  '"authorization_id":"auth","context":{},"decision":"allow","engine_version":"test",' +
+  '"issued_at":"2026-09-30T00:00:00.000Z","key_id":"ephemeral",' +
+  '"reason":"test","receipt_id":"receipt","resource":null,"schema_version":"4",' +
+  '"user_id":"user","workspace_id":"workspace"}';
+const { privateKey, publicKey } = generateKeyPairSync("ed25519");
+const signature = sign(null, Buffer.from(canonicalReceipt, "utf8"), privateKey);
+const receipt = { ...JSON.parse(canonicalReceipt), signature: signature.toString("base64url") };
+const keys = [{ keyId: "ephemeral", alg: "Ed25519" as const,
+  publicKeyBytes: new Uint8Array(publicKey.export({ type: "spki", format: "der" }).subarray(-32)),
+  activeFrom: new Date("2026-09-01T00:00:00.000Z"), activeUntil: null }];
+const opts = { now: new Date("2026-10-01T00:00:00.000Z"), expectedWorkspaceId: "workspace" };
+await verifyReceipt(receipt, keys, opts);
+const changedSignature = Buffer.from(signature);
+changedSignature[0] ^= 1;
+await assert.rejects(verifyReceipt({ ...receipt, signature: changedSignature.toString("base64url") }, keys, opts),
+  (error: unknown) => error instanceof VerificationError && error.name === "VerificationError");
 
 if (failures) {
   console.log(`\n${failures} failure(s)`);
