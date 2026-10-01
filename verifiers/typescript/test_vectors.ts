@@ -6,7 +6,8 @@
  */
 import { readFileSync } from "node:fs";
 import assert from "node:assert/strict";
-import { createHash, generateKeyPairSync, sign as signBytes } from "node:crypto";
+import { createHash, generateKeyPairSync, sign as signBytes, webcrypto } from "node:crypto";
+import { mock } from "node:test";
 import jcsCanonicalize from "canonicalize";
 import {
   VerificationError,
@@ -158,6 +159,83 @@ async function main(vectorsPath: string): Promise<number> {
     await verifyReceipt(signBoundaryReceipt({ ...baseline,
       policy_eval: { matched_condition: null, field_value } }), [boundaryKey], { now });
   }
+
+  // A membership value may be empty or contain any mix of JSON scalars. Every
+  // item must be a scalar; one valid item cannot hide an object or nested array.
+  for (const value of [[], [null, false, true, 0, -1, ""]]) {
+    await verifyReceipt(signBoundaryReceipt({ ...baseline,
+      policy_eval: { matched_condition: { field: "v", op: "in", value }, field_value: null },
+    }), [boundaryKey], { now });
+  }
+  for (const value of [[null, {}], [false, []], [1, {}], ["valid", []], [{}, true]]) {
+    await rejectSigned({ ...baseline,
+      policy_eval: { matched_condition: { field: "v", op: "in", value }, field_value: null },
+    }, "every policy condition array item must be a scalar");
+  }
+
+  const { action: omittedAction, ...eventBaseline } = baseline;
+  await verifyReceipt(signBoundaryReceipt({ ...eventBaseline,
+    event: "authorization.create", decision: "authorization_granted", resource: null,
+  }), [boundaryKey], { now });
+  await rejectSigned({ ...eventBaseline,
+    event: ["authorization.create"], decision: "authorization_granted", resource: null,
+  }, "an event array must not be coerced into an allowed event name");
+
+  const signedBoundary = signBoundaryReceipt(baseline);
+  await assert.rejects(verifyReceipt(signedBoundary, new Set([boundaryKey]) as never, { now }),
+    VerificationError, "publicKeys must be an array even when an iterable contains the right key");
+  // Spec §7 step 2 rejects wrong-length signatures before cryptographic work.
+  // Counting calls catches a skipped schema guard even if Ed25519 later rejects
+  // the same bytes. No error text is used as the detection oracle.
+  const signatureVerification = mock.method(webcrypto.subtle, "verify");
+  try {
+    for (const length of [0, 1, 63, 65]) {
+      await assert.rejects(verifyReceipt({ ...signedBoundary,
+        signature: Buffer.alloc(length).toString("base64url"),
+      }, [boundaryKey], { now }), VerificationError);
+    }
+    assert.equal(signatureVerification.mock.callCount(), 0,
+      "invalid signature lengths must fail the schema check before Ed25519 verification");
+  } finally {
+    signatureVerification.mock.restore();
+  }
+  // A caller can supply malformed key objects directly, bypassing the key
+  // document loader. Sign the numeric selector independently so crypto cannot
+  // conceal a missing receipt key_id type check.
+  const { signature: omittedSignature, ...numericSelectorPayload } = { ...baseline, key_id: 7 };
+  const numericSelectorReceipt = { ...numericSelectorPayload,
+    signature: signBytes(null, Buffer.from(jcsCanonicalize(numericSelectorPayload)!), privateKey)
+      .toString("base64url"),
+  };
+  await assert.rejects(verifyReceipt(numericSelectorReceipt,
+    [{ ...boundaryKey, keyId: 7 as never }], { now }), VerificationError,
+  "an authentic receipt must still use a string key_id");
+
+  // Sparse arrays can have as many enumerable keys as their length by adding
+  // an extra property. They must not become the signed empty array when cloned
+  // and serialized. The accepted control fixes the signature over [] first.
+  const emptyArrayReceipt = signBoundaryReceipt({ ...baseline, context: { values: [] } });
+  await verifyReceipt(emptyArrayReceipt, [boundaryKey], { now });
+  const balancedSparseArray: unknown[] = new Array(1);
+  Object.defineProperty(balancedSparseArray, "extra", { enumerable: true, value: null });
+  const sparseReceipt = { ...emptyArrayReceipt, context: { values: balancedSparseArray } };
+  await assert.rejects(verifyReceipt(sparseReceipt, [boundaryKey], { now }), VerificationError,
+    "a sparse array plus an extra key must not reuse an empty-array signature");
+
+  const nullPrototypeContext = Object.assign(Object.create(null), {
+    empty: Object.create(null), values: [null, false, [], {}],
+  });
+  await verifyReceipt(signBoundaryReceipt({ ...baseline, context: nullPrototypeContext }),
+    [boundaryKey], { now });
+  const localMetadataReceipt = signBoundaryReceipt({ ...baseline, context: {} }) as Record<string, unknown>;
+  let localMetadataReads = 0;
+  Object.defineProperty(localMetadataReceipt.context as object, "local_metadata", {
+    enumerable: false,
+    get() { localMetadataReads++; throw new Error("local metadata must not be read"); },
+  });
+  await verifyReceipt(localMetadataReceipt, [boundaryKey], { now });
+  assert.equal(localMetadataReads, 0, "non-enumerable metadata is outside the JSON payload");
+
   const checkpointCase = vectors.checkpoint_cases[0];
   const checkpoint = checkpointCase.checkpoint;
   await verifyReceipt(signBoundaryReceipt(checkpoint), [boundaryKey], { now });
@@ -295,6 +373,43 @@ async function main(vectorsPath: string): Promise<number> {
   }
 
   assert.equal(new TextDecoder().decode(canonicalize({ v: '"\\\b\f\r' })), String.raw`{"v":"\"\\\u0008\u000c\u000d"}`);
+  const canonicalScalarCases: Array<[unknown, string]> = [
+    [null, "null"], [false, "false"], [true, "true"], [0, "0"], [-0, "0"],
+    [Number.MAX_SAFE_INTEGER, "9007199254740991"],
+    [Number.MIN_SAFE_INTEGER, "-9007199254740991"],
+    [[], "[]"], [{}, "{}"], [Object.create(null), "{}"],
+    [{ empty: [], nested: Object.create(null), value: null },
+      '{"empty":[],"nested":{},"value":null}'],
+    [{ "2": "two", "10": "ten", "1": "one" }, '{"1":"one","10":"ten","2":"two"}'],
+    ["/😀é", '"/😀é"'],
+  ];
+  for (const [value, expected] of canonicalScalarCases) {
+    assert.deepEqual(canonicalize(value), new TextEncoder().encode(expected),
+      "canonical bytes must preserve empty values, scalars and UTF-8");
+  }
+  assert.deepEqual(canonicalize(String.fromCharCode(...Array.from({ length: 32 }, (_, i) => i))),
+    new TextEncoder().encode(String.raw`"\u0000\u0001\u0002\u0003\u0004\u0005\u0006\u0007\u0008\u0009\u000a\u000b\u000c\u000d\u000e\u000f\u0010\u0011\u0012\u0013\u0014\u0015\u0016\u0017\u0018\u0019\u001a\u001b\u001c\u001d\u001e\u001f"`),
+    "wire 4 uses a lowercase four-digit escape for every control character");
+  assert.throws(() => canonicalize(balancedSparseArray), VerificationError,
+    "key count alone cannot prove that an array is dense");
+
+  // Enumerable accessors are reachable JavaScript inputs, but are not JSON
+  // data. Rejection must not execute a getter while making the snapshot.
+  for (const value of [{}, [null]]) {
+    let getterReads = 0;
+    Object.defineProperty(value, Array.isArray(value) ? "0" : "claim", {
+      enumerable: true,
+      get() { getterReads++; return true; },
+    });
+    assert.throws(() => canonicalize(value), VerificationError);
+    assert.equal(getterReads, 0, "an invalid input getter must never run");
+  }
+  const snapshotReceipt = signBoundaryReceipt({ ...baseline, context: { claim: false } }) as Record<string, unknown>;
+  const snapshotVerification = verifyReceipt(snapshotReceipt, [boundaryKey], { now });
+  queueMicrotask(() => { (snapshotReceipt.context as { claim: boolean }).claim = true; });
+  await snapshotVerification;
+  assert.deepEqual(snapshotReceipt.context, { claim: true }, "the caller changed its input after verification began");
+
   assert.doesNotThrow(() => canonicalize(new Array(49_999).fill(null)));
   assert.throws(
     () => canonicalize(new Array(50_000).fill(null)),
