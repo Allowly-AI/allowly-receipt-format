@@ -142,7 +142,12 @@ async function main(vectorsPath: string): Promise<void> {
     ["gt", 9, 10, false, null], ["gt", 10, 10, false, null], ["gt", 11, 10, true, 11],
     ["gte", 9, 10, false, null], ["gte", 10, 10, true, 10], ["gte", 11, 10, true, 11],
     ["lt", true, 10, null, true], ["gte", "10", 10, null, "10"],
+    ["lt", "10", 10, null, "10"], ["gt", true, 10, null, true],
+    ["lt", [10], 10, null, null],
+    ["eq", {}, null, null, null], ["eq", [], "x", null, null],
+    ["eq", null, "x", null, null], ["eq", "x", null, null, "x"],
     ["in", true, [1, true], true, true], ["in", false, [1, true], false, null],
+    ["in", true, [false, true], true, true], ["nin", true, [false, true], false, null],
     ["in", true, [1], null, true], ["in", null, [null], true, null],
     ["nin", true, [1, false], true, true], ["nin", true, [true], false, null],
     ["nin", true, [1], null, true], ["nin", null, [null], false, null],
@@ -153,14 +158,21 @@ async function main(vectorsPath: string): Promise<void> {
     ["contains_any", [null], [null], true, null],
     ["contains_any", "a", ["a"], null, "a"],
     ["contains_any", [{}], [null], null, null],
+    ["contains_any", [false], [true], false, null],
+    ["contains_any", [1], [2], false, null],
+    ["contains_any", ["1"], [1], false, null],
+    ["contains_any", ["a", {}], ["b"], null, null],
     ["contains_none", [], [null], true, null],
     ["contains_none", [true], [1], true, null],
     ["contains_none", [1, true], [true], false, null],
     ["contains_none", [null], [null], false, null],
     ["contains_none", {}, [null], null, null],
+    ["contains_none", "a", ["a"], null, null],
+    ["contains_none", ["a", {}], ["a"], null, null],
     ["empty", [], true, true, null], ["empty", [null], true, false, null],
     ["empty", [], false, false, null], ["empty", [null], false, true, null],
     ["empty", "", true, null, null],
+    ["empty", "not-an-array", true, null, null], ["empty", {}, true, null, null],
     ["exists", null, true, true, null], ["exists", null, false, false, null],
     ["exists", false, true, true, false],
   ];
@@ -175,6 +187,115 @@ async function main(vectorsPath: string): Promise<void> {
       `${op}: ${JSON.stringify(actual)} against ${JSON.stringify(value)}`);
   }
 
+  const expectReplay = async (
+    name: string,
+    constraints: JsonObject,
+    context: JsonObject,
+    recorded: JsonObject,
+    calculated: JsonObject | null,
+    status = "matched",
+    diagnostic = status === "matched" ? "matched" : "policy_evaluation_mismatch",
+  ): Promise<void> => {
+    const action = signReceipt({ ...signedAction, context, policy_eval: recorded });
+    const creation = signReceipt({ ...signedCreation,
+      context: { actions: [{ name: action.action, constraints }] } });
+    assert.deepEqual(
+      await verifyPolicyEvaluation(action, [creation], [replayKey], replayOptions),
+      { ...matchedCase.expected, status, diagnostic,
+        recorded_evaluation: recorded, calculated_evaluation: calculated },
+      name,
+    );
+  };
+  const matchingCondition = { field: "tier", eq: "blocked" };
+  const matchingEvaluation = { matched_condition: { field: "tier", op: "eq", value: "blocked" },
+    field_value: "blocked" };
+  const noMatchEvaluation = { matched_condition: null, field_value: null };
+
+  // Profile §4 counts all lists before §5 chooses the first match.
+  for (const [deny, escalate, confirm] of [[10, 0, 0], [4, 3, 3], [0, 5, 5], [0, 0, 10]]) {
+    const constraints = {
+      deny_when: Array.from({ length: deny }, () => matchingCondition),
+      escalate_when: Array.from({ length: escalate }, () => matchingCondition),
+      confirm_when: Array.from({ length: confirm }, () => matchingCondition),
+    };
+    await expectReplay(`exactly ten conditions are supported: ${deny}/${escalate}/${confirm}`,
+      constraints, { tier: "blocked" }, matchingEvaluation, matchingEvaluation);
+  }
+  for (const [deny, escalate, confirm] of [[11, 0, 0], [4, 3, 4], [1, 5, 5], [0, 0, 11]]) {
+    await expectReplay(`eleven conditions are unsupported: ${deny}/${escalate}/${confirm}`, {
+      deny_when: Array.from({ length: deny }, () => matchingCondition),
+      escalate_when: Array.from({ length: escalate }, () => matchingCondition),
+      confirm_when: Array.from({ length: confirm }, () => matchingCondition),
+    }, { tier: "blocked" }, matchingEvaluation, null, "not_checked", "unsupported_policy");
+  }
+  for (const key of ["deny_when", "escalate_when", "confirm_when"]) {
+    for (const malformedList of [false, 1, "", "condition", {}, { length: 0 }]) {
+      await expectReplay(`${key} must be null or an array: ${JSON.stringify(malformedList)}`,
+        { [key]: malformedList }, {}, noMatchEvaluation, null, "not_checked", "unsupported_policy");
+    }
+    await expectReplay(`${key} may be null beside valid conditions`, {
+      deny_when: [matchingCondition], escalate_when: [matchingCondition], confirm_when: [matchingCondition],
+      [key]: null,
+    }, { tier: "blocked" }, matchingEvaluation, matchingEvaluation);
+    for (const invalid of [{ field: "tier", unknown: "blocked" }, { field: "tier", in: ["blocked", {}] }]) {
+      await expectReplay(`an early ${key} match cannot hide its later malformed condition`,
+        { [key]: [matchingCondition, invalid] }, { tier: "blocked" }, matchingEvaluation,
+        null, "not_checked", "unsupported_policy");
+      if (key !== "deny_when") {
+        await expectReplay(`an early deny cannot hide malformed ${key}`,
+          { deny_when: [matchingCondition], [key]: [invalid] }, { tier: "blocked" },
+          matchingEvaluation, null, "not_checked", "unsupported_policy");
+      }
+    }
+  }
+
+  // Profile §5.6 calculates no result, even if a signed receipt records one.
+  for (const constraints of [{}, { deny_when: [] }, { escalate_when: [], confirm_when: [] },
+    { deny_when: null, escalate_when: null, confirm_when: null },
+    { deny_when: [], escalate_when: null, confirm_when: [] }, { max_per_day: 1 }]) {
+    await expectReplay(`no conditions produce no calculated object: ${JSON.stringify(constraints)}`,
+      constraints, {}, noMatchEvaluation, null, "mismatch");
+  }
+  for (const key of ["escalate_when", "confirm_when"]) {
+    const firstMissing = { matched_condition: { field: "absent", op: "eq", value: 1 }, field_value: null };
+    await expectReplay(`${key} returns its first missing field before a later match`,
+      { [key]: [{ field: "absent", eq: 1 }, matchingCondition] }, { tier: "blocked" },
+      firstMissing, firstMissing);
+  }
+
+  // Profile §4 requires an own field member. An inherited string must not turn
+  // a signed object with missing/extra members into a supported condition.
+  const inheritedFieldDescriptor = Object.getOwnPropertyDescriptor(Object.prototype, "field");
+  try {
+    Object.defineProperty(Object.prototype, "field", { value: "tier", configurable: true });
+    for (const condition of [{ eq: "blocked" }, { eq: "blocked", gte: 1 },
+      { eq: "blocked", unexpected: 1 }]) {
+      await expectReplay(`an inherited field cannot repair condition members: ${JSON.stringify(condition)}`,
+        { deny_when: [condition] }, { tier: "blocked" }, matchingEvaluation,
+        null, "not_checked", "unsupported_policy");
+    }
+  } finally {
+    if (inheritedFieldDescriptor) Object.defineProperty(Object.prototype, "field", inheritedFieldDescriptor);
+    else delete (Object.prototype as JsonObject).field;
+  }
+
+  // Profile §7 compares every byte/value, rather than just serialized length.
+  const stringEvaluation = { matched_condition: { field: "sample", op: "eq", value: "alpha" },
+    field_value: "alpha" };
+  await expectReplay("a different field value of the same byte length is a mismatch",
+    { deny_when: [{ field: "sample", eq: "alpha" }] }, { sample: "alpha" },
+    { ...stringEvaluation, field_value: "bravo" }, stringEvaluation, "mismatch");
+  const membershipEvaluation = { matched_condition: { field: "sample", op: "in", value: ["a", "b"] },
+    field_value: "a" };
+  await expectReplay("recorded policy-value array order is part of the comparison",
+    { deny_when: [{ field: "sample", in: ["a", "b"] }] }, { sample: "a" },
+    { ...membershipEvaluation, matched_condition: { field: "sample", op: "in", value: ["b", "a"] } },
+    membershipEvaluation, "mismatch");
+  await expectReplay("object member order does not change the complete evaluation",
+    { deny_when: [{ field: "sample", eq: "alpha" }] }, { sample: "alpha" },
+    { field_value: "alpha", matched_condition: { value: "alpha", op: "eq", field: "sample" } },
+    stringEvaluation);
+
   // Malformed policy is not replayable, even with an authentic signature.
   const invalidConditions: unknown[] = [null, [], "condition", {},
     { field: "", eq: 1 }, { field: 1, eq: 1 }, { field: null, eq: 1 },
@@ -184,7 +305,7 @@ async function main(vectorsPath: string): Promise<void> {
     for (const value of [null, 0, 1, "true", [], {}]) invalidConditions.push({ field: "sample", [op]: value });
   }
   for (const op of ["in", "nin", "contains_any", "contains_none"]) {
-    for (const value of [null, true, 1, "a", [], {}, [{}]]) invalidConditions.push({ field: "sample", [op]: value });
+    for (const value of [null, true, 1, "a", [], {}, [{}], [1, {}]]) invalidConditions.push({ field: "sample", [op]: value });
   }
   for (const op of ["lt", "lte", "gt", "gte"]) {
     for (const value of [null, true, "1", [], {}]) invalidConditions.push({ field: "sample", [op]: value });
@@ -225,6 +346,37 @@ async function main(vectorsPath: string): Promise<void> {
       agent_id: "another-agent" })], [replayKey], replayOptions),
     { ...matchedCase.expected, status: "not_checked", diagnostic: "authorization_subject_mismatch",
       calculated_evaluation: null },
+  );
+  assert.deepEqual(
+    await verifyPolicyEvaluation(signReceipt({ ...signedAction, authorization_id: "" }),
+      [signReceipt({ ...signedCreation, authorization_id: "" })], [replayKey], replayOptions),
+    { ...matchedCase.expected, authorization_receipt_id: null, status: "not_checked",
+      diagnostic: "authorization_receipt_not_found", calculated_evaluation: null },
+    "an empty authorization ID never selects a matching creation snapshot",
+  );
+
+  for (const actions of [undefined, null, false, 1, "not-an-array", {}, [],
+    [null], [[]], ["entry"], [{}],
+    [{ name: signedAction.action, constraints: false }],
+    [{ name: signedAction.action, constraints: 1 }],
+    [{ name: signedAction.action, constraints: "policy" }],
+    [{ name: signedAction.action, constraints: [] }]]) {
+    const context = actions === undefined ? {} : { actions };
+    assert.deepEqual(
+      await verifyPolicyEvaluation(signedAction, [signReceipt({ ...signedCreation, context })],
+        [replayKey], replayOptions),
+      { ...matchedCase.expected, status: "not_checked", diagnostic: "unsupported_authorization_snapshot",
+        calculated_evaluation: null },
+      `an authenticated malformed actions snapshot is unsupported: ${JSON.stringify(actions)}`,
+    );
+  }
+  assert.deepEqual(
+    await verifyPolicyEvaluation(signedAction, [signReceipt({ ...signedCreation, context: { actions: [
+      { name: "first-other-action", constraints: {} }, signedCreation.context.actions[0],
+      { name: "second-other-action", constraints: {} },
+    ] } })], [replayKey], replayOptions),
+    matchedCase.expected,
+    "several different unrelated actions do not change the selected policy",
   );
 
   for (const actions of [
@@ -275,6 +427,8 @@ async function main(vectorsPath: string): Promise<void> {
     [{ ...grant, enabled_executable_id: ["not-a-string"] }],
     [{ ...grant, definition_fingerprint: "sha256:bad" }],
     [{ ...grant, minimum_evidence_mode: "unsupported" }],
+    [Object.fromEntries(Object.entries(grant).map(([key, value]) =>
+      [key === "provider_id" ? "unexpected_provider" : key, value]))],
   ];
   for (const field of Object.keys(grant)) {
     const missingField = { ...grant };
@@ -329,6 +483,7 @@ async function main(vectorsPath: string): Promise<void> {
     [{ ...opts, trustedKeyFingerprints: { has() { return true; }, size: "1" } }, "trustedKeyFingerprints must be a non-empty set"],
     [{ ...opts, trustedKeyFingerprints: { has() { return true; }, size: 1 } }, "trustedKeyFingerprints must be a non-empty set"],
     [{ ...opts, now: "not-a-date" }, "now must be a valid Date"],
+    [{ ...opts, now: null }, "now must be a valid Date"],
     [{ ...opts, now: new Date(Number.NaN) }, "now must be a valid Date"],
   ] as const) {
     await assert.rejects(
@@ -337,7 +492,8 @@ async function main(vectorsPath: string): Promise<void> {
     );
   }
   const pinned = [...trustedKeyFingerprints][0];
-  for (const malformed of [null, 1, `extra${pinned}`, `${pinned}extra`, pinned.toUpperCase()]) {
+  for (const malformed of [null, 1, `extra${pinned}`, `${pinned}extra`, pinned.toUpperCase(),
+    { toString: () => pinned }]) {
     await assert.rejects(
       verifyPolicyEvaluation(matchedCase.receipt, matchedCase.authorization_receipts, keys, {
         ...opts,
@@ -346,6 +502,36 @@ async function main(vectorsPath: string): Promise<void> {
       (error: unknown) => error instanceof VerificationError
         && error.message === "trustedKeyFingerprints must contain at least one sha256:<64 lowercase hex> fingerprint",
       "one valid pin must not hide a malformed second pin",
+    );
+  }
+
+  const callableOptions = Object.assign(() => undefined, replayOptions);
+  const callablePins = Object.assign(function* () { yield publicKeyFingerprint(replayKey); }, {
+    has: () => true, size: 1,
+    *[Symbol.iterator]() { yield publicKeyFingerprint(replayKey); },
+  });
+  for (const [options, message] of [
+    [callableOptions, "expectedWorkspaceId must be a non-empty string"],
+    [{ ...replayOptions, trustedKeyFingerprints: callablePins }, "trustedKeyFingerprints must be a non-empty set"],
+    [{ ...replayOptions, trustedKeyFingerprints: {
+      has: () => true, size: "1",
+      *[Symbol.iterator]() { yield publicKeyFingerprint(replayKey); },
+    } }, "trustedKeyFingerprints must be a non-empty set"],
+  ] as const) {
+    await assert.rejects(
+      verifyPolicyEvaluation(signedAction, [signedCreation], [replayKey], options as never),
+      (error: unknown) => error instanceof VerificationError && error.message === message,
+    );
+  }
+  const { now: _now, ...withoutNow } = replayOptions;
+  assert.deepEqual(await verifyPolicyEvaluation(signedAction, [signedCreation], [replayKey], withoutNow),
+    matchedCase.expected, "the public replay API uses its default clock when now is omitted");
+  for (const publicKeys of [[{ ...replayKey, extra: () => undefined }], [null],
+    [{ ...replayKey, publicKeyBytes: undefined }]]) {
+    await assert.rejects(
+      verifyPolicyEvaluation(signedAction, [signedCreation], publicKeys as never, replayOptions),
+      VerificationError,
+      "uncloneable or malformed selected keys produce a verification error",
     );
   }
 
@@ -434,6 +620,20 @@ async function main(vectorsPath: string): Promise<void> {
       && error.message.includes("SharedArrayBuffer"),
     "shared key bytes cannot provide an immutable verification snapshot",
   );
+  await assert.rejects(
+    verifyPolicyEvaluation(signedAction, [signedCreation],
+      [replayKey, { ...replayKey, publicKeyBytes: sharedKeyBytes }], replayOptions),
+    (error: unknown) => error instanceof VerificationError && error.message.includes("SharedArrayBuffer"),
+    "an ordinary first key cannot hide shared memory in a later key",
+  );
+  const sharedBufferDescriptor = Object.getOwnPropertyDescriptor(globalThis, "SharedArrayBuffer")!;
+  try {
+    Object.defineProperty(globalThis, "SharedArrayBuffer", { ...sharedBufferDescriptor, value: undefined });
+    assert.deepEqual(await verifyPolicyEvaluation(signedAction, [signedCreation], [replayKey], replayOptions),
+      matchedCase.expected, "ordinary keys remain usable when SharedArrayBuffer is unavailable");
+  } finally {
+    Object.defineProperty(globalThis, "SharedArrayBuffer", sharedBufferDescriptor);
+  }
 
   console.log("Policy evaluation TypeScript vectors passed");
 }
