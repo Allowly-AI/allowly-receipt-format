@@ -382,6 +382,40 @@ async function main(vectorsPath: string): Promise<number> {
     failures++;
   }
 
+  // A sort comparator must be consistent for the keys it receives, including
+  // self comparisons (ECMA-262 SortIndexedProperties). Otherwise canonical
+  // bytes depend on the engine's permitted comparison sequence. Default
+  // STRING sorting remains valid; no comparator or sorting method is required.
+  {
+    const payload = { "｡": 7, z: 6, "😀": 5, a: 4, "": 3, "é": 2, aa: 1 };
+    const nativeSort = Array.prototype.sort;
+    const orderedKeys = nativeSort.call(Object.keys(payload)) as string[];
+    Array.prototype.sort = function (this: unknown[], compare?: (a: unknown, b: unknown) => number) {
+      const keyOf = (value: unknown): unknown => Array.isArray(value) ? value[0] : value;
+      if (compare && this.length === orderedKeys.length
+        && this.every(value => orderedKeys.includes(keyOf(value) as string))) {
+        for (const left of this) {
+          assert.equal(compare(left, left), 0, "canonical key sort must compare a key equal to itself");
+          for (const right of this) {
+            const expected = Math.sign(orderedKeys.indexOf(keyOf(left) as string)
+              - orderedKeys.indexOf(keyOf(right) as string));
+            const forward = Math.sign(compare(left, right));
+            assert.equal(forward, expected, "canonical key sort must follow native UTF-16 STRING order");
+            assert.ok(forward === -Math.sign(compare(right, left)),
+              "canonical key sort must reverse sign when its arguments are reversed");
+          }
+        }
+      }
+      return nativeSort.call(this, compare);
+    } as typeof Array.prototype.sort;
+    try {
+      assert.deepEqual(canonicalize(payload),
+        new TextEncoder().encode('{"":3,"a":4,"aa":1,"z":6,"é":2,"😀":5,"｡":7}'));
+    } finally {
+      Array.prototype.sort = nativeSort;
+    }
+  }
+
   console.log("\nTesting keys-document hardening...");
   const dupDoc = { ...vectors.public_keys, keys: [...vectors.public_keys.keys, ...vectors.public_keys.keys] };
   const badKeyDoc = (field: "active_from" | "active_until", value: unknown) => {
@@ -685,6 +719,262 @@ async function main(vectorsPath: string): Promise<number> {
       failures++;
     }
   }
+
+  console.log("\nTesting checkpoint/key boundary contracts...");
+  {
+    const verificationError = (error: unknown) => error instanceof VerificationError
+      && error.name === "VerificationError";
+    // These fresh signed fixtures are control-free. JCS and Node crypto are
+    // independent of the verifier; the 00/01/02 domains come from spec §3.7.1.
+    const leaf = (receipt: Record<string, unknown>) => createHash("sha256")
+      .update(Buffer.from([0])).update(jcsCanonicalize(receipt)!).digest();
+    const independentRoot = (receipts: Array<Record<string, unknown>>) => {
+      let hashes = receipts.map(leaf).sort(Buffer.compare);
+      if (!hashes.length) return "sha256:" + createHash("sha256").update(Buffer.from([2])).digest("hex");
+      while (hashes.length > 1) {
+        hashes = Array.from({ length: Math.ceil(hashes.length / 2) }, (_, index) =>
+          createHash("sha256").update(Buffer.from([1])).update(hashes[index * 2])
+            .update(hashes[Math.min(index * 2 + 1, hashes.length - 1)]).digest());
+      }
+      return "sha256:" + hashes[0].toString("hex");
+    };
+    const emptyRoot = "sha256:dbc1b4c900ffe48d575b5da5c638040125f65db0fe3e24494b76ea986457d986";
+    assert.equal(independentRoot([]), emptyRoot);
+    const start = "2026-04-21T00:00:00.000Z";
+    const end = "2026-04-22T00:00:00.000Z";
+    const emptyContext = {
+      period_start: start, period_end: end, receipt_count: 0, merkle_root: emptyRoot,
+      previous_checkpoint_id: null, previous_merkle_root: null,
+    };
+    const emptyCheckpoint = signBoundaryReceipt({ ...checkpoint, receipt_id: "boundary-empty-day",
+      issued_at: end, context: emptyContext });
+    const options = { expectedWorkspaceId: vectors.public_keys.workspace_id, now };
+    const members = Array.from({ length: 17 }, (_, index) => signBoundaryReceipt({ ...baseline,
+      receipt_id: `boundary-member-${index}`, issued_at: start, context: { index } }));
+    for (const count of [0, 1, 3, 7, 17]) {
+      const receipts = members.slice(0, count);
+      const merkle_root = independentRoot(receipts);
+      const signed = signBoundaryReceipt({ ...emptyCheckpoint,
+        receipt_id: `boundary-count-${count}`, context: { ...emptyContext, receipt_count: count, merkle_root } });
+      await verifyReceipt(signed, [boundaryKey], { now });
+      await verifyCheckpoint(signed, receipts, [boundaryKey], options);
+      assert.equal(await checkpointMerkleRoot(receipts), merkle_root, `independent ${count}-leaf root`);
+      assert.equal(await checkpointMerkleRoot([...receipts].reverse()), merkle_root, "member order cannot change a set commitment");
+    }
+    // At most 257 distinct leaves guarantee a shared first byte. Comparing the
+    // entire digest is required even when that first byte ties; both orders
+    // must yield the independently computed two-leaf commitment.
+    const prefixes = new Map<number, Record<string, unknown>>();
+    let tied: Array<Record<string, unknown>> | undefined;
+    for (let index = 0; index < 257 && tied === undefined; index++) {
+      const receipt = signBoundaryReceipt({ ...baseline,
+        receipt_id: `boundary-prefix-${index}`, issued_at: start, context: {} });
+      const digest = leaf(receipt);
+      const previous = prefixes.get(digest[0]);
+      if (previous && !leaf(previous).equals(digest)) tied = [previous, receipt];
+      else prefixes.set(digest[0], receipt);
+    }
+    assert.ok(tied, "find two distinct digest suffixes sharing a first byte");
+    for (const receipts of [tied, [...tied].reverse()]) {
+      assert.equal(await checkpointMerkleRoot(receipts), independentRoot(receipts),
+        "Merkle sorting must compare digest suffixes when the first byte ties");
+    }
+    await assert.rejects(checkpointMerkleRoot([members[0], members[0]]), verificationError,
+      "duplicate member ids are rejected independently of the root");
+
+    for (const receipt_count of [0, 1, Number.MAX_SAFE_INTEGER - 1, Number.MAX_SAFE_INTEGER]) {
+      await verifyReceipt(signBoundaryReceipt({ ...emptyCheckpoint,
+        context: { ...emptyContext, receipt_count } }), [boundaryKey], { now });
+    }
+    for (const receipt_count of [-1, 0.5, Number.MAX_SAFE_INTEGER + 1, null, false, "0"]) {
+      await assert.rejects(verifyReceipt(signBoundaryReceipt({ ...emptyCheckpoint,
+        context: { ...emptyContext, receipt_count } }), [boundaryKey], { now }), verificationError);
+    }
+    for (const field of ["merkle_root", "previous_merkle_root"]) {
+      for (const value of ["prefix" + emptyRoot, emptyRoot + "suffix", [emptyRoot], null, 1, false]) {
+        const context = { ...emptyContext, previous_checkpoint_id: "prior", previous_merkle_root: emptyRoot,
+          [field]: value };
+        await assert.rejects(verifyReceipt(signBoundaryReceipt({ ...emptyCheckpoint, context }),
+          [boundaryKey], { now }), verificationError, `${field} must have the exact string profile`);
+      }
+    }
+    for (const day of ["0001-01-01", "0099-12-31", "2000-02-28", "2000-02-29", "9999-12-30"]) {
+      const period_start = day + "T00:00:00.000Z";
+      const period_end = new Date(Date.parse(period_start) + 86_400_000).toISOString();
+      const signed = signBoundaryReceipt({ ...emptyCheckpoint, issued_at: period_end,
+        context: { ...emptyContext, period_start, period_end } });
+      await verifyCheckpoint(signed, [], [boundaryKey], { ...options, now: new Date(period_end) });
+    }
+    for (const context of [
+      { ...emptyContext, period_start: "2026-04-21T12:00:00.000Z", period_end: "2026-04-22T12:00:00.000Z" },
+      { ...emptyContext, period_end: "2026-04-23T00:00:00.000Z" },
+      { ...emptyContext, period_start: end, period_end: start },
+      { ...emptyContext, period_start: start, period_end: start },
+    ]) {
+      await assert.rejects(verifyReceipt(signBoundaryReceipt({ ...emptyCheckpoint,
+        issued_at: "2026-04-24T00:00:00.000Z", context }), [boundaryKey], { now }), verificationError);
+    }
+    await assert.rejects(verifyReceipt(signBoundaryReceipt({ ...emptyCheckpoint,
+      issued_at: new Date(Date.parse(end) - 1).toISOString() }), [boundaryKey], { now }), verificationError,
+    "checkpoint issue time includes the exact end but excludes the preceding millisecond");
+    for (const field of ["period_start", "period_end"]) {
+      await assert.rejects(verifyReceipt(signBoundaryReceipt({ ...emptyCheckpoint,
+        context: { ...emptyContext, [field]: { toString: null } } }), [boundaryKey], { now }), verificationError,
+      "a JSON object in a timestamp field must raise VerificationError without implicit coercion");
+    }
+
+    const prior: Record<string, unknown> & { signature: string } = signBoundaryReceipt({ ...emptyCheckpoint, receipt_id: "boundary-prior",
+      issued_at: start, context: { ...emptyContext,
+        period_start: "2026-04-20T00:00:00.000Z", period_end: start } });
+    const linked = signBoundaryReceipt({ ...emptyCheckpoint, receipt_id: "boundary-linked",
+      context: { ...emptyContext, receipt_count: members.length, merkle_root: independentRoot(members),
+        previous_checkpoint_id: prior.receipt_id, previous_merkle_root: emptyRoot } });
+    await verifyCheckpoint(prior, [], [boundaryKey], options);
+    await verifyCheckpoint(linked, members, [boundaryKey], { ...options, previousCheckpoint: prior });
+    await verifyCheckpoint(linked, members, [boundaryKey], options);
+    for (const fields of [{ receipt_id: "other-prior" },
+      { context: { ...(prior.context as Record<string, unknown>), merkle_root: "sha256:" + "0".repeat(64) } },
+      { issued_at: end, context: emptyContext }]) {
+      const invalidPrior = signBoundaryReceipt({ ...prior, ...fields });
+      await verifyReceipt(invalidPrior, [boundaryKey], { now });
+      await assert.rejects(verifyCheckpoint(linked, members, [boundaryKey],
+        { ...options, previousCheckpoint: invalidPrior }), verificationError,
+      "a supplied prior checkpoint must have the signed id/root and a non-overlapping period");
+    }
+    const wrongSignature = Buffer.from(prior.signature, "base64url");
+    wrongSignature[0] ^= 1;
+    await assert.rejects(verifyCheckpoint(linked, members, [boundaryKey], { ...options,
+      previousCheckpoint: { ...prior, signature: wrongSignature.toString("base64url") } }), verificationError,
+    "a supplied prior checkpoint signature must verify");
+    const actionAsCheckpoint: Record<string, unknown> = { ...emptyCheckpoint, action: "files.read", decision: "allow" };
+    delete actionAsCheckpoint.event;
+    const signedAction = signBoundaryReceipt(actionAsCheckpoint);
+    await verifyReceipt(signedAction, [boundaryKey], { now });
+    await assert.rejects(verifyCheckpoint(signedAction, [], [boundaryKey], options), verificationError,
+      "an action with checkpoint-shaped context cannot serve as a checkpoint");
+    const actionAsPrior = signBoundaryReceipt({ ...actionAsCheckpoint, receipt_id: prior.receipt_id,
+      issued_at: start, context: prior.context });
+    await verifyReceipt(actionAsPrior, [boundaryKey], { now });
+    await assert.rejects(verifyCheckpoint(linked, members, [boundaryKey],
+      { ...options, previousCheckpoint: actionAsPrior }), verificationError,
+    "an authentic action with matching linkage cannot serve as the prior checkpoint");
+    const nestedCheckpoint = signBoundaryReceipt({ ...emptyCheckpoint,
+      context: { ...emptyContext, receipt_count: 1, merkle_root: independentRoot([prior]) } });
+    await verifyReceipt(nestedCheckpoint, [boundaryKey], { now });
+    await assert.rejects(verifyCheckpoint(nestedCheckpoint, [prior], [boundaryKey], options), verificationError,
+      "a valid earlier checkpoint inside the current period cannot be a member");
+    for (const context of [null, [], 1, "context", { ...emptyContext, period_start: null },
+      { ...emptyContext, previous_checkpoint_id: false, previous_merkle_root: emptyRoot }]) {
+      const invalidPrior = signBoundaryReceipt({ ...prior, context });
+      await assert.rejects(verifyCheckpoint(linked, members, [boundaryKey],
+        { ...options, previousCheckpoint: invalidPrior }), verificationError,
+      "prior schema validation cannot be hidden by an unauthentic fixture");
+    }
+    await verifyCheckpoint(emptyCheckpoint, [], [boundaryKey], { expectedWorkspaceId: options.expectedWorkspaceId });
+    for (const invalidNow of [null, 0, "2026-04-22T00:00:00.000Z", new Date(Number.NaN)]) {
+      await assert.rejects(verifyCheckpoint(emptyCheckpoint, [], [boundaryKey],
+        { ...options, now: invalidNow as never }), verificationError, "a supplied clock must be a valid Date");
+    }
+    const mutableNow = new Date(end);
+    const withClockSnapshot = verifyCheckpoint(linked, members, [boundaryKey],
+      { ...options, now: mutableNow, previousCheckpoint: prior });
+    queueMicrotask(() => mutableNow.setTime(Date.parse(start) - 300_001));
+    await withClockSnapshot;
+    await assert.rejects(verifyCheckpoint(emptyCheckpoint, [], [new Proxy(boundaryKey, {})], options), verificationError,
+      "uncloneable public keys must raise VerificationError");
+    for (const invalidKey of [null, undefined, 1, false, "key", { ...boundaryKey, publicKeyBytes: undefined }]) {
+      await assert.rejects(verifyCheckpoint(emptyCheckpoint, [], [invalidKey as never, boundaryKey], options),
+        verificationError, "invalid public-key entries must raise VerificationError before key selection");
+    }
+    const sharedArrayDescriptor = Object.getOwnPropertyDescriptor(globalThis, "SharedArrayBuffer")!;
+    try {
+      Object.defineProperty(globalThis, "SharedArrayBuffer", { ...sharedArrayDescriptor, value: undefined });
+      await verifyCheckpoint(emptyCheckpoint, [], [boundaryKey], options);
+    } finally {
+      Object.defineProperty(globalThis, "SharedArrayBuffer", sharedArrayDescriptor);
+    }
+
+    const rotationPair = generateKeyPairSync("ed25519");
+    const rotationKey = { ...boundaryKey, keyId: "checkpoint-rotation",
+      publicKeyBytes: new Uint8Array(rotationPair.publicKey.export({ type: "spki", format: "der" }).subarray(-32)) };
+    const signRotation = (receipt: Record<string, unknown>) => {
+      const { signature, ...payload } = receipt;
+      payload.key_id = rotationKey.keyId;
+      return { ...payload, signature: signBytes(null, Buffer.from(jcsCanonicalize(payload)!),
+        rotationPair.privateKey).toString("base64url") };
+    };
+    const trusted = new Set([boundaryKey, rotationKey].map(key =>
+      "sha256:" + createHash("sha256").update(key.publicKeyBytes).digest("hex")));
+    const currentPin = new Set(["sha256:" + createHash("sha256").update(boundaryKey.publicKeyBytes).digest("hex")]);
+    const rotatedMember = signRotation(members[0]);
+    const rotatingCheckpoint = signBoundaryReceipt({ ...emptyCheckpoint, context: { ...emptyContext,
+      receipt_count: 1, merkle_root: independentRoot([rotatedMember]) } });
+    const rotatedPrior = signRotation(prior);
+    for (const [current, receipts, previousCheckpoint] of [
+      [rotatingCheckpoint, [rotatedMember], undefined], [linked, members, rotatedPrior],
+    ] as const) {
+      await verifyCheckpoint(current, [...receipts], [boundaryKey, rotationKey],
+        { ...options, previousCheckpoint, trustedKeyFingerprints: trusted });
+      await assert.rejects(verifyCheckpoint(current, [...receipts], [boundaryKey, rotationKey],
+        { ...options, previousCheckpoint, trustedKeyFingerprints: currentPin }), verificationError,
+      "trusted fingerprints apply to members and prior checkpoints as well as the current checkpoint");
+    }
+
+    const entry = { key_id: boundaryKey.keyId, alg: "Ed25519", public_key: Buffer.from(boundaryKey.publicKeyBytes).toString("base64url"),
+      active_from: "0001-01-01T00:00:00.000Z", active_until: null,
+      public_key_fingerprint: "sha256:" + createHash("sha256").update(boundaryKey.publicKeyBytes).digest("hex") };
+    const keyDoc = { workspace_id: options.expectedWorkspaceId, keys: [entry] };
+    const loaded = loadKeysFromJson(keyDoc);
+    assert.deepEqual(loaded[0].publicKeyBytes, boundaryKey.publicKeyBytes);
+    assert.equal(publicKeyFingerprint(loaded[0]), entry.public_key_fingerprint);
+    await verifyReceipt(signBoundaryReceipt(baseline), loaded, { now });
+    for (const doc of [null, undefined, false, 1, "doc", { ...keyDoc, workspace_id: 1 },
+      Object.assign(Object.create({ workspace_id: keyDoc.workspace_id }), { keys: keyDoc.keys }),
+      Object.assign(() => undefined, keyDoc)]) {
+      assert.throws(() => loadKeysFromJson(doc as never), verificationError,
+        "key documents require an object with an own string workspace id");
+    }
+    for (const key of [Object.assign(() => undefined, entry),
+      Object.assign(Object.create({ active_until: null }), { ...entry, active_until: undefined })]) {
+      if (typeof key !== "function") delete key.active_until;
+      assert.throws(() => loadKeysFromJson({ ...keyDoc, keys: [key] } as never), verificationError,
+        "key entries require an object and an own active_until field");
+    }
+    for (const fingerprint of [null, false, 1, [], {}, entry.public_key_fingerprint.toUpperCase()]) {
+      assert.throws(() => loadKeysFromJson({ ...keyDoc, keys: [{ ...entry, public_key_fingerprint: fingerprint }] } as never),
+        verificationError, "advertised fingerprints must match the independently computed raw-key hash");
+    }
+    for (const active_from of ["0001-01-01T00:00:00.000Z", "0099-12-31T23:59:59.999Z", "9999-12-31T23:59:59.999Z"]) {
+      const parsed = loadKeysFromJson({ ...keyDoc, keys: [{ ...entry, active_from }] });
+      assert.equal(parsed[0].activeFrom.toISOString(), active_from);
+    }
+    for (const field of ["active_from", "active_until"] as const) {
+      for (const value of ["0000-01-01T00:00:00.000Z", "2026-02-29T00:00:00.000Z",
+        "2026-04-21T24:00:00.000Z", "prefix" + start, start + "suffix", [start]]) {
+        assert.throws(() => loadKeysFromJson({ ...keyDoc, keys: [{ ...entry, [field]: value }] } as never), verificationError);
+      }
+    }
+    const signedMember = members[0];
+    for (const publicKeyBytes of [undefined, [], Array.from(boundaryKey.publicKeyBytes),
+      new Uint8Array(31), new Uint8Array(33), new Uint16Array(32)]) {
+      await assert.rejects(verifyReceipt(signedMember, [{ ...boundaryKey, publicKeyBytes: publicKeyBytes as never }], { now }),
+        verificationError, "selected keys must have exactly 32 raw Uint8Array bytes");
+    }
+    for (const activeUntil of [undefined, start, new Date(Number.NaN)]) {
+      await assert.rejects(verifyReceipt(signedMember, [{ ...boundaryKey, activeUntil: activeUntil as never }], { now }),
+        verificationError, "selected key retirement dates must be a valid Date or null");
+    }
+    for (const issued_at of [start, new Date(Date.parse(start) + 1).toISOString(), new Date(Date.parse(end) - 1).toISOString()]) {
+      await verifyReceipt(signBoundaryReceipt({ ...signedMember, issued_at }), [{ ...boundaryKey,
+        activeFrom: new Date(start), activeUntil: new Date(end) }], { now });
+    }
+    for (const issued_at of [new Date(Date.parse(start) - 1).toISOString(), end]) {
+      await assert.rejects(verifyReceipt(signBoundaryReceipt({ ...signedMember, issued_at }), [{ ...boundaryKey,
+        activeFrom: new Date(start), activeUntil: new Date(end) }], { now }), verificationError,
+      "selected key validity is half-open at the exact millisecond boundaries");
+    }
+  }
+  console.log("  OK    checkpoint/key boundary contracts");
 
   console.log();
   if (failures) {
