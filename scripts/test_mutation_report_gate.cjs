@@ -5,10 +5,11 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const os = require("node:os");
 const path = require("node:path");
+const { createHash } = require("node:crypto");
 const { spawnSync } = require("node:child_process");
 const test = require("node:test");
 const ts = require("../verifiers/typescript/node_modules/typescript");
-const { classifyReport } = require("./mutation_report_gate.cjs");
+const { classifyReport, TIMEOUT_CONTEXT_PATHS } = require("./mutation_report_gate.cjs");
 const source = fs.readFileSync(path.join(__dirname, "../verifiers/typescript/verifier.ts"), "utf8");
 const MESSAGE = '"receipt must be an object"';
 const ORIGINAL_RETURN = "left.length - right.length";
@@ -182,7 +183,7 @@ test("killed, raw survived, timeout, cosmetic, equivalent, and unresolved status
   assert.equal(result.pass, false);
   assert.equal(result.total, 9);
   assert.deepEqual(result.counts, { Killed: 1, Survived: 2, Timeout: 1, NoCoverage: 1, RuntimeError: 1,
-    CompileError: 1, Ignored: 1, Pending: 1, cosmetic: 1, equivalent: 1, unclassifiedSurvived: 0 });
+    CompileError: 1, Ignored: 1, Pending: 1, cosmetic: 1, equivalent: 1, unclassifiedSurvived: 0, detectedTimeout: 0 });
   assert.equal(result.blockers.length, 6);
   assert.deepEqual(result.blockers.map((m) => m.id), mutants.slice(3).map((m) => m.id));
   for (const m of result.blockers) {
@@ -190,6 +191,75 @@ test("killed, raw survived, timeout, cosmetic, equivalent, and unresolved status
     assert.match(m.reason, /unresolved and blocks/);
   }
   assert.equal(classify([{ ...equivalent(), status: "Timeout" }]).pass, false);
+});
+
+// These are fictional proof records over synthetic context; they never write a
+// production proof file or modify source/test inputs in the original repo.
+const fixtureHash = (text) => createHash("sha256").update(text).digest("hex");
+function timeoutEvidence(m) {
+  const verificationContextSha256 = fixtureHash("synthetic fixture context");
+  return { verificationContextSha256, manifest: {
+    verificationContextSha256, verifierSourceSha256: fixtureHash(source),
+    entries: [{ mutatorName: m.mutatorName, location: m.location, replacement: m.replacement,
+      reason: "Synthetic fixture: independently reproduced infinite loop" }],
+  } };
+}
+
+test("only an exact independently proven Timeout is a detected fault, never an exclusion", () => {
+  const m = mutant("i < left.length", { mutatorName: "ConditionalExpression", replacement: "true", status: "Timeout" });
+  const evidence = timeoutEvidence(m);
+  const result = classifyReport(report([m]), source, evidence);
+  assert.equal(result.pass, true);
+  assert.equal(result.counts.Timeout, 1);
+  assert.equal(result.counts.detectedTimeout, 1);
+  assert.equal(result.counts.Killed, 0);
+  assert.equal(result.counts.cosmetic, 0);
+  assert.equal(result.counts.equivalent, 0);
+  assert.deepEqual(result.exclusions, []);
+  assert.deepEqual(result.detectedFaults, [{ id: m.id, location: m.location, mutatorName: m.mutatorName,
+    status: "Timeout", reason: evidence.manifest.entries[0].reason }]);
+  assert.deepEqual(result.blockers, []);
+  for (const status of ["Survived", "NoCoverage", "RuntimeError", "CompileError", "Ignored", "Pending"]) {
+    const blocked = classifyReport(report([{ ...m, status }]), source, evidence);
+    assert.equal(blocked.pass, false, status);
+    assert.equal(blocked.counts.detectedTimeout, 0, status);
+  }
+});
+
+test("mismatched type/location/replacement/source/context or an unexplained timeout still blocks", () => {
+  const m = mutant("i < left.length", { mutatorName: "ConditionalExpression", replacement: "true", status: "Timeout" });
+  const evidence = timeoutEvidence(m);
+  const otherLocation = mutant("!B64URL_RE.test(s)", { mutatorName: m.mutatorName, replacement: m.replacement, status: "Timeout" }).location;
+  for (const entry of [{ ...evidence.manifest.entries[0], mutatorName: "EqualityOperator" },
+    { ...evidence.manifest.entries[0], location: otherLocation }, { ...evidence.manifest.entries[0], replacement: "false" }]) {
+    const result = classifyReport(report([m]), source, { ...evidence, manifest: { ...evidence.manifest, entries: [entry] } });
+    assert.equal(result.pass, false);
+    assert.equal(result.counts.detectedTimeout, 0);
+  }
+  for (const stale of [{ ...evidence, verificationContextSha256: fixtureHash("changed test/fixture/build context") },
+    { ...evidence, manifest: { ...evidence.manifest, verifierSourceSha256: fixtureHash("different verifier source") } },
+    { ...evidence, manifest: { ...evidence.manifest, entries: [] } }, { manifest: null, verificationContextSha256: null }]) {
+    const result = classifyReport(report([m]), source, stale);
+    assert.equal(result.pass, false);
+    assert.equal(result.counts.Timeout, 1);
+    assert.equal(result.counts.detectedTimeout, 0);
+    assert.equal(result.blockers[0].id, m.id);
+  }
+  const changed = source.replace(MESSAGE, '"changed cosmetic text"');
+  assert.equal(classifyReport(report([m], changed), changed, evidence).pass, false);
+});
+
+test("malformed/omitted proof inputs, empty reasons, or duplicate entries cannot approve a timeout", () => {
+  const m = mutant("i < left.length", { mutatorName: "ConditionalExpression", replacement: "true", status: "Timeout" });
+  const evidence = timeoutEvidence(m);
+  const invalid = [undefined, {}, { ...evidence.manifest, verifierSourceSha256: "bad hash" },
+    { ...evidence.manifest, contextPaths: TIMEOUT_CONTEXT_PATHS.slice(0, 1) },
+    { ...evidence.manifest, contextPaths: [...TIMEOUT_CONTEXT_PATHS].reverse() },
+    { ...evidence.manifest, entries: [{ ...evidence.manifest.entries[0], reason: " " }] },
+    { ...evidence.manifest, entries: [evidence.manifest.entries[0], evidence.manifest.entries[0]] },
+    { ...evidence.manifest, entries: [{ ...evidence.manifest.entries[0], status: "Timeout" }] },
+    { ...evidence.manifest, entries: "all timeouts" }];
+  for (const manifest of invalid) assert.throws(() => classifyReport(report([m]), source, { ...evidence, manifest }));
 });
 
 test("unknown statuses/schema and missing, empty, wrong-target, or forged source/report fail closed", () => {
@@ -216,6 +286,49 @@ test("duplicate IDs, malformed locations, and no-op replacements cannot pass", (
     assert.throws(() => classify([{ ...m, location }]));
   }
   assert.throws(() => classify([{ ...m, replacement: MESSAGE }]), /does not change/);
+});
+
+test("CLI binds timeout proof to every live input and never accepts a missing manifest", () => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "allowly-timeout-gate-"));
+  const m = mutant("i < left.length", { mutatorName: "ConditionalExpression", replacement: "true", status: "Timeout" });
+  const script = path.join(directory, "scripts/mutation_report_gate.cjs");
+  const proofPath = path.join(directory, "scripts/mutation_timeout_proofs.json");
+  const reportPath = path.join(directory, "report.json");
+  const run = () => spawnSync(process.execPath, [script, reportPath], { encoding: "utf8" });
+  try {
+    for (const name of ["scripts/mutation_report_gate.cjs", ...TIMEOUT_CONTEXT_PATHS]) {
+      const target = path.join(directory, name);
+      fs.mkdirSync(path.dirname(target), { recursive: true });
+      fs.copyFileSync(path.join(__dirname, "..", name), target);
+    }
+    fs.symlinkSync(fs.realpathSync(path.join(__dirname, "../verifiers/typescript/node_modules")),
+      path.join(directory, "verifiers/typescript/node_modules"), "dir");
+    const manifest = timeoutEvidence(m).manifest;
+    manifest.verificationContextSha256 = fixtureHash(JSON.stringify(TIMEOUT_CONTEXT_PATHS.map((name) =>
+      [name, fs.readFileSync(path.join(directory, name), "utf8")])));
+    fs.writeFileSync(proofPath, JSON.stringify(manifest));
+    fs.writeFileSync(reportPath, JSON.stringify(report([m])));
+    const accepted = run();
+    assert.equal(accepted.status, 0, accepted.stderr);
+    assert.equal(JSON.parse(accepted.stdout).counts.detectedTimeout, 1);
+    for (const name of TIMEOUT_CONTEXT_PATHS) {
+      const target = path.join(directory, name);
+      const original = fs.readFileSync(target, "utf8");
+      fs.writeFileSync(target, original + "\n");
+      if (name === "verifiers/typescript/verifier.ts") fs.writeFileSync(reportPath, JSON.stringify(report([m], original + "\n")));
+      const stale = run();
+      assert.equal(stale.status, 1, `${name}: ${stale.stderr}`);
+      assert.equal(JSON.parse(stale.stdout).counts.detectedTimeout, 0, name);
+      fs.writeFileSync(target, original);
+      fs.writeFileSync(reportPath, JSON.stringify(report([m])));
+    }
+    fs.unlinkSync(proofPath);
+    const missing = run();
+    assert.equal(missing.status, 1, missing.stderr);
+    assert.equal(JSON.parse(missing.stdout).counts.detectedTimeout, 0);
+  } finally {
+    fs.rmSync(directory, { recursive: true });
+  }
 });
 
 test("CLI returns 0 only for resolved reports; unresolved, missing, or invalid JSON fail", () => {

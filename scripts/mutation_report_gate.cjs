@@ -7,7 +7,27 @@ const fs = require("node:fs");
 const path = require("node:path");
 const { createHash } = require("node:crypto");
 const ts = require("../verifiers/typescript/node_modules/typescript");
-const SOURCE_PATH = path.join(__dirname, "../verifiers/typescript/verifier.ts");
+const REPO_ROOT = path.resolve(__dirname, "..");
+const SOURCE_PATH = path.join(REPO_ROOT, "verifiers/typescript/verifier.ts");
+const TIMEOUT_PROOF_PATH = path.join(__dirname, "mutation_timeout_proofs.json");
+// Exact ordered inputs of the reviewed runtime proof. The context hash binds
+// these names and their contents; no report/manifest/CLI path list is accepted.
+const TIMEOUT_CONTEXT_PATHS = Object.freeze([
+  "verifiers/typescript/verifier.ts",
+  "verifiers/typescript/test_vectors.ts",
+  "verifiers/typescript/test_policy_evaluation.ts",
+  "verifiers/typescript/test_pseudonym_refs.ts",
+  "verifiers/typescript/test_seal.ts",
+  "test-vectors.json",
+  "vectors/policy/profile-v1.json",
+  "vectors/seal/profile-v1.json",
+  "vectors/seal/verification-v1.json",
+  "verifiers/typescript/package.json",
+  "verifiers/typescript/package-lock.json",
+  "verifiers/typescript/tsconfig.json",
+  "verifiers/typescript/scripts/copy-seal-vectors.mjs",
+  "verifiers/typescript/stryker.conf.cjs",
+]);
 const STATUSES = ["Killed", "Survived", "Timeout", "NoCoverage", "RuntimeError", "CompileError", "Ignored", "Pending"];
 
 // Reviewed verifier.ts at 4cdf6d6: replace only the 64 direct sole plain
@@ -115,7 +135,45 @@ function exemption(mutant, range, ast, proof) {
   return null;
 }
 
-function classifyReport(report, trustedSource) {
+function timeoutKey(mutant) {
+  const { start, end } = mutant.location;
+  return JSON.stringify([mutant.mutatorName, start.line, start.column, end.line, end.column, mutant.replacement]);
+}
+// Pure proof validation for synthetic fixtures. Production callers must obtain
+// both the manifest and current fingerprint from the fixed live files below.
+function verifiedTimeouts(manifest, verificationContextSha256, ast) {
+  const entries = new Map();
+  if (manifest === null) return entries;
+  onlyKeys(manifest, ["verificationContextSha256", "verifierSourceSha256", "entries"], "Timeout proof manifest");
+  requireThat([manifest.verificationContextSha256, manifest.verifierSourceSha256].every((value) =>
+    typeof value === "string" && /^[0-9a-f]{64}$/.test(value)), "Invalid timeout proof fingerprints");
+  requireThat(Array.isArray(manifest.entries), "Timeout proofs must be individually recorded entries");
+  if (manifest.verificationContextSha256 !== verificationContextSha256 || manifest.verifierSourceSha256 !== hash(ast.text)) return entries;
+  for (const entry of manifest.entries) {
+    onlyKeys(entry, ["mutatorName", "location", "replacement", "reason"], "Timeout proof entry");
+    requireThat(typeof entry.reason === "string" && entry.reason.trim().length > 0, "Timeout proof lacks an individual reason");
+    validateMutant({ id: "proof", mutatorName: entry.mutatorName, location: entry.location,
+      replacement: entry.replacement, status: "Timeout" }, ast, new Set());
+    const key = timeoutKey(entry);
+    requireThat(!entries.has(key), "Duplicate timeout proof entry");
+    entries.set(key, entry.reason);
+  }
+  return entries;
+}
+function liveTimeoutEvidence() {
+  let manifest;
+  try {
+    manifest = JSON.parse(fs.readFileSync(TIMEOUT_PROOF_PATH, "utf8"));
+  } catch (error) {
+    if (error.code === "ENOENT") return { manifest: null, verificationContextSha256: null };
+    throw error;
+  }
+  const verificationContextSha256 = hash(JSON.stringify(TIMEOUT_CONTEXT_PATHS.map((name) =>
+    [name, fs.readFileSync(path.join(REPO_ROOT, name), "utf8")])));
+  return { manifest, verificationContextSha256 };
+}
+
+function classifyReport(report, trustedSource, timeoutEvidence = { manifest: null, verificationContextSha256: null }) {
   onlyKeys(report, ["schemaVersion", "files", "thresholds", "testFiles", "projectRoot", "config", "framework", "system", "performance"], "Report");
   requireThat(report.schemaVersion === "1.0", "Unsupported report schema; expected 1.0");
   onlyKeys(report.thresholds, ["high", "low", "break"], "Report thresholds");
@@ -133,9 +191,11 @@ function classifyReport(report, trustedSource) {
   requireThat(Array.isArray(file.mutants) && file.mutants.length > 0, "Report has no mutants");
   const ast = parse(trustedSource);
   const proof = evidence(ast);
+  const timeouts = verifiedTimeouts(timeoutEvidence.manifest, timeoutEvidence.verificationContextSha256, ast);
   const counts = Object.fromEntries(STATUSES.map((status) => [status, 0]));
   Object.assign(counts, { cosmetic: 0, equivalent: 0, unclassifiedSurvived: 0 });
   const exclusions = [];
+  const detectedFaults = [];
   const blockers = [];
   const ids = new Set();
   for (const mutant of file.mutants) {
@@ -143,7 +203,12 @@ function classifyReport(report, trustedSource) {
     counts[mutant.status]++;
     if (mutant.status === "Killed") continue;
     const record = { id: mutant.id, location: mutant.location, mutatorName: mutant.mutatorName, status: mutant.status };
-    // A timeout is unresolved even when its source edit looks cosmetic/equivalent.
+    const timeoutReason = mutant.status === "Timeout" ? timeouts.get(timeoutKey(mutant)) : null;
+    if (timeoutReason) {
+      detectedFaults.push({ ...record, reason: timeoutReason });
+      continue;
+    }
+    // Unproven/resource timeouts never become cosmetic/equivalent successes.
     const allowed = mutant.status === "Survived" ? exemption(mutant, range, ast, proof) : null;
     if (allowed) {
       counts[allowed.classification]++;
@@ -153,16 +218,17 @@ function classifyReport(report, trustedSource) {
       blockers.push({ ...record, reason: mutant.status === "Survived" ? "No individually proven cosmetic/equivalent exemption" : `${mutant.status} is unresolved and blocks the gate` });
     }
   }
+  counts.detectedTimeout = detectedFaults.length;
   return { pass: blockers.length === 0, file: "verifier.ts", sourceSha256: hash(trustedSource),
     normalizedSourceSha256: proof.normalizedSourceSha256, evidenceSourceMatched: proof.trusted,
-    total: file.mutants.length, counts, exclusions, blockers };
+    total: file.mutants.length, counts, exclusions, detectedFaults, blockers };
 }
 
 if (require.main === module) {
   try {
     requireThat(process.argv.length === 3, "Usage: node scripts/mutation_report_gate.cjs <Stryker JSON report>");
     const source = fs.readFileSync(SOURCE_PATH, "utf8");
-    const result = classifyReport(JSON.parse(fs.readFileSync(process.argv[2], "utf8")), source);
+    const result = classifyReport(JSON.parse(fs.readFileSync(process.argv[2], "utf8")), source, liveTimeoutEvidence());
     console.log(JSON.stringify(result, null, 2));
     process.exitCode = result.pass ? 0 : 1;
   } catch (error) {
@@ -170,4 +236,4 @@ if (require.main === module) {
     process.exitCode = 2;
   }
 }
-module.exports = { classifyReport };
+module.exports = { classifyReport, TIMEOUT_CONTEXT_PATHS };

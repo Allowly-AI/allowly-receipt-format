@@ -1,0 +1,141 @@
+{
+  "verificationContextSha256": "11e024eccb2e5ee6194364e504fbf7f5faece38d2c8e74da09477d9313643db2",
+  "verifierSourceSha256": "407d7a2d759706b8fb3f005c61983575d58a891d8b4b0d5e1cffae4240b72691",
+  "entries": [
+    {
+      "mutatorName": "EqualityOperator",
+      "location": {
+        "end": {
+          "column": 26,
+          "line": 191
+        },
+        "start": {
+          "column": 10,
+          "line": 191
+        }
+      },
+      "replacement": "level.length >= 1",
+      "reason": "The >= 1 guard keeps the Merkle loop running at one digest; odd-length duplication and reduction produce one digest again. Exact-source isolated reproduction: dist/test_vectors.js timed out twice at 20000 ms; the same correct-copy suite passed twice in under 150 ms. Both disposable copies used Stryker's installed disableTypeChecks preparation; the normal unprepared full npm test also passed."
+    },
+    {
+      "mutatorName": "BlockStatement",
+      "location": {
+        "end": {
+          "column": 4,
+          "line": 198
+        },
+        "start": {
+          "column": 28,
+          "line": 191
+        }
+      },
+      "replacement": "{}",
+      "reason": "The empty Merkle loop body cannot change the non-singleton level. Exact-source isolated reproduction: dist/test_vectors.js timed out twice at 20000 ms; the same correct-copy suite passed twice in under 150 ms. Both disposable copies used Stryker's installed disableTypeChecks preparation; the normal unprepared full npm test also passed."
+    },
+    {
+      "mutatorName": "ArrayDeclaration",
+      "location": {
+        "end": {
+          "column": 34,
+          "line": 193
+        },
+        "start": {
+          "column": 32,
+          "line": 193
+        }
+      },
+      "replacement": "[\"Stryker was here\"]",
+      "reason": "Seeding next with an extra element makes each non-empty reduction have at least two elements, so the loop cannot reach one digest. Exact-source isolated reproduction: dist/test_vectors.js timed out twice at 20000 ms; the same correct-copy suite passed twice in under 150 ms. Both disposable copies used Stryker's installed disableTypeChecks preparation; the normal unprepared full npm test also passed."
+    },
+    {
+      "mutatorName": "BlockStatement",
+      "location": {
+        "end": {
+          "column": 4,
+          "line": 266
+        },
+        "start": {
+          "column": 28,
+          "line": 210
+        }
+      },
+      "replacement": "{}",
+      "reason": "The empty validateTree loop body never pops the non-empty stack. Exact-source isolated reproduction: dist/test_vectors.js timed out twice at 20000 ms; the same correct-copy suite passed twice in under 150 ms. Both disposable copies used Stryker's installed disableTypeChecks preparation; the normal unprepared full npm test also passed."
+    },
+    {
+      "mutatorName": "BlockStatement",
+      "location": {
+        "end": {
+          "column": 4,
+          "line": 1191
+        },
+        "start": {
+          "column": 31,
+          "line": 1153
+        }
+      },
+      "replacement": "{}",
+      "reason": "The empty outer JSON scanner body cannot advance index on non-empty JSON. Exact-source isolated reproduction: dist/test_seal.js timed out twice at 20000 ms; the same correct-copy suite passed twice in under 150 ms. Both disposable copies used Stryker's installed disableTypeChecks preparation; the normal unprepared full npm test also passed."
+    },
+    {
+      "mutatorName": "AssignmentOperator",
+      "location": {
+        "end": {
+          "column": 17,
+          "line": 1157
+        },
+        "start": {
+          "column": 7,
+          "line": 1157
+        }
+      },
+      "replacement": "index -= 1",
+      "reason": "Decrementing the outer JSON scanner index takes it below zero; undefined characters still follow the decrement branch and index remains below text.length. Exact-source isolated reproduction: dist/test_seal.js timed out twice at 20000 ms; the same correct-copy suite passed twice in under 150 ms. Both disposable copies used Stryker's installed disableTypeChecks preparation; the normal unprepared full npm test also passed."
+    },
+    {
+      "mutatorName": "BlockStatement",
+      "location": {
+        "end": {
+          "column": 6,
+          "line": 1169
+        },
+        "start": {
+          "column": 33,
+          "line": 1163
+        }
+      },
+      "replacement": "{}",
+      "reason": "The empty inner JSON scanner body cannot advance index inside a string. Exact-source isolated reproduction: dist/test_seal.js timed out twice at 20000 ms; the same correct-copy suite passed twice in under 150 ms. Both disposable copies used Stryker's installed disableTypeChecks preparation; the normal unprepared full npm test also passed."
+    },
+    {
+      "mutatorName": "AssignmentOperator",
+      "location": {
+        "end": {
+          "column": 17,
+          "line": 1168
+        },
+        "start": {
+          "column": 7,
+          "line": 1168
+        }
+      },
+      "replacement": "index -= 1",
+      "reason": "The inner JSON string scanner moves backward instead of forward; its upper-bound-only loop cannot finish for inputs exercised by the SEAL suite. Exact-source isolated reproduction: dist/test_seal.js timed out twice at 20000 ms; the same correct-copy suite passed twice in under 150 ms. Both disposable copies used Stryker's installed disableTypeChecks preparation; the normal unprepared full npm test also passed."
+    },
+    {
+      "mutatorName": "BlockStatement",
+      "location": {
+        "end": {
+          "column": 4,
+          "line": 1457
+        },
+        "start": {
+          "column": 28,
+          "line": 1404
+        }
+      },
+      "replacement": "{}",
+      "reason": "The empty validateSealTree loop body never pops the non-empty stack. Exact-source isolated reproduction: dist/test_seal.js timed out twice at 20000 ms; the same correct-copy suite passed twice in under 150 ms. Both disposable copies used Stryker's installed disableTypeChecks preparation; the normal unprepared full npm test also passed."
+    }
+  ]
+}
