@@ -1,156 +1,156 @@
 {
-  "verificationContextSha256": "1d3b4a921ab17a1bea7ad42be3cde42fef93d94f72ba18b0dd1b67d70346e55a",
-  "verifierSourceSha256": "407d7a2d759706b8fb3f005c61983575d58a891d8b4b0d5e1cffae4240b72691",
+  "verificationContextSha256": "9347cb4729244a77553d3484fc35d5b3277d9eda2b673dc795b349dc0186c11b",
+  "verifierSourceSha256": "34f80c55f2e508cf423f2dc83fbe70bbc07ecbc6d48b00730088a871a0f9244f",
   "entries": [
+    {
+      "mutatorName": "UpdateOperator",
+      "location": {
+        "end": {
+          "column": 39,
+          "line": 166
+        },
+        "start": {
+          "column": 36,
+          "line": 166
+        }
+      },
+      "replacement": "i--",
+      "reason": "A tied first digest byte makes i-- move below zero; both indexed byte reads then remain undefined and the upper-bound-only comparator loop never finishes. The current Merkle test creates two distinct leaves sharing a first byte. Fresh exact-source reproduction on current context 9347cb4729244a77553d3484fc35d5b3277d9eda2b673dc795b349dc0186c11b: dist/test_vectors.js timed out in both independent trials (20008 and 20013 ms), each limited to 20000 ms and stopped by owned-child SIGKILL. Separate correct copies passed all four Node suites in both rounds. Every exact mutation compiled after the installed Stryker 10.0.0 disableTypeChecks preparation. See docs/qa/2026-10-08-confirmation-timeouts.json for source hashes and full trial metadata."
+    },
     {
       "mutatorName": "EqualityOperator",
       "location": {
         "end": {
           "column": 26,
-          "line": 191
+          "line": 192
         },
         "start": {
           "column": 10,
-          "line": 191
+          "line": 192
         }
       },
       "replacement": "level.length >= 1",
-      "reason": "The >= 1 guard keeps the Merkle loop running at one digest; odd-length duplication and reduction produce one digest again. Exact-source isolated reproduction on frozen context aeadc2a678817243c2e07a305d01776e43d3adbe190a8877afceddf6f3548dda: dist/test_vectors.js timed out twice with a 20000 ms limit and owned-child SIGKILL; the same correct-copy suite passed twice in 258 and 250 ms. Both copies used the installed Stryker disableTypeChecks preparation. The unprepared full npm test passed, and the context was independently matched to the integrated main files."
+      "reason": "The >= 1 Merkle guard keeps a singleton level running; odd-length duplication and reduction produce one digest again. Fresh exact-source reproduction on current context 9347cb4729244a77553d3484fc35d5b3277d9eda2b673dc795b349dc0186c11b: dist/test_vectors.js timed out in both independent trials (20005 and 20004 ms), each limited to 20000 ms and stopped by owned-child SIGKILL. Separate correct copies passed all four Node suites in both rounds. Every exact mutation compiled after the installed Stryker 10.0.0 disableTypeChecks preparation. See docs/qa/2026-10-08-confirmation-timeouts.json for source hashes and full trial metadata."
     },
     {
       "mutatorName": "BlockStatement",
       "location": {
         "end": {
           "column": 4,
-          "line": 198
+          "line": 199
         },
         "start": {
           "column": 28,
-          "line": 191
+          "line": 192
         }
       },
       "replacement": "{}",
-      "reason": "The empty Merkle loop body cannot change the non-singleton level. Exact-source isolated reproduction on frozen context aeadc2a678817243c2e07a305d01776e43d3adbe190a8877afceddf6f3548dda: dist/test_vectors.js timed out twice with a 20000 ms limit and owned-child SIGKILL; the same correct-copy suite passed twice in 258 and 250 ms. Both copies used the installed Stryker disableTypeChecks preparation. The unprepared full npm test passed, and the context was independently matched to the integrated main files."
+      "reason": "The empty Merkle loop body leaves the non-singleton level unchanged. Fresh exact-source reproduction on current context 9347cb4729244a77553d3484fc35d5b3277d9eda2b673dc795b349dc0186c11b: dist/test_vectors.js timed out in both independent trials (20008 and 20025 ms), each limited to 20000 ms and stopped by owned-child SIGKILL. Separate correct copies passed all four Node suites in both rounds. Every exact mutation compiled after the installed Stryker 10.0.0 disableTypeChecks preparation. See docs/qa/2026-10-08-confirmation-timeouts.json for source hashes and full trial metadata."
     },
     {
       "mutatorName": "ArrayDeclaration",
       "location": {
         "end": {
           "column": 34,
-          "line": 193
+          "line": 194
         },
         "start": {
           "column": 32,
-          "line": 193
+          "line": 194
         }
       },
       "replacement": "[\"Stryker was here\"]",
-      "reason": "Seeding next with an extra element makes each non-empty reduction have at least two elements, so the loop cannot reach one digest. Exact-source isolated reproduction on frozen context aeadc2a678817243c2e07a305d01776e43d3adbe190a8877afceddf6f3548dda: dist/test_vectors.js timed out twice with a 20000 ms limit and owned-child SIGKILL; the same correct-copy suite passed twice in 258 and 250 ms. Both copies used the installed Stryker disableTypeChecks preparation. The unprepared full npm test passed, and the context was independently matched to the integrated main files."
+      "reason": "Seeding next with an extra element produces 1 + ceil(n/2) entries, always at least two for the non-empty reduction, so the loop never reaches one digest. Fresh exact-source reproduction on current context 9347cb4729244a77553d3484fc35d5b3277d9eda2b673dc795b349dc0186c11b: dist/test_vectors.js timed out in both independent trials (20007 and 20005 ms), each limited to 20000 ms and stopped by owned-child SIGKILL. Separate correct copies passed all four Node suites in both rounds. Every exact mutation compiled after the installed Stryker 10.0.0 disableTypeChecks preparation. See docs/qa/2026-10-08-confirmation-timeouts.json for source hashes and full trial metadata."
     },
     {
       "mutatorName": "BlockStatement",
       "location": {
         "end": {
           "column": 4,
-          "line": 266
+          "line": 267
         },
         "start": {
           "column": 28,
-          "line": 210
+          "line": 211
         }
       },
       "replacement": "{}",
-      "reason": "The empty validateTree loop body never pops the non-empty stack. Exact-source isolated reproduction on frozen context aeadc2a678817243c2e07a305d01776e43d3adbe190a8877afceddf6f3548dda: dist/test_vectors.js timed out twice with a 20000 ms limit and owned-child SIGKILL; the same correct-copy suite passed twice in 258 and 250 ms. Both copies used the installed Stryker disableTypeChecks preparation. The unprepared full npm test passed, and the context was independently matched to the integrated main files."
+      "reason": "The empty validateTree loop body never pops the initial non-empty stack. Fresh exact-source reproduction on current context 9347cb4729244a77553d3484fc35d5b3277d9eda2b673dc795b349dc0186c11b: dist/test_vectors.js timed out in both independent trials (20004 and 20004 ms), each limited to 20000 ms and stopped by owned-child SIGKILL. Separate correct copies passed all four Node suites in both rounds. Every exact mutation compiled after the installed Stryker 10.0.0 disableTypeChecks preparation. See docs/qa/2026-10-08-confirmation-timeouts.json for source hashes and full trial metadata."
     },
     {
       "mutatorName": "BlockStatement",
       "location": {
         "end": {
           "column": 4,
-          "line": 1191
+          "line": 1192
         },
         "start": {
           "column": 31,
-          "line": 1153
+          "line": 1154
         }
       },
       "replacement": "{}",
-      "reason": "The empty outer JSON scanner body cannot advance index on non-empty JSON. Exact-source isolated reproduction on frozen context aeadc2a678817243c2e07a305d01776e43d3adbe190a8877afceddf6f3548dda: dist/test_seal.js timed out twice with a 20000 ms limit and owned-child SIGKILL; the same correct-copy suite passed twice in 618 and 301 ms. Both copies used the installed Stryker disableTypeChecks preparation. The unprepared full npm test passed, and the context was independently matched to the integrated main files."
+      "reason": "The empty outer JSON scanner body leaves index unchanged on non-empty text. Fresh exact-source reproduction on current context 9347cb4729244a77553d3484fc35d5b3277d9eda2b673dc795b349dc0186c11b: dist/test_seal.js timed out in both independent trials (20014 and 20006 ms), each limited to 20000 ms and stopped by owned-child SIGKILL. Separate correct copies passed all four Node suites in both rounds. Every exact mutation compiled after the installed Stryker 10.0.0 disableTypeChecks preparation. See docs/qa/2026-10-08-confirmation-timeouts.json for source hashes and full trial metadata."
     },
     {
       "mutatorName": "AssignmentOperator",
       "location": {
         "end": {
           "column": 17,
-          "line": 1157
+          "line": 1158
         },
         "start": {
           "column": 7,
-          "line": 1157
+          "line": 1158
         }
       },
       "replacement": "index -= 1",
-      "reason": "Decrementing the outer JSON scanner index takes it below zero; undefined characters still follow the decrement branch and index remains below text.length. Exact-source isolated reproduction on frozen context aeadc2a678817243c2e07a305d01776e43d3adbe190a8877afceddf6f3548dda: dist/test_seal.js timed out twice with a 20000 ms limit and owned-child SIGKILL; the same correct-copy suite passed twice in 618 and 301 ms. Both copies used the installed Stryker disableTypeChecks preparation. The unprepared full npm test passed, and the context was independently matched to the integrated main files."
+      "reason": "The outer JSON scanner decrement moves below zero on a non-quote prefix; undefined characters continue taking the decrement branch. Fresh exact-source reproduction on current context 9347cb4729244a77553d3484fc35d5b3277d9eda2b673dc795b349dc0186c11b: dist/test_seal.js timed out in both independent trials (20018 and 20014 ms), each limited to 20000 ms and stopped by owned-child SIGKILL. Separate correct copies passed all four Node suites in both rounds. Every exact mutation compiled after the installed Stryker 10.0.0 disableTypeChecks preparation. See docs/qa/2026-10-08-confirmation-timeouts.json for source hashes and full trial metadata."
     },
     {
       "mutatorName": "BlockStatement",
       "location": {
         "end": {
           "column": 6,
-          "line": 1169
+          "line": 1170
         },
         "start": {
           "column": 33,
-          "line": 1163
+          "line": 1164
         }
       },
       "replacement": "{}",
-      "reason": "The empty inner JSON scanner body cannot advance index inside a string. Exact-source isolated reproduction on frozen context aeadc2a678817243c2e07a305d01776e43d3adbe190a8877afceddf6f3548dda: dist/test_seal.js timed out twice with a 20000 ms limit and owned-child SIGKILL; the same correct-copy suite passed twice in 618 and 301 ms. Both copies used the installed Stryker disableTypeChecks preparation. The unprepared full npm test passed, and the context was independently matched to the integrated main files."
+      "reason": "The empty inner JSON scanner body cannot advance index or detect a closing quote. Fresh exact-source reproduction on current context 9347cb4729244a77553d3484fc35d5b3277d9eda2b673dc795b349dc0186c11b: dist/test_seal.js timed out in both independent trials (20004 and 20004 ms), each limited to 20000 ms and stopped by owned-child SIGKILL. Separate correct copies passed all four Node suites in both rounds. Every exact mutation compiled after the installed Stryker 10.0.0 disableTypeChecks preparation. See docs/qa/2026-10-08-confirmation-timeouts.json for source hashes and full trial metadata."
     },
     {
       "mutatorName": "AssignmentOperator",
       "location": {
         "end": {
           "column": 17,
-          "line": 1168
+          "line": 1169
         },
         "start": {
           "column": 7,
-          "line": 1168
+          "line": 1169
         }
       },
       "replacement": "index -= 1",
-      "reason": "The inner JSON string scanner moves backward instead of forward; its upper-bound-only loop cannot finish for inputs exercised by the SEAL suite. Exact-source isolated reproduction on frozen context aeadc2a678817243c2e07a305d01776e43d3adbe190a8877afceddf6f3548dda: dist/test_seal.js timed out twice with a 20000 ms limit and owned-child SIGKILL; the same correct-copy suite passed twice in 618 and 301 ms. Both copies used the installed Stryker disableTypeChecks preparation. The unprepared full npm test passed, and the context was independently matched to the integrated main files."
+      "reason": "With an initial escaped character, backward traversal clears escaped at the opening quote without breaking and can move below zero forever. The current SEAL suite exercises escaped initial string content; this claim is not about every ordinary string. Fresh exact-source reproduction on current context 9347cb4729244a77553d3484fc35d5b3277d9eda2b673dc795b349dc0186c11b: dist/test_seal.js timed out in both independent trials (20012 and 20007 ms), each limited to 20000 ms and stopped by owned-child SIGKILL. Separate correct copies passed all four Node suites in both rounds. Every exact mutation compiled after the installed Stryker 10.0.0 disableTypeChecks preparation. See docs/qa/2026-10-08-confirmation-timeouts.json for source hashes and full trial metadata."
     },
     {
       "mutatorName": "BlockStatement",
       "location": {
         "end": {
           "column": 4,
-          "line": 1457
+          "line": 1458
         },
         "start": {
           "column": 28,
-          "line": 1404
+          "line": 1405
         }
       },
       "replacement": "{}",
-      "reason": "The empty validateSealTree loop body never pops the non-empty stack. Exact-source isolated reproduction on frozen context aeadc2a678817243c2e07a305d01776e43d3adbe190a8877afceddf6f3548dda: dist/test_seal.js timed out twice with a 20000 ms limit and owned-child SIGKILL; the same correct-copy suite passed twice in 618 and 301 ms. Both copies used the installed Stryker disableTypeChecks preparation. The unprepared full npm test passed, and the context was independently matched to the integrated main files."
-    },
-    {
-      "mutatorName": "UpdateOperator",
-      "location": {
-        "end": {
-          "column": 39,
-          "line": 165
-        },
-        "start": {
-          "column": 36,
-          "line": 165
-        }
-      },
-      "replacement": "i--",
-      "reason": "Replacing i++ with i-- in compareBytes makes a matching first byte move the index below zero. Both out-of-bounds byte reads then remain undefined, the comparison cannot return a difference, and the upper-bound-only loop never finishes. Exact-source frozen-context reproduction aeadc2a678817243c2e07a305d01776e43d3adbe190a8877afceddf6f3548dda: dist/test_vectors.js timed out twice with a 20000 ms limit and owned-child SIGKILL; the same correct suite passed in 258 and 250 ms. Both copies used installed Stryker disableTypeChecks preparation; compilation succeeded, unprepared full npm test passed, and the context matches integrated main. This is a detected fault only when native Stryker reports this exact identity as Timeout, never a harmless Survived exclusion."
+      "reason": "The empty validateSealTree loop body never pops the initial non-empty stack. Fresh exact-source reproduction on current context 9347cb4729244a77553d3484fc35d5b3277d9eda2b673dc795b349dc0186c11b: dist/test_seal.js timed out in both independent trials (20004 and 20002 ms), each limited to 20000 ms and stopped by owned-child SIGKILL. Separate correct copies passed all four Node suites in both rounds. Every exact mutation compiled after the installed Stryker 10.0.0 disableTypeChecks preparation. See docs/qa/2026-10-08-confirmation-timeouts.json for source hashes and full trial metadata."
     }
   ]
 }
