@@ -41,6 +41,7 @@ EVENT_DECISIONS = {
     "authorization.create": {"authorization_granted"},
     "authorization.revoke": {"authorization_revoked"},
     "budget.settle": {"budget_settled"},
+    "confirmation.resolve": {"confirmation_approved", "confirmation_rejected"},
     "escalation.resolve": {"escalation_approved", "escalation_rejected"},
     "receipt.checkpoint": {"receipt_set_committed"},
 }
@@ -185,6 +186,9 @@ def _parse_rfc3339(s: str) -> datetime:
             f"YYYY-MM-DDTHH:MM:SS.sssZ, got {s!r}"
         )
     try:
+        # Python 3.14 accepts 24:00 as next-day midnight; this profile does not.
+        if int(s[11:13]) >= 24:
+            raise ValueError
         return datetime.fromisoformat(s[:-1] + "+00:00")
     except ValueError:
         # e.g. Feb 30: shape-valid but not a real calendar date.

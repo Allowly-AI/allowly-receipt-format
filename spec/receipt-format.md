@@ -13,7 +13,7 @@ A *receipt* is a signed, tamper-evident record of a single authorization event �
 Two kinds of receipts share the same format:
 
 - **Action receipts** record a single authorization decision: *at time T, the issuer decided that a request for action A by agent G on behalf of user U was allowed, denied, required confirmation, or required escalation, under authorization C.* These are produced by the issuer's `/check` endpoint and do not prove the action occurred.
-- **Event receipts** record authorization lifecycle events and workspace receipt checkpoints: creation, revocation, client-reported budget settlement, client-reported escalation resolution, or a daily commitment to a signed receipt set.
+- **Event receipts** record authorization lifecycle events and workspace receipt checkpoints: creation, revocation, client-reported budget settlement, client-reported confirmation or escalation resolution, or a daily commitment to a signed receipt set.
 
 Both kinds of receipts use the same JSON structure, the same canonicalization, the same signature scheme, and the same verifier. They differ only in the values of a few fields (§3.3). An auditor presented with a dispute typically needs both: event receipts show *what the issuer recorded about creation, settlement, resolution, and receipt-set commitments*, while action receipts show *the decisions the issuer recorded under that authorization*. Neither proves the truth of client-supplied facts or that a downstream action occurred.
 
@@ -32,7 +32,7 @@ The key words **MUST**, **MUST NOT**, **SHOULD**, **SHOULD NOT**, and **MAY** in
 
 - **Receipt** — a JSON object conforming to §3 plus its signature. Either an action receipt or an event receipt. A receipt always carries a real Ed25519 signature; an in-flight pending state is a transport-layer concept the issuer surfaces separately (§5.3).
 - **Action receipt** — a receipt recording a single authorization decision when an action was checked or requested. See §3.3.
-- **Event receipt** — a receipt recording an authorization-related event (creation, revocation, budget settlement, escalation resolution, or receipt checkpoint). See §3.3.
+- **Event receipt** — a receipt recording an authorization-related event (creation, revocation, budget settlement, confirmation or escalation resolution, or receipt checkpoint). See §3.3.
 - **Issuer** — the entity that produced and signed the receipt. `workspace_id` is its signed claim; the verifier authenticates that identity by independently trusting the expected workspace and key (§7).
 - **Subject** — the end-user identifier on whose behalf the client says the agent acts, or for whom it registers an authorization. Identified by `user_id`.
 - **Verifier** — any party validating a receipt.
@@ -81,8 +81,8 @@ A receipt is a JSON object with the following top-level fields. All fields are r
 | `user_id` | string | yes | Opaque identifier of the end-user. Customer-defined; issuers and verifiers MUST NOT assume any particular structure. SHOULD NOT contain personally identifiable information (§10.6). |
 | `agent_id` | string | yes | Opaque identifier of the agent or acting principal. Customer-defined. For human-initiated actions, this identifies the actor's role (e.g. `controller`, `dba`). |
 | `action` | string \| absent | conditional | Present on action receipts. The action name being checked (e.g. `email.send`, `contact.enrich`). Format is issuer-defined but conventionally dotted. **MUST be absent on event receipts.** |
-| `event` | string \| absent | conditional | Present on event receipts. One of `"authorization.create"`, `"authorization.revoke"`, `"budget.settle"`, `"escalation.resolve"`, or `"receipt.checkpoint"`. **MUST be absent on action receipts.** |
-| `resource` | string \| null | yes | An identifier for the target of the action, or `null`. Always `null` for authorization create/revoke receipts. For `budget.settle` and `escalation.resolve`, this MAY carry the resource the event was bound to. Issuers MUST NOT include the resource's contents, only an identifier. |
+| `event` | string \| absent | conditional | Present on event receipts. One of `"authorization.create"`, `"authorization.revoke"`, `"budget.settle"`, `"confirmation.resolve"`, `"escalation.resolve"`, or `"receipt.checkpoint"`. **MUST be absent on action receipts.** |
+| `resource` | string \| null | yes | An identifier for the target of the action, or `null`. Always `null` for authorization create/revoke receipts. For `budget.settle`, `confirmation.resolve`, and `escalation.resolve`, this MAY carry the resource the event was bound to. Issuers MUST NOT include the resource's contents, only an identifier. |
 | `context` | object | yes | An opaque object of additional facts the issuer considered. Contents are issuer-defined. Verifiers MUST canonicalize the object by the same §4 rules as the rest of the payload and MUST NOT alter its values, drop or add keys, or reorder arrays; nested object keys are re-sorted per rule 3 like any other object. MAY be empty (`{}`). |
 | `authorization_id` | string \| null | yes | The authorization record this receipt relates to. For action receipts: the authorization that authorized the decision, or `null` if no authorization matched. For authorization-related event receipts: the related `authorization_id`. For workspace-wide `receipt.checkpoint`, MUST be `null`. |
 | `engine_version` | string | yes | Version of the issuer's decision logic at time of issue. Format is issuer-defined. |
@@ -94,6 +94,13 @@ A receipt is a JSON object with the following top-level fields. All fields are r
 ### 3.2 Extensibility
 
 Verifiers implementing this specification accept only `"4"` and **MUST** reject every other value. Future incompatible receipt shapes require a new wire version and matching verifier release. Issuers **MUST NOT** emit fields or event values under a version that does not define them.
+
+The approved [2026-10-07 prelaunch exception](../docs/decisions/2026-10-07-confirmation-resolution-wire-4.md)
+defines `confirmation.resolve` under wire `"4"` starting with verifier
+packages `4.3.0`. Published `4.2.0` verifiers remain unchanged and reject this
+event. Issuers MUST update verification consumers before emitting it. This
+exception adds no top-level fields and changes no canonicalization or
+signature rules; other breaking changes retain the normal governance process.
 
 ### 3.3 Receipt kinds
 
@@ -107,12 +114,13 @@ Receipts come in two kinds, distinguished by which of two mutually exclusive fie
 - `authorization_id` — the matching authorization, or `null` if no authorization matched.
 - `resource` — an identifier for the action's target, or `null`.
 
-**Event receipts** record an authorization-related event or a workspace-wide receipt checkpoint. Authorization lifecycle events are produced when the issuer records creation/revocation or an authenticated customer client reports cost settlement or escalation resolution.
+**Event receipts** record an authorization-related event or a workspace-wide receipt checkpoint. Authorization lifecycle events are produced when the issuer records creation/revocation or an authenticated customer client reports cost settlement, confirmation resolution, or escalation resolution.
 
 - `event` — present, one of:
   - `"authorization.create"` — an authenticated customer client registered a set of actions for an agent. Issuer-specific context or reason fields may say what the client reported about approval; the event itself does not prove a human action.
   - `"authorization.revoke"` — the issuer recorded revocation, with issuer-defined context describing its source.
   - `"budget.settle"` — an authenticated customer client reported an actual cost to reconcile with the estimate.
+  - `"confirmation.resolve"` — an authenticated customer client reported an approved or rejected confirmation resolution.
   - `"escalation.resolve"` — an authenticated customer client reported an approved or rejected escalation resolution.
   - `"receipt.checkpoint"` — the issuer committed to one UTC day's registered signed non-checkpoint receipt set (§3.7).
 - `action` — **MUST be absent.**
@@ -120,11 +128,13 @@ Receipts come in two kinds, distinguished by which of two mutually exclusive fie
   - `"authorization_granted"` — paired with `event: "authorization.create"`.
   - `"authorization_revoked"` — paired with `event: "authorization.revoke"`.
   - `"budget_settled"` — paired with `event: "budget.settle"`.
+  - `"confirmation_approved"` — paired with `event: "confirmation.resolve"` for a reported approval.
+  - `"confirmation_rejected"` — paired with `event: "confirmation.resolve"` for a reported rejection.
   - `"escalation_approved"` — paired with `event: "escalation.resolve"` for a reported approval.
   - `"escalation_rejected"` — paired with `event: "escalation.resolve"` for a reported rejection.
   - `"receipt_set_committed"` — paired with `event: "receipt.checkpoint"`.
-- `authorization_id` — the authorization being created, revoked, settled, or escalated. **MUST NOT** be `null` on those event receipts. It **MUST** be `null` on `receipt.checkpoint`.
-- `resource` — **MUST** be `null` for authorization create/revoke receipts. For `budget.settle` and `escalation.resolve`, this MAY carry the resource the event was bound to.
+- `authorization_id` — the authorization being created, revoked, settled, confirmed, or escalated. **MUST NOT** be `null` on those event receipts. It **MUST** be `null` on `receipt.checkpoint`. Confirmation resolution refers to the original parent authorization, not the short-lived approval child.
+- `resource` — **MUST** be `null` for authorization create/revoke receipts. For `budget.settle`, `confirmation.resolve`, and `escalation.resolve`, this MAY carry the resource the event was bound to.
 - `context` — conventionally carries lifecycle metadata: the full action set at creation, `expires_at`, `requires_confirm_for`, `requires_escalation_for`, the creation source (`csv_upload`, `onboarding_modal`), an optional `csv_hash` or similar integrity identifier, an optional `replaces` field (see below); for revocations a `revoked_by` field (`user`, `admin`, `expired`, `tombstone`, or `superseded` when the revocation is part of a rule change) and, when `revoked_by` is `superseded`, an optional `superseded_by: "<authorization_id of the successor>"` forward pointer (see below); for budget settlements the originating check receipt id and client-reported estimated/actual cost evidence; and for escalation resolution an `escalation` object containing the escalation id, action, approver label, reported resolution status, and client-reported resolver identity.
 
 **Authorizations are immutable.** There is no update event. Any change to an authorization — its actions, per-action constraints, or verb-routing rules (`requires_confirm_for`, `requires_escalation_for`, conditional routing) — is expressed as revoking the existing authorization and creating a new one, producing one signed `authorization.revoke` receipt and one signed `authorization.create` receipt. Because each `authorization_id` therefore refers to exactly one immutable rule set, the id alone pins the rules in force for every action receipt that references it; no revision counter is needed.
@@ -141,10 +151,24 @@ Emitting the successor id on the revoke receipt requires the successor's `author
 Verifiers **MUST** enforce the following:
 
 - Exactly one of `action` and `event` is present. Receipts with both fields, or with neither, are rejected.
-- If `event` is present, it MUST be one of `"authorization.create"`, `"authorization.revoke"`, `"budget.settle"`, `"escalation.resolve"`, or `"receipt.checkpoint"`. The corresponding `decision` MUST be valid for that event. `authorization_id` MUST NOT be `null` except on `receipt.checkpoint`, where it MUST be `null`. `resource` MUST be `null` for authorization create/revoke and checkpoint receipts. `policy_eval` MUST be absent. Checkpoint context MUST conform to §3.7.
-- If `action` is present, `decision` MUST be one of `"allow"`, `"deny"`, `"confirm"`, or `"escalate"`. The reserved event-only decisions (`authorization_granted`, `authorization_revoked`, `budget_settled`, `escalation_approved`, `escalation_rejected`) MUST NOT appear on action receipts. If `policy_eval` is present, it MUST conform to §3.6.
+- If `event` is present, it MUST be one of `"authorization.create"`, `"authorization.revoke"`, `"budget.settle"`, `"confirmation.resolve"`, `"escalation.resolve"`, or `"receipt.checkpoint"`. The corresponding `decision` MUST be valid for that event. `authorization_id` MUST NOT be `null` except on `receipt.checkpoint`, where it MUST be `null`. `resource` MUST be `null` for authorization create/revoke and checkpoint receipts. `policy_eval` MUST be absent. Checkpoint context MUST conform to §3.7.
+- If `action` is present, `decision` MUST be one of `"allow"`, `"deny"`, `"confirm"`, or `"escalate"`. The reserved event-only decisions (`authorization_granted`, `authorization_revoked`, `budget_settled`, `confirmation_approved`, `confirmation_rejected`, `escalation_approved`, `escalation_rejected`, `receipt_set_committed`) MUST NOT appear on action receipts. If `policy_eval` is present, it MUST conform to §3.6.
 
 The two-field discriminator design (rather than a single overloaded field) makes the receipt kind explicit at the schema level. A field's presence tells you what kind of receipt it is; pairing rules become trivial to enforce.
+
+**Resolution context convention (non-normative).** Allowly records confirmation
+resolution in `context.confirmation`: an opaque monitor `id` (never the bearer
+nonce), `source_receipt_id` for the originating check, `action`, `resource`,
+`resolution`, `resolved_at`, `child_authorization_id` (null on rejection),
+`matched_condition_fingerprint`, and `resolution_source`. The source identifies
+an authenticated customer client or a control-plane actor mapping. An optional
+`resolved_by` is an opaque actor identifier mapped by the control plane.
+Escalation resolution uses `context.escalation` and likewise carries a
+`source_receipt_id` and `resolution_source`; historical source links may be null.
+These values are signed issuer records. Verifiers do not prove the referenced
+receipt is present, a named human's identity, or an approval ceremony.
+Confirmation approval can also create an `authorization.create` receipt for
+the short-lived child; that receipt does not replace the resolution event.
 
 ### 3.4 Example authorization receipt
 
@@ -196,8 +220,9 @@ When a complete receipt set is available, an auditor can reconstruct the recorde
 1. Exactly one `authorization.create` receipt (the authorization grant itself).
 2. Zero or more action receipts (each check that matched this authorization). The rules in force for every one of them are exactly those recorded in the creation receipt — authorizations are immutable (§3.3), so `authorization_id` alone pins the rule set.
 3. Zero or more `budget.settle` receipts recording client-reported actual costs against estimates.
-4. Zero or more `escalation.resolve` receipts recording client-reported escalation resolutions under this authorization.
-5. At most one `authorization.revoke` receipt (if and when the authorization was revoked).
+4. Zero or more `confirmation.resolve` receipts recording client-reported approvals and rejections under this authorization.
+5. Zero or more `escalation.resolve` receipts recording client-reported escalation resolutions under this authorization.
+6. At most one `authorization.revoke` receipt (if and when the authorization was revoked).
 
 Every receipt in the chain is independently signed and cryptographically tied to the same `authorization_id`; a consumer can order presented receipts by `issued_at`. Verification proves each presented receipt is genuine and untampered; it does **not** prove the presented set is complete — a party can omit receipts (e.g. a revoke or a deny) and the remainder still verifies. Parties relying on completeness need separate evidence or an operational source they trust for that property; this format alone cannot authenticate the set as complete.
 
@@ -438,10 +463,11 @@ A verifier given a receipt `R` and the issuer's public keys **MUST** perform all
 3. **Receipt kind and pairing check.** Determine the receipt kind from which discriminator field is present, and enforce the corresponding constraints:
    - Exactly one of `action` and `event` MUST be present. Reject if both are present, or if neither is present.
    - **If `event` is present** (event receipt):
-     - `event` MUST be one of `"authorization.create"`, `"authorization.revoke"`, `"budget.settle"`, `"escalation.resolve"`, or `"receipt.checkpoint"`.
+     - `event` MUST be one of `"authorization.create"`, `"authorization.revoke"`, `"budget.settle"`, `"confirmation.resolve"`, `"escalation.resolve"`, or `"receipt.checkpoint"`.
      - If `event == "authorization.create"`: `decision` MUST equal `"authorization_granted"`.
      - If `event == "authorization.revoke"`: `decision` MUST equal `"authorization_revoked"`.
      - If `event == "budget.settle"`: `decision` MUST equal `"budget_settled"`.
+     - If `event == "confirmation.resolve"`: `decision` MUST be one of `"confirmation_approved"` or `"confirmation_rejected"`.
      - If `event == "escalation.resolve"`: `decision` MUST be one of `"escalation_approved"` or `"escalation_rejected"`.
      - If `event == "receipt.checkpoint"`: `decision` MUST equal `"receipt_set_committed"` and context MUST conform to §3.7.
      - `authorization_id` MUST NOT be `null`, except it MUST be `null` for `receipt.checkpoint`.
@@ -449,7 +475,7 @@ A verifier given a receipt `R` and the issuer's public keys **MUST** perform all
      - `policy_eval` MUST be absent.
    - **If `action` is present** (action receipt):
      - `decision` MUST be one of `"allow"`, `"deny"`, `"confirm"`, or `"escalate"`.
-     - The reserved event-only decisions (`authorization_granted`, `authorization_revoked`, `budget_settled`, `escalation_approved`, `escalation_rejected`, `receipt_set_committed`) MUST NOT appear.
+     - The reserved event-only decisions (`authorization_granted`, `authorization_revoked`, `budget_settled`, `confirmation_approved`, `confirmation_rejected`, `escalation_approved`, `escalation_rejected`, `receipt_set_committed`) MUST NOT appear.
 4. **Algorithm check.** Assert `R.alg` equals `"Ed25519"`.
 5. **Timestamp sanity.** Parse `R.issued_at` using the exact `YYYY-MM-DDTHH:MM:SS.sssZ` profile. Assert it is a real calendar instant, is not in the future (allowing a small skew, e.g. 5 minutes), and is not absurdly far in the past (spec does not mandate a cutoff; verifier policy).
 6. **Canonicalize.** Produce the canonical payload bytes per §4.
@@ -516,12 +542,16 @@ Vectors include:
 - A `authorization.revoke` receipt with `revoked_by: "user"` in context.
 - A `authorization.revoke` receipt with `revoked_by: "superseded"` and a `superseded_by` forward pointer (§3.3 lineage convention).
 - A `budget.settle` receipt with estimated and client-reported actual cost evidence.
+- `confirmation.resolve` receipts with client-reported approved and rejected resolutions linked to the original check receipt.
 - `escalation.resolve` receipts with client-reported approved and rejected resolutions and resource bindings.
 - Linked `receipt.checkpoint` receipts, including an empty day and a two-member Merkle commitment.
 
 *Receipts that MUST be rejected:*
 - A non-object top-level receipt (`null`, array, string, or number).
 - A receipt with a tampered payload (signature fails).
+- A confirmation resolution with a source receipt link or reported outcome changed after signing.
+- A `confirmation.resolve` event paired with an escalation decision, or without its parent authorization ID.
+- A confirmation-only decision on an action receipt, or an unknown confirmation event.
 - A receipt with a forged signature (zero bytes).
 - A receipt with an unknown `key_id`.
 - A receipt whose signed `key_id` was changed to another published key.
@@ -767,6 +797,12 @@ The normative cross-language profile vectors are
 `vectors/seal/verification-v1.json`. Implementations **MUST** pass both files.
 
 ## 11. Changelog
+
+- **Verifier packages 4.3.0 (staged; wire format unchanged at 4)** — Add
+  `confirmation.resolve` with `confirmation_approved` and
+  `confirmation_rejected` under the approved 2026-10-07 prelaunch exception.
+  Earlier 4.2.0 consumers reject the new event. Existing receipt bytes,
+  signatures, canonicalization, and other rejection rules are unchanged.
 
 - **Verifier packages 4.2.0 (wire format unchanged at 4)** — Added conditional
   policy replay for engines `2026-09-16.1`, `2026-09-24.1`, and `2026-09-27.1`. The newer engines

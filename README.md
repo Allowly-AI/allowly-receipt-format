@@ -109,22 +109,30 @@ try {
 
 ## Status
 
-### Conditional policy replay (unreleased)
+### Confirmation resolution (staged 4.3.0)
 
-The feature branch adds `verify_policy_evaluation` in Python and
+`confirmation.resolve` records a client-reported approval or rejection linked
+to its original check receipt. The approved
+[prelaunch exception](docs/decisions/2026-10-07-confirmation-resolution-wire-4.md)
+keeps wire `"4"` and advances both verifier packages to `4.3.0`. Existing
+receipt bytes and signatures are unchanged; published `4.2.0` verifiers reject
+the new event. Publish both packages and regenerate consumer registry locks
+before runtime rollout. Branch-local source locks are for testing and do not
+make standalone production builds ready.
+
+### Conditional policy replay
+
+Verifier 4.2.0 added `verify_policy_evaluation` in Python and
 `verifyPolicyEvaluation` in TypeScript. They authenticate an action receipt and
 its signed authorization snapshot, repeat the supported conditional calculation,
 and report `matched`, `mismatch` or `not_checked` with a diagnostic. These results
 are separate from signature verification. They do not reproduce budget, rate,
 revocation or human-approval state, or establish that the inputs were true.
 
-Use a reviewed source checkout for this feature. Published 4.1.0 packages do not
-contain policy replay. The Python and TypeScript manifests identify the pending
-coordinated release as 4.2.0. Install `./verifiers/python` into an isolated
-environment, or build `verifiers/typescript` locally; see the package READMEs
-for the new function and CLI options. Publish both packages and update consumer
-locks before deployment. Existing signature verification commands above
-continue to work with the published packages.
+Published 4.1.0 packages do not contain policy replay. Use 4.2.0 or later, or
+install `./verifiers/python` into an isolated environment and build
+`verifiers/typescript` locally. See the package READMEs for the function and
+CLI options. The staged confirmation extension above requires 4.3.0.
 
 ### Receipt wire format
 

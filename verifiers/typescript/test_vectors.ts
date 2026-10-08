@@ -720,6 +720,14 @@ async function main(vectorsPath: string): Promise<number> {
   }
 
   console.log(`\nTesting ${vectors.should_reject.length} should_reject vectors...`);
+  for (const v of vectors.should_verify) {
+    if (v.receipt.event !== "confirmation.resolve") continue;
+    await assert.rejects(
+      verifyReceipt(v.receipt, keys, { now, expectedWorkspaceId: "ws_other" }),
+      /workspace_id mismatch/,
+      "confirmation receipts must bind to the caller's trusted workspace",
+    );
+  }
   for (const v of vectors.should_reject) {
     try {
       await verifyReceipt(v.receipt, keys, { now });

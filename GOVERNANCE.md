@@ -35,6 +35,16 @@ Breaking changes require a wire-version and verifier-major bump (for example, wi
 
 Breaking changes never rewrite a released specification. A new wire-version specification lives alongside the historical text. Support for older verifier majors is governed by their published release and security-support policy; this document does not promise indefinite maintenance.
 
+### Approved prelaunch exception: confirmation resolution
+
+The [2026-10-07 decision](docs/decisions/2026-10-07-confirmation-resolution-wire-4.md)
+permits only `confirmation.resolve` with `confirmation_approved` or
+`confirmation_rejected` to extend wire `"4"` in verifier packages `4.3.0`.
+For this one approved prelaunch change, the wire-major bump and 14-day RFC
+window above do not apply. Published `4.2.0` artifacts remain unchanged and
+continue to reject the new event. All other breaking changes follow the
+normal rules above.
+
 ## Who are the maintainers
 
 Listed in `MAINTAINERS.md`. Maintainers are added when they've made sustained contributions to the spec, verifiers, or test vectors, and are nominated by an existing maintainer. Removal happens when a maintainer is inactive for 12+ months or steps down.

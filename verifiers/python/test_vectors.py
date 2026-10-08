@@ -91,6 +91,18 @@ def main(vectors_path: str) -> int:
             print(f"  FAIL  {v['name']}: unexpected rejection: {e}")
             failures += 1
 
+    for v in vectors["should_verify"]:
+        if v["receipt"].get("event") != "confirmation.resolve":
+            continue
+        try:
+            verify_receipt(v["receipt"], keys, now=now, expected_workspace_id="ws_other")
+            print(f"  FAIL  {v['name']}_workspace: wrong workspace was accepted")
+            failures += 1
+        except VerificationError as e:
+            if "workspace_id mismatch" not in str(e):
+                print(f"  FAIL  {v['name']}_workspace: wrong error: {e}")
+                failures += 1
+
     print(f"\nTesting {len(vectors['should_reject'])} should_reject vectors...")
     for v in vectors["should_reject"]:
         try:
