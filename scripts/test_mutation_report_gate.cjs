@@ -9,8 +9,31 @@ const { createHash } = require("node:crypto");
 const { spawnSync } = require("node:child_process");
 const test = require("node:test");
 const ts = require("../verifiers/typescript/node_modules/typescript");
-const { classifyReport, TIMEOUT_CONTEXT_PATHS, LOSSLESS_EVIDENCE_PATHS } = require("./mutation_report_gate.cjs");
-const source = fs.readFileSync(path.join(__dirname, "../verifiers/typescript/verifier.ts"), "utf8");
+const liveGate = require("./mutation_report_gate.cjs");
+const { TIMEOUT_CONTEXT_PATHS, LOSSLESS_EVIDENCE_PATHS } = liveGate;
+const fixtureRoot = path.join(__dirname, "fixtures/mutation-evidence-4.2.0");
+const liveSource = fs.readFileSync(path.join(__dirname, "../verifiers/typescript/verifier.ts"), "utf8");
+const source = fs.readFileSync(path.join(fixtureRoot, "verifier.ts.txt"), "utf8");
+const fixtureInputs = {
+  "verifiers/typescript/verifier.ts": path.join(fixtureRoot, "verifier.ts.txt"),
+  "verifiers/typescript/package-lock.json": path.join(fixtureRoot, "package-lock.json.txt"),
+};
+function copyFixtureInput(name, directory) {
+  const target = path.join(directory, name);
+  fs.mkdirSync(path.dirname(target), { recursive: true });
+  fs.copyFileSync(fixtureInputs[name] ?? path.join(__dirname, "..", name), target);
+}
+// The existing identities and proofs belong to the reviewed 4.2.0 inputs,
+// not to whichever verifier happens to be checked out. Run the unchanged gate
+// against those bytes in a disposable context; never re-pin production proofs.
+const proofDirectory = fs.mkdtempSync(path.join(os.tmpdir(), "allowly-reviewed-gate-fixture-"));
+test.after(() => fs.rmSync(proofDirectory, { recursive: true }));
+for (const name of ["scripts/mutation_report_gate.cjs", ...Object.keys(fixtureInputs)]) {
+  copyFixtureInput(name, proofDirectory);
+}
+fs.symlinkSync(fs.realpathSync(path.join(__dirname, "../verifiers/typescript/node_modules")),
+  path.join(proofDirectory, "verifiers/typescript/node_modules"), "dir");
+const { classifyReport } = require(path.join(proofDirectory, "scripts/mutation_report_gate.cjs"));
 const MESSAGE = '"receipt must be an object"';
 const ORIGINAL_RETURN = "left.length - right.length";
 let nextId = 0;
@@ -247,6 +270,32 @@ test("every reviewed exact identity is classified with an individual reason and 
   }
 });
 
+test("historical proof fixtures retain the exact reviewed source and lock bytes", () => {
+  const hash = (text) => createHash("sha256").update(text).digest("hex");
+  assert.equal(hash(source), "407d7a2d759706b8fb3f005c61983575d58a891d8b4b0d5e1cffae4240b72691");
+  assert.equal(hash(fs.readFileSync(fixtureInputs["verifiers/typescript/package-lock.json"], "utf8")),
+    "5c8d37baaa5d0b491dcd87d65f829caa049003fe1d8a39d4a7d7d55956ae777b");
+});
+
+test("the live verifier cannot inherit historical source or dependency exemptions", () => {
+  const m = mutant(MESSAGE, {}, liveSource);
+  const result = liveGate.classifyReport(report([m], liveSource), liveSource);
+  assert.equal(result.pass, false);
+  assert.equal(result.evidenceSourceMatched, false);
+  assert.equal(result.exactEvidenceSourceMatched, false);
+  assert.equal(result.losslessEvidenceMatched, false);
+  assert.equal(result.counts.cosmetic, 0);
+  assert.equal(result.counts.equivalent, 0);
+  assert.equal(result.counts.unclassifiedSurvived, 1);
+  assert.deepEqual(result.exclusions, []);
+  assert.equal(result.score.thresholdPercent, 80);
+  const oldSource = liveGate.classifyReport(report([mutant()]), source);
+  assert.equal(oldSource.exactEvidenceSourceMatched, true);
+  assert.equal(oldSource.losslessEvidenceMatched, false);
+  assert.throws(() => liveGate.classifyReport(report([mutant()]), liveSource),
+    /Report source does not exactly match checked-out verifier/);
+});
+
 test("every exact entry refuses nearby ranges and altered mutators or replacements", () => {
   for (const fixture of EXACT_FIXTURES) {
     const m = exactFixture(fixture);
@@ -340,9 +389,7 @@ test("parser-dependent exact entries bind the fixed installed call chain and loc
   const run = (...extra) => spawnSync(process.execPath, [script, reportPath, ...extra], { encoding: "utf8", timeout: 20000 });
   try {
     for (const name of ["scripts/mutation_report_gate.cjs", "verifiers/typescript/verifier.ts", ...LOSSLESS_EVIDENCE_PATHS]) {
-      const target = path.join(directory, name);
-      fs.mkdirSync(path.dirname(target), { recursive: true });
-      fs.copyFileSync(path.join(__dirname, "..", name), target);
+      copyFixtureInput(name, directory);
     }
     fs.symlinkSync(fs.realpathSync(path.join(__dirname, "../verifiers/typescript/node_modules/typescript")),
       path.join(directory, "verifiers/typescript/node_modules/typescript"), "dir");
@@ -708,9 +755,7 @@ test("CLI binds timeout proof to every live input and never accepts a missing ma
   const run = () => spawnSync(process.execPath, [script, reportPath], { encoding: "utf8" });
   try {
     for (const name of ["scripts/mutation_report_gate.cjs", ...TIMEOUT_CONTEXT_PATHS]) {
-      const target = path.join(directory, name);
-      fs.mkdirSync(path.dirname(target), { recursive: true });
-      fs.copyFileSync(path.join(__dirname, "..", name), target);
+      copyFixtureInput(name, directory);
     }
     fs.symlinkSync(fs.realpathSync(path.join(__dirname, "../verifiers/typescript/node_modules")),
       path.join(directory, "verifiers/typescript/node_modules"), "dir");
@@ -747,8 +792,14 @@ test("CLI returns 0 only at the approved score with no fatal blockers; missing o
   const script = path.join(__dirname, "mutation_report_gate.cjs");
   const run = (filename) => spawnSync(process.execPath, [script, path.join(directory, filename)], { encoding: "utf8" });
   try {
-    fs.writeFileSync(path.join(directory, "pass.json"), JSON.stringify(report([...Array.from({ length: 8 }, () => killed()), mutant(), comparatorSurvivor()])));
-    fs.writeFileSync(path.join(directory, "blocked.json"), JSON.stringify(report([mutant(MESSAGE, { status: "Timeout" })])));
+    fs.writeFileSync(path.join(directory, "pass.json"), JSON.stringify(report([
+      ...Array.from({ length: 8 }, () => killed(liveSource)),
+      mutant(MESSAGE, {}, liveSource), comparatorSurvivor(liveSource),
+    ], liveSource)));
+    fs.writeFileSync(path.join(directory, "blocked.json"), JSON.stringify(report([
+      mutant(MESSAGE, { status: "Timeout" }, liveSource),
+    ], liveSource)));
+    fs.writeFileSync(path.join(directory, "stale.json"), JSON.stringify(report([killed()])));
     fs.writeFileSync(path.join(directory, "invalid.json"), "not JSON");
     const pass = run("pass.json");
     assert.equal(pass.status, 0, pass.stderr);
@@ -758,6 +809,9 @@ test("CLI returns 0 only at the approved score with no fatal blockers; missing o
     assert.equal(JSON.parse(blocked.stdout).counts.Timeout, 1);
     assert.equal(run("missing.json").status, 2);
     assert.equal(run("invalid.json").status, 2);
+    const stale = run("stale.json");
+    assert.equal(stale.status, 2);
+    assert.match(stale.stderr, /Report source does not exactly match checked-out verifier/);
   } finally {
     fs.rmSync(directory, { recursive: true });
   }
