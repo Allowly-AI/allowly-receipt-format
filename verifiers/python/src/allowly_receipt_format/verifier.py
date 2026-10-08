@@ -188,7 +188,7 @@ def _parse_rfc3339(s: str) -> datetime:
     try:
         # Python 3.14 accepts 24:00 as next-day midnight; this profile does not.
         if int(s[11:13]) >= 24:
-            raise ValueError("hour outside timestamp profile")
+            raise ValueError
         return datetime.fromisoformat(s[:-1] + "+00:00")
     except ValueError:
         # e.g. Feb 30: shape-valid but not a real calendar date.

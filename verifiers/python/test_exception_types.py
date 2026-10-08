@@ -11,9 +11,10 @@ import json
 import sys
 from contextlib import redirect_stderr, redirect_stdout
 from dataclasses import replace
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from unittest.mock import patch
 
 from allowly_receipt_format import (
     KeyOutsideActiveWindowError,
@@ -46,6 +47,16 @@ def _expect_bad_keys(doc: dict) -> None:
     except SchemaError:
         return
     raise AssertionError(f"expected SchemaError for keys doc {doc!r}")
+
+
+class _Hour24PermissiveDatetime(datetime):
+    """Exercise Python 3.14's midnight normalization on older test runners."""
+
+    @classmethod
+    def fromisoformat(cls, value: str) -> datetime:
+        if value[11:13] == "24":
+            return super().fromisoformat(value[:11] + "00" + value[13:]) + timedelta(days=1)
+        return super().fromisoformat(value)
 
 
 def main(vectors_path: str) -> int:
@@ -143,6 +154,18 @@ def main(vectors_path: str) -> int:
     ):
         bad_doc = copy.deepcopy(keys_doc)
         bad_doc["keys"][0]["active_from"] = timestamp
+        _expect_bad_keys(bad_doc)
+
+    # Do not let an older datetime parser independently reject 24:00 and hide a
+    # broken profile guard. The public key loader must reject it even when the
+    # underlying parser would normalize it to next-day midnight.
+    hour_24 = "2026-01-01T24:00:00.000Z"
+    assert _Hour24PermissiveDatetime.fromisoformat(hour_24[:-1] + "+00:00") == datetime(
+        2026, 1, 2, tzinfo=timezone.utc
+    )
+    with patch("allowly_receipt_format.verifier.datetime", _Hour24PermissiveDatetime):
+        bad_doc = copy.deepcopy(keys_doc)
+        bad_doc["keys"][0]["active_from"] = hour_24
         _expect_bad_keys(bad_doc)
 
     for active_until in ("", 0, False):
