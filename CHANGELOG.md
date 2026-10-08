@@ -1,6 +1,6 @@
 # Changelog
 
-## v4.3.0 — unreleased
+## v4.3.0 — 2026-10-08
 
 - Add `confirmation.resolve`, paired with `confirmation_approved` or
   `confirmation_rejected`, under the approved
