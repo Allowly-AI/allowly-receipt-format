@@ -30,6 +30,7 @@ const EVENT_DECISIONS: Record<string, Set<string>> = {
   "authorization.create": new Set(["authorization_granted"]),
   "authorization.revoke": new Set(["authorization_revoked"]),
   "budget.settle": new Set(["budget_settled"]),
+  "confirmation.resolve": new Set(["confirmation_approved", "confirmation_rejected"]),
   "escalation.resolve": new Set(["escalation_approved", "escalation_rejected"]),
   "receipt.checkpoint": new Set(["receipt_set_committed"]),
 };
@@ -389,7 +390,7 @@ export async function verifyReceipt(
     }
     if (!Object.hasOwn(EVENT_DECISIONS, event)) {
       throw new VerificationError(
-        `event must be one of ["authorization.create","authorization.revoke","budget.settle","escalation.resolve","receipt.checkpoint"], got ${JSON.stringify(event)}`,
+        `event must be one of ${JSON.stringify(Object.keys(EVENT_DECISIONS).sort())}, got ${JSON.stringify(event)}`,
       );
     }
     const expectedDecisions = EVENT_DECISIONS[event];

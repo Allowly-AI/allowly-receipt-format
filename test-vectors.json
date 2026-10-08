@@ -558,6 +558,109 @@
       }
     },
     {
+      "name": "confirmation_resolve_approved",
+      "kind": "event",
+      "description": "client-reported confirmation approval linked to its originating check",
+      "receipt": {
+        "schema_version": "4",
+        "receipt_id": "rcp_confirmation_approved",
+        "workspace_id": "ws_test",
+        "issued_at": "2026-06-09T17:04:39.114Z",
+        "decision": "confirmation_approved",
+        "reason": "confirmation_resolution_reported_by_client",
+        "user_id": "cand_55ab2",
+        "agent_id": "scout_referrals",
+        "event": "confirmation.resolve",
+        "resource": "application:req_2207:cand_55ab2",
+        "context": {
+          "confirmation": {
+            "id": "cnf_monitor_approved",
+            "source_receipt_id": "rcp_01J0Z7Q4BORDERLINE0CONFIRM",
+            "action": "hiring.publish_feedback",
+            "resource": "application:req_2207:cand_55ab2",
+            "resolution": "approved",
+            "resolved_at": "2026-06-09T17:04:39.114Z",
+            "child_authorization_id": "auth_confirmation_child",
+            "matched_condition_fingerprint": null,
+            "resolution_source": "authenticated_customer_client"
+          }
+        },
+        "authorization_id": "auth_conditional",
+        "engine_version": "2026-04-17.1",
+        "alg": "Ed25519",
+        "key_id": "test-key/v1",
+        "signature": "6N9aI2E49IML_cYVugYIdz3ZniRJ8UkDVFrb0w0biplccBwrea0XhQbKWXCTeDNKxkrTrmCJVql0uvSU8s2fAg"
+      }
+    },
+    {
+      "name": "confirmation_resolve_rejected",
+      "kind": "event",
+      "description": "client-reported confirmation rejection linked to its originating check",
+      "receipt": {
+        "schema_version": "4",
+        "receipt_id": "rcp_confirmation_rejected",
+        "workspace_id": "ws_test",
+        "issued_at": "2026-06-09T17:04:39.114Z",
+        "decision": "confirmation_rejected",
+        "reason": "confirmation_resolution_reported_by_client",
+        "user_id": "cand_55ab2",
+        "agent_id": "scout_referrals",
+        "event": "confirmation.resolve",
+        "resource": "application:req_2207:cand_55ab2",
+        "context": {
+          "confirmation": {
+            "id": "cnf_monitor_rejected",
+            "source_receipt_id": "rcp_01J0Z7Q4BORDERLINE0CONFIRM",
+            "action": "hiring.publish_feedback",
+            "resource": "application:req_2207:cand_55ab2",
+            "resolution": "rejected",
+            "resolved_at": "2026-06-09T17:04:39.114Z",
+            "child_authorization_id": null,
+            "matched_condition_fingerprint": null,
+            "resolution_source": "authenticated_customer_client"
+          }
+        },
+        "authorization_id": "auth_conditional",
+        "engine_version": "2026-04-17.1",
+        "alg": "Ed25519",
+        "key_id": "test-key/v1",
+        "signature": "wkuNtV_g8CPpHhgHpfekj4pt0SJ3X2RamiPAzK9CW2TKzQyWPbF720hJCsBC5hE4kfNmVRZKZE1ovJ3xpvGJAQ"
+      }
+    },
+    {
+      "name": "escalation_resolve_linked",
+      "kind": "event",
+      "description": "client-reported escalation resolution linked to its originating check",
+      "receipt": {
+        "schema_version": "4",
+        "receipt_id": "rcp_escalation_resolve_linked",
+        "workspace_id": "ws_test",
+        "issued_at": "2026-04-21T14:32:17.482Z",
+        "decision": "escalation_approved",
+        "reason": "escalation_resolution_reported_by_client",
+        "user_id": "emp_8821",
+        "agent_id": "referral_outreach",
+        "event": "escalation.resolve",
+        "resource": "candidate:123",
+        "context": {
+          "escalation": {
+            "id": "esc_linked",
+            "event": "resolved",
+            "status": "approved",
+            "action": "candidate.delete",
+            "source_receipt_id": "rcp_01HXZESCALATE000000000000",
+            "resolved_by": "manager:8821",
+            "resolution_source": "authenticated_customer_client"
+          }
+        },
+        "authorization_id": "auth_escalate",
+        "engine_version": "2026-04-17.1",
+        "alg": "Ed25519",
+        "key_id": "test-key/v1",
+        "signature": "tvHjlsCu-m4u95aBawzr-L9WWOQaShXmLc-bsKdNPHXGeOCPLtM-4XLZnGMpO3SwWF86h6qhqYGeoWjxfQT1AQ"
+      }
+    },
+    {
       "name": "receipt_checkpoint_previous",
       "kind": "checkpoint",
       "description": "empty daily receipt.checkpoint",
@@ -739,6 +842,168 @@
         "alg": "Ed25519",
         "key_id": "test-key/v1",
         "signature": "zkkq7UVzS-GmO6Zhcei_a9viZy3je7lfX-kBHduDsFAutkPx7B-F22-i7oCG3X_Zz2fD5CruOX2OcEnM73T2CA"
+      }
+    },
+    {
+      "name": "confirmation_tampered_source",
+      "description": "confirmation source receipt link changed after signing",
+      "expected_reason": "signature verification failed",
+      "receipt": {
+        "schema_version": "4",
+        "receipt_id": "rcp_confirmation_approved",
+        "workspace_id": "ws_test",
+        "issued_at": "2026-06-09T17:04:39.114Z",
+        "decision": "confirmation_approved",
+        "reason": "confirmation_resolution_reported_by_client",
+        "user_id": "cand_55ab2",
+        "agent_id": "scout_referrals",
+        "event": "confirmation.resolve",
+        "resource": "application:req_2207:cand_55ab2",
+        "context": {
+          "confirmation": {
+            "id": "cnf_monitor_approved",
+            "source_receipt_id": "rcp_other",
+            "action": "hiring.publish_feedback",
+            "resource": "application:req_2207:cand_55ab2",
+            "resolution": "approved",
+            "resolved_at": "2026-06-09T17:04:39.114Z",
+            "child_authorization_id": "auth_confirmation_child",
+            "matched_condition_fingerprint": null,
+            "resolution_source": "authenticated_customer_client"
+          }
+        },
+        "authorization_id": "auth_conditional",
+        "engine_version": "2026-04-17.1",
+        "alg": "Ed25519",
+        "key_id": "test-key/v1",
+        "signature": "6N9aI2E49IML_cYVugYIdz3ZniRJ8UkDVFrb0w0biplccBwrea0XhQbKWXCTeDNKxkrTrmCJVql0uvSU8s2fAg"
+      }
+    },
+    {
+      "name": "confirmation_tampered_resolution",
+      "description": "confirmation reported outcome changed after signing",
+      "expected_reason": "signature verification failed",
+      "receipt": {
+        "schema_version": "4",
+        "receipt_id": "rcp_confirmation_rejected",
+        "workspace_id": "ws_test",
+        "issued_at": "2026-06-09T17:04:39.114Z",
+        "decision": "confirmation_rejected",
+        "reason": "confirmation_resolution_reported_by_client",
+        "user_id": "cand_55ab2",
+        "agent_id": "scout_referrals",
+        "event": "confirmation.resolve",
+        "resource": "application:req_2207:cand_55ab2",
+        "context": {
+          "confirmation": {
+            "id": "cnf_monitor_rejected",
+            "source_receipt_id": "rcp_01J0Z7Q4BORDERLINE0CONFIRM",
+            "action": "hiring.publish_feedback",
+            "resource": "application:req_2207:cand_55ab2",
+            "resolution": "approved",
+            "resolved_at": "2026-06-09T17:04:39.114Z",
+            "child_authorization_id": null,
+            "matched_condition_fingerprint": null,
+            "resolution_source": "authenticated_customer_client"
+          }
+        },
+        "authorization_id": "auth_conditional",
+        "engine_version": "2026-04-17.1",
+        "alg": "Ed25519",
+        "key_id": "test-key/v1",
+        "signature": "wkuNtV_g8CPpHhgHpfekj4pt0SJ3X2RamiPAzK9CW2TKzQyWPbF720hJCsBC5hE4kfNmVRZKZE1ovJ3xpvGJAQ"
+      }
+    },
+    {
+      "name": "confirmation_wrong_pair",
+      "description": "confirmation event paired with escalation decision",
+      "expected_reason": "must have decision",
+      "receipt": {
+        "schema_version": "4",
+        "receipt_id": "rcp_confirmation_wrong_pair",
+        "workspace_id": "ws_test",
+        "issued_at": "2026-04-21T14:32:17.482Z",
+        "decision": "escalation_approved",
+        "reason": "authorization_granted_action_active",
+        "user_id": "emp_8821",
+        "agent_id": "referral_outreach",
+        "event": "confirmation.resolve",
+        "resource": "edge:emp_8821:conn_9f2a",
+        "context": {},
+        "authorization_id": "auth_01HXZ2A0K1L2M3N4P5Q6R7S8T9",
+        "engine_version": "2026-04-17.1",
+        "alg": "Ed25519",
+        "key_id": "test-key/v1",
+        "signature": "8jjTXxV28m1c6t-cFLZKUUE8CSTvKhtRka8TA6XCwGzC1InsN20bKE4UHmOG6OUUlLuOy--EbmXTeJ2jc7PeCQ"
+      }
+    },
+    {
+      "name": "confirmation_null_authorization",
+      "description": "confirmation event without parent authorization",
+      "expected_reason": "must have non-null authorization_id",
+      "receipt": {
+        "schema_version": "4",
+        "receipt_id": "rcp_confirmation_null_authorization",
+        "workspace_id": "ws_test",
+        "issued_at": "2026-04-21T14:32:17.482Z",
+        "decision": "confirmation_rejected",
+        "reason": "authorization_granted_action_active",
+        "user_id": "emp_8821",
+        "agent_id": "referral_outreach",
+        "event": "confirmation.resolve",
+        "resource": "edge:emp_8821:conn_9f2a",
+        "context": {},
+        "authorization_id": null,
+        "engine_version": "2026-04-17.1",
+        "alg": "Ed25519",
+        "key_id": "test-key/v1",
+        "signature": "ERPr2qds5Qe2s77G6YuMG86rM3hmZNxcxTA1bEMA9n3GgG6RmnS2C1Xpwpo4lH9S58lJcZTunyLLRrVf2dfoBA"
+      }
+    },
+    {
+      "name": "confirmation_action_decision",
+      "description": "confirmation-only decision on an action receipt",
+      "expected_reason": "requires an event receipt",
+      "receipt": {
+        "schema_version": "4",
+        "receipt_id": "rcp_confirmation_action_decision",
+        "workspace_id": "ws_test",
+        "issued_at": "2026-04-21T14:32:17.482Z",
+        "decision": "confirmation_approved",
+        "reason": "authorization_granted_action_active",
+        "user_id": "emp_8821",
+        "agent_id": "referral_outreach",
+        "action": "outreach.send",
+        "resource": "edge:emp_8821:conn_9f2a",
+        "context": {},
+        "authorization_id": "auth_01HXZ2A0K1L2M3N4P5Q6R7S8T9",
+        "engine_version": "2026-04-17.1",
+        "alg": "Ed25519",
+        "key_id": "test-key/v1",
+        "signature": "5bOjq5urJbD-7fsDS7AJcCdqbWuWtnHTvt27xQJ_53fGjNk-LL_VhbRx-FgEgXt-hhvm1PEvAC-6O89RRQLQBw"
+      }
+    },
+    {
+      "name": "confirmation_unknown_event",
+      "description": "unrecognized confirmation event remains fail-closed",
+      "expected_reason": "event must be one of",
+      "receipt": {
+        "schema_version": "4",
+        "receipt_id": "rcp_confirmation_unknown_event",
+        "workspace_id": "ws_test",
+        "issued_at": "2026-04-21T14:32:17.482Z",
+        "decision": "confirmation_approved",
+        "reason": "authorization_granted_action_active",
+        "user_id": "emp_8821",
+        "agent_id": "referral_outreach",
+        "event": "confirmation.resolve.future",
+        "resource": "edge:emp_8821:conn_9f2a",
+        "context": {},
+        "authorization_id": "auth_01HXZ2A0K1L2M3N4P5Q6R7S8T9",
+        "engine_version": "2026-04-17.1",
+        "alg": "Ed25519",
+        "key_id": "test-key/v1",
+        "signature": "XHL3mLUNgaZmV2mDZA9dlVdZzMAvq6MpbXzaOaJUL8MDeZqCNIabtlg2qNy60iRW5E7e2wvtHrKBw0WSPZqQDA"
       }
     },
     {

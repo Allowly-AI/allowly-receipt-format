@@ -392,6 +392,52 @@ escalation_resolve_rejected = signed_receipt(
     resource="candidate:124",
 )
 
+# Additive vectors: preserve every existing receipt and signature unchanged.
+confirmation_resolutions = {}
+for resolution in ("approved", "rejected"):
+    confirmation_resolutions[resolution] = signed_receipt(
+        f"rcp_confirmation_{resolution}",
+        issued_at="2026-06-09T17:04:39.114Z",
+        decision=f"confirmation_{resolution}",
+        reason="confirmation_resolution_reported_by_client",
+        user_id=confirm_condition_matched["user_id"],
+        agent_id=confirm_condition_matched["agent_id"],
+        action=None,
+        event="confirmation.resolve",
+        resource=confirm_condition_matched["resource"],
+        authorization_id=confirm_condition_matched["authorization_id"],
+        context={"confirmation": {
+            "id": f"cnf_monitor_{resolution}",
+            "source_receipt_id": confirm_condition_matched["receipt_id"],
+            "action": confirm_condition_matched["action"],
+            "resource": confirm_condition_matched["resource"],
+            "resolution": resolution,
+            "resolved_at": "2026-06-09T17:04:39.114Z",
+            "child_authorization_id": "auth_confirmation_child" if resolution == "approved" else None,
+            "matched_condition_fingerprint": None,
+            "resolution_source": "authenticated_customer_client",
+        }},
+    )
+
+escalation_resolve_linked = signed_receipt(
+    "rcp_escalation_resolve_linked",
+    decision="escalation_approved",
+    reason="escalation_resolution_reported_by_client",
+    action=None,
+    event="escalation.resolve",
+    resource=escalate_action["resource"],
+    authorization_id=escalate_action["authorization_id"],
+    context={"escalation": {
+        "id": "esc_linked",
+        "event": "resolved",
+        "status": "approved",
+        "action": escalate_action["action"],
+        "source_receipt_id": escalate_action["receipt_id"],
+        "resolved_by": "manager:8821",
+        "resolution_source": "authenticated_customer_client",
+    }},
+)
+
 budget_settle = signed_receipt(
     "rcp_01HXZBUDGETSETTLE0000000",
     issued_at="2026-04-21T16:16:00.000Z",
@@ -504,6 +550,26 @@ authorization_revoke_superseded = signed_receipt(
 
 tampered = copy.deepcopy(minimal_allow)
 tampered["user_id"] = "emp_ATTACKER"
+
+confirmation_tampered_source = copy.deepcopy(confirmation_resolutions["approved"])
+confirmation_tampered_source["context"]["confirmation"]["source_receipt_id"] = "rcp_other"
+confirmation_tampered_resolution = copy.deepcopy(confirmation_resolutions["rejected"])
+confirmation_tampered_resolution["context"]["confirmation"]["resolution"] = "approved"
+confirmation_wrong_pair = signed_receipt(
+    "rcp_confirmation_wrong_pair", action=None, event="confirmation.resolve",
+    decision="escalation_approved",
+)
+confirmation_null_authorization = signed_receipt(
+    "rcp_confirmation_null_authorization", action=None, event="confirmation.resolve",
+    decision="confirmation_rejected", authorization_id=None,
+)
+confirmation_action_decision = signed_receipt(
+    "rcp_confirmation_action_decision", decision="confirmation_approved",
+)
+confirmation_unknown_event = signed_receipt(
+    "rcp_confirmation_unknown_event", action=None, event="confirmation.resolve.future",
+    decision="confirmation_approved",
+)
 
 forged = copy.deepcopy(minimal_allow)
 forged["signature"] = b64url(b"\x00" * 64)
@@ -871,6 +937,9 @@ should_verify = [
     ("budget_settle", "event", "budget.settle receipt with exact post-execution cost", budget_settle),
     ("escalation_resolve_approved", "event", "escalation.resolve receipt with approved decision and resource", escalation_resolve_approved),
     ("escalation_resolve_rejected", "event", "escalation.resolve receipt with rejected decision and resource", escalation_resolve_rejected),
+    ("confirmation_resolve_approved", "event", "client-reported confirmation approval linked to its originating check", confirmation_resolutions["approved"]),
+    ("confirmation_resolve_rejected", "event", "client-reported confirmation rejection linked to its originating check", confirmation_resolutions["rejected"]),
+    ("escalation_resolve_linked", "event", "client-reported escalation resolution linked to its originating check", escalation_resolve_linked),
     ("receipt_checkpoint_previous", "checkpoint", "empty daily receipt.checkpoint", previous_checkpoint),
     ("receipt_checkpoint_daily", "checkpoint", "daily receipt.checkpoint with prior linkage", daily_checkpoint),
     ("action_control_chars_context", "action", "context string with control characters (tests \\uXXXX escaping, rule 5)", control_chars_context),
@@ -884,6 +953,12 @@ should_reject = [
     ("receipt_string", "top-level receipt is a string", "receipt must be an object", "x"),
     ("receipt_number", "top-level receipt is a number", "receipt must be an object", 42),
     ("tampered_payload", "user_id modified after signing", "signature verification failed", tampered),
+    ("confirmation_tampered_source", "confirmation source receipt link changed after signing", "signature verification failed", confirmation_tampered_source),
+    ("confirmation_tampered_resolution", "confirmation reported outcome changed after signing", "signature verification failed", confirmation_tampered_resolution),
+    ("confirmation_wrong_pair", "confirmation event paired with escalation decision", "must have decision", confirmation_wrong_pair),
+    ("confirmation_null_authorization", "confirmation event without parent authorization", "must have non-null authorization_id", confirmation_null_authorization),
+    ("confirmation_action_decision", "confirmation-only decision on an action receipt", "requires an event receipt", confirmation_action_decision),
+    ("confirmation_unknown_event", "unrecognized confirmation event remains fail-closed", "event must be one of", confirmation_unknown_event),
     ("forged_signature", "signature bytes replaced with zeros", "signature verification failed", forged),
     ("unknown_key_id", "key_id not in published keys", "no public key found", unknown_key),
     ("key_id_swapped", "signed key_id changed to another published key", "signature verification failed", key_id_swapped),

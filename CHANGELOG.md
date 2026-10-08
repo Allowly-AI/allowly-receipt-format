@@ -1,5 +1,23 @@
 # Changelog
 
+## v4.3.0 — unreleased
+
+- Add `confirmation.resolve`, paired with `confirmation_approved` or
+  `confirmation_rejected`, under the approved
+  [prelaunch wire 4 exception](docs/decisions/2026-10-07-confirmation-resolution-wire-4.md).
+  Resolution context links the originating check receipt and records the
+  authenticated client's report. Signatures do not prove human approval.
+- Both verifiers require the new event/decision pairing and keep all unknown
+  events fail-closed. Existing receipt bytes, canonicalization, signatures,
+  and wire version `"4"` are unchanged. Published `4.2.0` artifacts remain
+  immutable and reject the new event.
+- Add signed approval/rejection and linked escalation vectors, plus tampering,
+  workspace binding, invalid-pairing, and unknown-event regression coverage.
+  Publish both verifier packages and update consumer locks before runtime
+  rollout; branch-local staging is not a production release.
+- Keep the existing rejection of hour `24` timestamps on Python 3.14, whose
+  standard parser now accepts that spelling as next-day midnight.
+
 ## v4.2.0 — 2026-09-30
 
 - Add the Allowly conditional evaluation profile and offline policy replay in
