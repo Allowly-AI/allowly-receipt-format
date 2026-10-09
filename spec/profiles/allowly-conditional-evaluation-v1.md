@@ -19,14 +19,19 @@ must not apply newer semantics to an unknown engine.
 
 | Action engine | Authorization snapshot engine | Evaluator source |
 |---|---|---|
-| `2026-09-16.1` | `2026-09-16.1` | `allowly-api/app/services/policy_conditions.py` at commit `1a7b36e2e83d0a8b57914d16bc297d8f8090eb13` |
-| `2026-09-24.1` | `2026-09-16.1` or `2026-09-24.1` | The same conditional evaluator; this engine also records identity, customer time, and governed execution evidence after evaluation. |
-| `2026-09-27.1` | `2026-09-16.1`, `2026-09-24.1`, or `2026-09-27.1` | The same conditional evaluator; `context.execution.approval_sha256` additionally links customer-side execution to its approved descriptor. |
+| `2026-09-16.1` | Any of the four listed versions | `allowly-api/app/services/policy_conditions.py` at commit `1a7b36e2e83d0a8b57914d16bc297d8f8090eb13` |
+| `2026-09-24.1` | Any of the four listed versions | The same conditional evaluator; this engine also records identity, customer time, and governed execution evidence after evaluation. |
+| `2026-09-27.1` | Any of the four listed versions | The same conditional evaluator; `context.execution.approval_sha256` additionally links customer-side execution to its approved descriptor. |
+| `2026-10-09.1` | Any of the four listed versions | The same conditional evaluator; `context.execution.review` additionally links native Execute continuation to its review and source decision receipt. |
 
-The verifier accepts authorization snapshots from all three listed versions
+The maintained verifier source accepts authorization snapshots from all four listed versions
 for each supported action engine. Snapshot shape checks still apply. This
 profile checks only the conditional calculation, not provider request semantics,
 dispatch, dynamic limits, or TLS evidence.
+
+Support for `2026-10-09.1` is prepared in verifier 4.3.1, not a capability of
+the already published 4.3.0 packages. Publish 4.3.1 and update consumer registry
+locks before deploying a runtime that emits that engine.
 
 An unsupported action engine returns `not_checked` with
 `unsupported_engine_version`. An unsupported creation snapshot version or
@@ -63,7 +68,7 @@ The selected creation receipt must meet all of these rules:
 - every `name` is a non-empty string and all names are unique; and
 - every `constraints` value is an object.
 
-For a `2026-09-27.1` authorization snapshot, an action may also contain
+For a `2026-09-27.1` or `2026-10-09.1` authorization snapshot, an action may also contain
 `executable_operations`: an array of at most 100 objects with exactly
 `enabled_executable_id`, `provider_id`, `operation_id`, `catalog_revision`,
 `definition_fingerprint`, and `minimum_evidence_mode`. All values are non-empty
@@ -88,13 +93,17 @@ exactly these top-level keys:
 - `escalation`
 - `session_id`
 
-For engines `2026-09-24.1` and `2026-09-27.1`, also remove these receipt-only fields, which the API
+For engines `2026-09-24.1`, `2026-09-27.1`, and `2026-10-09.1`, also remove these receipt-only fields, which the API
 adds after the conditional policy calculation:
 
 - `client_timestamp`
 - `client_timestamp_source`
 - `execution`
 - `identity_verification`
+
+Removing the complete `execution` field also removes its nested `review`
+metadata. Do not remove a customer input named `review` at the context's top
+level; that remains part of the conditional calculation.
 
 The API evaluates the customer context before it adds those receipt-only
 fields. Preserve every other key, array order, JSON type, explicit `null`, and

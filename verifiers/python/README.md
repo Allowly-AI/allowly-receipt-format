@@ -164,6 +164,13 @@ revocation, rate limits, approvals, and other state can affect that decision.
 See `spec/profiles/allowly-conditional-evaluation-v1.md` for the exact engine,
 operator, typed-comparison, missing-field, and context-reconstruction rules.
 
+The maintained source supports action and authorization engines `2026-09-16.1`,
+`2026-09-24.1`, `2026-09-27.1`, and `2026-10-09.1`. The last engine is a
+prepared 4.3.1 extension, not included in the already published 4.3.0 package.
+Build from this source for local tests; publish 4.3.1 and update consumer
+registry locks before runtime rollout. Its nested `context.execution.review`
+metadata is authenticated but excluded from the conditional calculation.
+
 Always pass `expected_workspace_id` to bind the receipt to a workspace — a
 `key_id` alone does not (spec §7, "Workspace binding"). Take that ID from
 caller-trusted configuration, never from the receipt or key document, and

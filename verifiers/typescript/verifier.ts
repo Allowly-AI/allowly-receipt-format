@@ -491,10 +491,11 @@ export async function verifyReceipt(
 // ---------------------------------------------------------------------------
 
 export const POLICY_EVALUATION_PROFILE = "allowly-conditional-evaluation-v1";
-export const POLICY_EVALUATION_ENGINE_VERSION = "2026-09-27.1";
+export const POLICY_EVALUATION_ENGINE_VERSION = "2026-10-09.1";
 export const POLICY_EVALUATION_ENGINE_VERSIONS = [
   "2026-09-16.1",
   "2026-09-24.1",
+  "2026-09-27.1",
   POLICY_EVALUATION_ENGINE_VERSION,
 ] as const;
 
@@ -804,7 +805,7 @@ function policyConstraintsFromAuthorization(
 
 function supportedActionShape(entry: Record<string, unknown>, engine: unknown): boolean {
   if (hasExactKeys(entry, ["name", "constraints"])) return true;
-  if (engine !== POLICY_EVALUATION_ENGINE_VERSION
+  if (!["2026-09-27.1", POLICY_EVALUATION_ENGINE_VERSION].includes(engine as string)
       || !hasExactKeys(entry, ["name", "constraints", "executable_operations"])) return false;
   const grants = entry.executable_operations;
   const fields = ["enabled_executable_id", "provider_id", "operation_id", "catalog_revision", "definition_fingerprint", "minimum_evidence_mode"];

@@ -16,9 +16,9 @@ import sys
 import tempfile
 from pathlib import Path
 
-
 PYTHON_CRITICAL_PATHS = {
     "verifiers/python/src/allowly_receipt_format/verifier.py",
+    "verifiers/python/src/allowly_receipt_format/policy.py",
     "verifiers/python/verifier.py",
 }
 TYPESCRIPT_CRITICAL_PATHS = {

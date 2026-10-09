@@ -9,6 +9,19 @@ import pytest
 from scripts import mutation_gate as gate
 
 
+def test_policy_replay_changes_are_critical_python_mutation_targets(monkeypatch):
+    target = "verifiers/python/src/allowly_receipt_format/policy.py"
+    calls = []
+
+    def run(args, **kwargs):
+        calls.append((args, kwargs))
+        return subprocess.CompletedProcess(args, 0, stdout=f"{target}\nREADME.md\n", stderr="")
+
+    monkeypatch.setattr(gate, "run", run)
+    assert gate.critical_targets("release-base") == ([target], [])
+    assert calls == [(["git", "diff", "--name-only", "release-base...HEAD"], {"capture": True})]
+
+
 def test_python_gate_names_sources_and_runs_complete_suite_through_shell(monkeypatch):
     calls = []
 

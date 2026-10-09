@@ -1,0 +1,1065 @@
+{
+  "schemaVersion": 1,
+  "release": "4.3.1",
+  "receiptWireVersion": 4,
+  "sourceState": "Uncommitted feature source; current source bytes and verification context are bound below",
+  "rawVerifierSha256": "806acdd02c4e0c53eea84410aa621fba6e7bd23eeaaf6bc25d21d530117e6a53",
+  "immutableReportSha256": "9540b99302f10466110560fbea8f56888165149ef368a5ec227cab6b6390f335",
+  "verificationContextSha256": "e41a572145a7fde4a1a573abe7571bf10f070a275b5841d6de724f526ac1c9b0",
+  "verificationContextPaths": [
+    "verifiers/typescript/verifier.ts",
+    "verifiers/typescript/test_vectors.ts",
+    "verifiers/typescript/test_policy_evaluation.ts",
+    "verifiers/typescript/test_pseudonym_refs.ts",
+    "verifiers/typescript/test_seal.ts",
+    "test-vectors.json",
+    "vectors/policy/profile-v1.json",
+    "vectors/seal/profile-v1.json",
+    "vectors/seal/verification-v1.json",
+    "verifiers/typescript/package.json",
+    "verifiers/typescript/package-lock.json",
+    "verifiers/typescript/tsconfig.json",
+    "verifiers/typescript/scripts/copy-seal-vectors.mjs",
+    "verifiers/typescript/stryker.conf.cjs"
+  ],
+  "nodeVersion": "v24.18.1",
+  "preparation": "Installed Stryker10.0.0 disableTypeChecks; exact raw mutation applied first",
+  "build": "npm run build",
+  "timeoutMs": 20000,
+  "ownedChildSignal": "SIGKILL",
+  "nativeCounts": {
+    "Killed": 2209,
+    "Survived": 227,
+    "Timeout": 10,
+    "total": 2446
+  },
+  "firstEightWorkerReport": {
+    "path": "/private/tmp/allowly-native-release-checks.eiK9eG/full-mutation-report-first8.json",
+    "sha256": "c5fce90ed3cc816992d225482e14e32ee9ba1299290b27ec788330301c328dc7",
+    "timeouts": 28
+  },
+  "nativeRemeasurement": "The 28 timeout cache entries were omitted for remeasurement at normal concurrency 2. Stryker reused 2418 same-source measured results and produced a full 2446 report. The 18 resource timeouts became Survived; no status was manually changed.",
+  "completeLocalTrials": [
+    {
+      "path": "/private/tmp/allowly-native-release-checks.eiK9eG/timeout-seed-probes/evidence.json",
+      "sha256": "3dbbe2ffdeaf7dedca16d430b9107f76c768de07c13bcd0bef498a2199f2fbd7"
+    },
+    {
+      "path": "/private/tmp/allowly-native-release-checks.eiK9eG/timeout-remainder-probes/evidence.json",
+      "sha256": "6b1cabf08c1c55aa23a1e4c85e67b668bd3b3472dd858b45302fadec393553a5"
+    }
+  ],
+  "correct": [
+    {
+      "round": 1,
+      "rawSourceSha256": "806acdd02c4e0c53eea84410aa621fba6e7bd23eeaaf6bc25d21d530117e6a53",
+      "preparedSourceSha256": "d2f430fb2339fd9f59a46d5cca4082705f8fd1b761bd00dddec7094962f6c6b6",
+      "tests": [
+        {
+          "args": [
+            "dist/test_vectors.js",
+            "../../test-vectors.json"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "elapsedMs": 2956
+        },
+        {
+          "args": [
+            "dist/test_policy_evaluation.js",
+            "../../vectors/policy/profile-v1.json"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "elapsedMs": 2289
+        },
+        {
+          "args": [
+            "dist/test_pseudonym_refs.js"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "elapsedMs": 501
+        },
+        {
+          "args": [
+            "dist/test_seal.js",
+            "../../vectors/seal/profile-v1.json",
+            "../../vectors/seal/verification-v1.json"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "elapsedMs": 2008
+        }
+      ]
+    },
+    {
+      "round": 2,
+      "rawSourceSha256": "806acdd02c4e0c53eea84410aa621fba6e7bd23eeaaf6bc25d21d530117e6a53",
+      "preparedSourceSha256": "d2f430fb2339fd9f59a46d5cca4082705f8fd1b761bd00dddec7094962f6c6b6",
+      "tests": [
+        {
+          "args": [
+            "dist/test_vectors.js",
+            "../../test-vectors.json"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "elapsedMs": 3486
+        },
+        {
+          "args": [
+            "dist/test_policy_evaluation.js",
+            "../../vectors/policy/profile-v1.json"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "elapsedMs": 1841
+        },
+        {
+          "args": [
+            "dist/test_pseudonym_refs.js"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "elapsedMs": 678
+        },
+        {
+          "args": [
+            "dist/test_seal.js",
+            "../../vectors/seal/profile-v1.json",
+            "../../vectors/seal/verification-v1.json"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "elapsedMs": 3146
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "rawSourceSha256": "806acdd02c4e0c53eea84410aa621fba6e7bd23eeaaf6bc25d21d530117e6a53",
+      "preparedSourceSha256": "d2f430fb2339fd9f59a46d5cca4082705f8fd1b761bd00dddec7094962f6c6b6",
+      "tests": [
+        {
+          "args": [
+            "dist/test_vectors.js",
+            "../../test-vectors.json"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "elapsedMs": 227
+        },
+        {
+          "args": [
+            "dist/test_policy_evaluation.js",
+            "../../vectors/policy/profile-v1.json"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "elapsedMs": 249
+        },
+        {
+          "args": [
+            "dist/test_pseudonym_refs.js"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "elapsedMs": 77
+        },
+        {
+          "args": [
+            "dist/test_seal.js",
+            "../../vectors/seal/profile-v1.json",
+            "../../vectors/seal/verification-v1.json"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "elapsedMs": 281
+        }
+      ]
+    },
+    {
+      "round": 2,
+      "rawSourceSha256": "806acdd02c4e0c53eea84410aa621fba6e7bd23eeaaf6bc25d21d530117e6a53",
+      "preparedSourceSha256": "d2f430fb2339fd9f59a46d5cca4082705f8fd1b761bd00dddec7094962f6c6b6",
+      "tests": [
+        {
+          "args": [
+            "dist/test_vectors.js",
+            "../../test-vectors.json"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "elapsedMs": 248
+        },
+        {
+          "args": [
+            "dist/test_policy_evaluation.js",
+            "../../vectors/policy/profile-v1.json"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "elapsedMs": 244
+        },
+        {
+          "args": [
+            "dist/test_pseudonym_refs.js"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "elapsedMs": 81
+        },
+        {
+          "args": [
+            "dist/test_seal.js",
+            "../../vectors/seal/profile-v1.json",
+            "../../vectors/seal/verification-v1.json"
+          ],
+          "exitCode": 0,
+          "signal": null,
+          "error": null,
+          "elapsedMs": 305
+        }
+      ]
+    }
+  ],
+  "mutants": [
+    {
+      "id": "103",
+      "mutatorName": "UpdateOperator",
+      "location": {
+        "end": {
+          "column": 39,
+          "line": 166
+        },
+        "start": {
+          "column": 36,
+          "line": 166
+        }
+      },
+      "replacement": "i--",
+      "rawStatus": "Timeout",
+      "trials": [
+        {
+          "round": 1,
+          "rawSourceSha256": "468d19f0f91bd2f0ef5b0604fe330092a0d804a04b0b43cd6707de1d74925642",
+          "preparedSourceSha256": "4c2c30cf6ffba14be9c14bbcec38f3556b78d1f944c032910dab53d669d5b0f0",
+          "tests": [
+            {
+              "args": [
+                "dist/test_vectors.js",
+                "../../test-vectors.json"
+              ],
+              "exitCode": null,
+              "signal": "SIGKILL",
+              "error": "ETIMEDOUT",
+              "elapsedMs": 20016
+            }
+          ]
+        },
+        {
+          "round": 2,
+          "rawSourceSha256": "468d19f0f91bd2f0ef5b0604fe330092a0d804a04b0b43cd6707de1d74925642",
+          "preparedSourceSha256": "4c2c30cf6ffba14be9c14bbcec38f3556b78d1f944c032910dab53d669d5b0f0",
+          "tests": [
+            {
+              "args": [
+                "dist/test_vectors.js",
+                "../../test-vectors.json"
+              ],
+              "exitCode": null,
+              "signal": "SIGKILL",
+              "error": "ETIMEDOUT",
+              "elapsedMs": 20036
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "148",
+      "mutatorName": "EqualityOperator",
+      "location": {
+        "end": {
+          "column": 26,
+          "line": 192
+        },
+        "start": {
+          "column": 10,
+          "line": 192
+        }
+      },
+      "replacement": "level.length >= 1",
+      "rawStatus": "Timeout",
+      "trials": [
+        {
+          "round": 1,
+          "rawSourceSha256": "0303b0240ea8b380caef63c4084015641a2a81062d7859404262345ee9d85067",
+          "preparedSourceSha256": "297a7659bff97c13599de5b39abcd3092de95881e6133470e859ec8c6decab8d",
+          "tests": [
+            {
+              "args": [
+                "dist/test_vectors.js",
+                "../../test-vectors.json"
+              ],
+              "exitCode": null,
+              "signal": "SIGKILL",
+              "error": "ETIMEDOUT",
+              "elapsedMs": 20008
+            }
+          ]
+        },
+        {
+          "round": 2,
+          "rawSourceSha256": "0303b0240ea8b380caef63c4084015641a2a81062d7859404262345ee9d85067",
+          "preparedSourceSha256": "297a7659bff97c13599de5b39abcd3092de95881e6133470e859ec8c6decab8d",
+          "tests": [
+            {
+              "args": [
+                "dist/test_vectors.js",
+                "../../test-vectors.json"
+              ],
+              "exitCode": null,
+              "signal": "SIGKILL",
+              "error": "ETIMEDOUT",
+              "elapsedMs": 20010
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "150",
+      "mutatorName": "BlockStatement",
+      "location": {
+        "end": {
+          "column": 4,
+          "line": 199
+        },
+        "start": {
+          "column": 28,
+          "line": 192
+        }
+      },
+      "replacement": "{}",
+      "rawStatus": "Timeout",
+      "trials": [
+        {
+          "round": 1,
+          "rawSourceSha256": "c6aefdb58c1410bf00001b409506e2b922811f1401b00fade7cddcaaf0fd3ee9",
+          "preparedSourceSha256": "ff3c5ec3f41b2be492cc0d72ced0d4dcff9b7e6d275f6a48576c796171d9ab5c",
+          "tests": [
+            {
+              "args": [
+                "dist/test_vectors.js",
+                "../../test-vectors.json"
+              ],
+              "exitCode": null,
+              "signal": "SIGKILL",
+              "error": "ETIMEDOUT",
+              "elapsedMs": 20033
+            }
+          ]
+        },
+        {
+          "round": 2,
+          "rawSourceSha256": "c6aefdb58c1410bf00001b409506e2b922811f1401b00fade7cddcaaf0fd3ee9",
+          "preparedSourceSha256": "ff3c5ec3f41b2be492cc0d72ced0d4dcff9b7e6d275f6a48576c796171d9ab5c",
+          "tests": [
+            {
+              "args": [
+                "dist/test_vectors.js",
+                "../../test-vectors.json"
+              ],
+              "exitCode": null,
+              "signal": "SIGKILL",
+              "error": "ETIMEDOUT",
+              "elapsedMs": 20015
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "157",
+      "mutatorName": "ArrayDeclaration",
+      "location": {
+        "end": {
+          "column": 34,
+          "line": 194
+        },
+        "start": {
+          "column": 32,
+          "line": 194
+        }
+      },
+      "replacement": "[\"Stryker was here\"]",
+      "rawStatus": "Timeout",
+      "trials": [
+        {
+          "round": 1,
+          "rawSourceSha256": "891fc35e26a96290ca948eb988118a3b42fd8887e3af67470082ce3a02aa348c",
+          "preparedSourceSha256": "37a69017f768807928995f22be7d9bd0a8fd5677ea65c6b48617cdb8c7f3e2a9",
+          "tests": [
+            {
+              "args": [
+                "dist/test_vectors.js",
+                "../../test-vectors.json"
+              ],
+              "exitCode": null,
+              "signal": "SIGKILL",
+              "error": "ETIMEDOUT",
+              "elapsedMs": 20013
+            }
+          ]
+        },
+        {
+          "round": 2,
+          "rawSourceSha256": "891fc35e26a96290ca948eb988118a3b42fd8887e3af67470082ce3a02aa348c",
+          "preparedSourceSha256": "37a69017f768807928995f22be7d9bd0a8fd5677ea65c6b48617cdb8c7f3e2a9",
+          "tests": [
+            {
+              "args": [
+                "dist/test_vectors.js",
+                "../../test-vectors.json"
+              ],
+              "exitCode": null,
+              "signal": "SIGKILL",
+              "error": "ETIMEDOUT",
+              "elapsedMs": 20019
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "174",
+      "mutatorName": "BlockStatement",
+      "location": {
+        "end": {
+          "column": 4,
+          "line": 267
+        },
+        "start": {
+          "column": 28,
+          "line": 211
+        }
+      },
+      "replacement": "{}",
+      "rawStatus": "Timeout",
+      "trials": [
+        {
+          "round": 1,
+          "rawSourceSha256": "e19347696bfd84fcb8bdc9b6a104039d411dd275c3025dd3f1b88d2c95383df1",
+          "preparedSourceSha256": "97f2a8365b8bc76da27d8256b3c4ccd5d8de09aa70bf25e987890c57cdf9bb59",
+          "tests": [
+            {
+              "args": [
+                "dist/test_vectors.js",
+                "../../test-vectors.json"
+              ],
+              "exitCode": null,
+              "signal": "SIGKILL",
+              "error": "ETIMEDOUT",
+              "elapsedMs": 20007
+            }
+          ]
+        },
+        {
+          "round": 2,
+          "rawSourceSha256": "e19347696bfd84fcb8bdc9b6a104039d411dd275c3025dd3f1b88d2c95383df1",
+          "preparedSourceSha256": "97f2a8365b8bc76da27d8256b3c4ccd5d8de09aa70bf25e987890c57cdf9bb59",
+          "tests": [
+            {
+              "args": [
+                "dist/test_vectors.js",
+                "../../test-vectors.json"
+              ],
+              "exitCode": null,
+              "signal": "SIGKILL",
+              "error": "ETIMEDOUT",
+              "elapsedMs": 20018
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "1426",
+      "mutatorName": "BlockStatement",
+      "location": {
+        "end": {
+          "column": 4,
+          "line": 1193
+        },
+        "start": {
+          "column": 31,
+          "line": 1155
+        }
+      },
+      "replacement": "{}",
+      "rawStatus": "Timeout",
+      "trials": [
+        {
+          "round": 1,
+          "rawSourceSha256": "38525e155203cbedd975cb02145e22aa38f7ecbca888f5fbb5e62431b5cd8232",
+          "preparedSourceSha256": "359b21f7bf0abf03738cae9a3060d3fa36d116ea7e1aec7acc02f54008f5d8e9",
+          "tests": [
+            {
+              "args": [
+                "dist/test_vectors.js",
+                "../../test-vectors.json"
+              ],
+              "exitCode": 0,
+              "signal": null,
+              "error": null,
+              "elapsedMs": 239
+            },
+            {
+              "args": [
+                "dist/test_policy_evaluation.js",
+                "../../vectors/policy/profile-v1.json"
+              ],
+              "exitCode": 0,
+              "signal": null,
+              "error": null,
+              "elapsedMs": 244
+            },
+            {
+              "args": [
+                "dist/test_pseudonym_refs.js"
+              ],
+              "exitCode": 0,
+              "signal": null,
+              "error": null,
+              "elapsedMs": 79
+            },
+            {
+              "args": [
+                "dist/test_seal.js",
+                "../../vectors/seal/profile-v1.json",
+                "../../vectors/seal/verification-v1.json"
+              ],
+              "exitCode": null,
+              "signal": "SIGKILL",
+              "error": "ETIMEDOUT",
+              "elapsedMs": 20004
+            }
+          ]
+        },
+        {
+          "round": 2,
+          "rawSourceSha256": "38525e155203cbedd975cb02145e22aa38f7ecbca888f5fbb5e62431b5cd8232",
+          "preparedSourceSha256": "359b21f7bf0abf03738cae9a3060d3fa36d116ea7e1aec7acc02f54008f5d8e9",
+          "tests": [
+            {
+              "args": [
+                "dist/test_vectors.js",
+                "../../test-vectors.json"
+              ],
+              "exitCode": 0,
+              "signal": null,
+              "error": null,
+              "elapsedMs": 263
+            },
+            {
+              "args": [
+                "dist/test_policy_evaluation.js",
+                "../../vectors/policy/profile-v1.json"
+              ],
+              "exitCode": 0,
+              "signal": null,
+              "error": null,
+              "elapsedMs": 287
+            },
+            {
+              "args": [
+                "dist/test_pseudonym_refs.js"
+              ],
+              "exitCode": 0,
+              "signal": null,
+              "error": null,
+              "elapsedMs": 77
+            },
+            {
+              "args": [
+                "dist/test_seal.js",
+                "../../vectors/seal/profile-v1.json",
+                "../../vectors/seal/verification-v1.json"
+              ],
+              "exitCode": null,
+              "signal": "SIGKILL",
+              "error": "ETIMEDOUT",
+              "elapsedMs": 20003
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "1442",
+      "mutatorName": "AssignmentOperator",
+      "location": {
+        "end": {
+          "column": 17,
+          "line": 1159
+        },
+        "start": {
+          "column": 7,
+          "line": 1159
+        }
+      },
+      "replacement": "index -= 1",
+      "rawStatus": "Timeout",
+      "trials": [
+        {
+          "round": 1,
+          "rawSourceSha256": "e4e93e6e0c54fac16c75a3121e81f6b220232767de10f90977769352657d9fb8",
+          "preparedSourceSha256": "dacb9b2ad72d210dc02f76a63b8c5fa09b20858dbf6a3909287cf04250d94396",
+          "tests": [
+            {
+              "args": [
+                "dist/test_vectors.js",
+                "../../test-vectors.json"
+              ],
+              "exitCode": 0,
+              "signal": null,
+              "error": null,
+              "elapsedMs": 238
+            },
+            {
+              "args": [
+                "dist/test_policy_evaluation.js",
+                "../../vectors/policy/profile-v1.json"
+              ],
+              "exitCode": 0,
+              "signal": null,
+              "error": null,
+              "elapsedMs": 241
+            },
+            {
+              "args": [
+                "dist/test_pseudonym_refs.js"
+              ],
+              "exitCode": 0,
+              "signal": null,
+              "error": null,
+              "elapsedMs": 78
+            },
+            {
+              "args": [
+                "dist/test_seal.js",
+                "../../vectors/seal/profile-v1.json",
+                "../../vectors/seal/verification-v1.json"
+              ],
+              "exitCode": null,
+              "signal": "SIGKILL",
+              "error": "ETIMEDOUT",
+              "elapsedMs": 20069
+            }
+          ]
+        },
+        {
+          "round": 2,
+          "rawSourceSha256": "e4e93e6e0c54fac16c75a3121e81f6b220232767de10f90977769352657d9fb8",
+          "preparedSourceSha256": "dacb9b2ad72d210dc02f76a63b8c5fa09b20858dbf6a3909287cf04250d94396",
+          "tests": [
+            {
+              "args": [
+                "dist/test_vectors.js",
+                "../../test-vectors.json"
+              ],
+              "exitCode": 0,
+              "signal": null,
+              "error": null,
+              "elapsedMs": 266
+            },
+            {
+              "args": [
+                "dist/test_policy_evaluation.js",
+                "../../vectors/policy/profile-v1.json"
+              ],
+              "exitCode": 0,
+              "signal": null,
+              "error": null,
+              "elapsedMs": 290
+            },
+            {
+              "args": [
+                "dist/test_pseudonym_refs.js"
+              ],
+              "exitCode": 0,
+              "signal": null,
+              "error": null,
+              "elapsedMs": 81
+            },
+            {
+              "args": [
+                "dist/test_seal.js",
+                "../../vectors/seal/profile-v1.json",
+                "../../vectors/seal/verification-v1.json"
+              ],
+              "exitCode": null,
+              "signal": "SIGKILL",
+              "error": "ETIMEDOUT",
+              "elapsedMs": 20006
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "1448",
+      "mutatorName": "BlockStatement",
+      "location": {
+        "end": {
+          "column": 6,
+          "line": 1171
+        },
+        "start": {
+          "column": 33,
+          "line": 1165
+        }
+      },
+      "replacement": "{}",
+      "rawStatus": "Timeout",
+      "trials": [
+        {
+          "round": 1,
+          "rawSourceSha256": "7f6760a4fa6ee96f24d423b18ca470ef78f0ab6c055dd5ed9d7fcbcb572e3f4e",
+          "preparedSourceSha256": "411434bfcd22d20ff52a0a5fd1dd66f1a93bbdd7cbfafbf1bbf657a0c09c2c89",
+          "tests": [
+            {
+              "args": [
+                "dist/test_vectors.js",
+                "../../test-vectors.json"
+              ],
+              "exitCode": 0,
+              "signal": null,
+              "error": null,
+              "elapsedMs": 255
+            },
+            {
+              "args": [
+                "dist/test_policy_evaluation.js",
+                "../../vectors/policy/profile-v1.json"
+              ],
+              "exitCode": 0,
+              "signal": null,
+              "error": null,
+              "elapsedMs": 271
+            },
+            {
+              "args": [
+                "dist/test_pseudonym_refs.js"
+              ],
+              "exitCode": 0,
+              "signal": null,
+              "error": null,
+              "elapsedMs": 91
+            },
+            {
+              "args": [
+                "dist/test_seal.js",
+                "../../vectors/seal/profile-v1.json",
+                "../../vectors/seal/verification-v1.json"
+              ],
+              "exitCode": null,
+              "signal": "SIGKILL",
+              "error": "ETIMEDOUT",
+              "elapsedMs": 20004
+            }
+          ]
+        },
+        {
+          "round": 2,
+          "rawSourceSha256": "7f6760a4fa6ee96f24d423b18ca470ef78f0ab6c055dd5ed9d7fcbcb572e3f4e",
+          "preparedSourceSha256": "411434bfcd22d20ff52a0a5fd1dd66f1a93bbdd7cbfafbf1bbf657a0c09c2c89",
+          "tests": [
+            {
+              "args": [
+                "dist/test_vectors.js",
+                "../../test-vectors.json"
+              ],
+              "exitCode": 0,
+              "signal": null,
+              "error": null,
+              "elapsedMs": 256
+            },
+            {
+              "args": [
+                "dist/test_policy_evaluation.js",
+                "../../vectors/policy/profile-v1.json"
+              ],
+              "exitCode": 0,
+              "signal": null,
+              "error": null,
+              "elapsedMs": 265
+            },
+            {
+              "args": [
+                "dist/test_pseudonym_refs.js"
+              ],
+              "exitCode": 0,
+              "signal": null,
+              "error": null,
+              "elapsedMs": 92
+            },
+            {
+              "args": [
+                "dist/test_seal.js",
+                "../../vectors/seal/profile-v1.json",
+                "../../vectors/seal/verification-v1.json"
+              ],
+              "exitCode": null,
+              "signal": "SIGKILL",
+              "error": "ETIMEDOUT",
+              "elapsedMs": 20005
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "1461",
+      "mutatorName": "AssignmentOperator",
+      "location": {
+        "end": {
+          "column": 17,
+          "line": 1170
+        },
+        "start": {
+          "column": 7,
+          "line": 1170
+        }
+      },
+      "replacement": "index -= 1",
+      "rawStatus": "Timeout",
+      "trials": [
+        {
+          "round": 1,
+          "rawSourceSha256": "29375986907e7ae29643f808a2b69f2b5dc835a7b1e74e68bd7b98bc777bd41a",
+          "preparedSourceSha256": "99ec4ab89dcb2e4f79cdfa884aca3d792f7a331ed82e1108740f99aebf0d04c3",
+          "tests": [
+            {
+              "args": [
+                "dist/test_vectors.js",
+                "../../test-vectors.json"
+              ],
+              "exitCode": 0,
+              "signal": null,
+              "error": null,
+              "elapsedMs": 253
+            },
+            {
+              "args": [
+                "dist/test_policy_evaluation.js",
+                "../../vectors/policy/profile-v1.json"
+              ],
+              "exitCode": 0,
+              "signal": null,
+              "error": null,
+              "elapsedMs": 275
+            },
+            {
+              "args": [
+                "dist/test_pseudonym_refs.js"
+              ],
+              "exitCode": 0,
+              "signal": null,
+              "error": null,
+              "elapsedMs": 90
+            },
+            {
+              "args": [
+                "dist/test_seal.js",
+                "../../vectors/seal/profile-v1.json",
+                "../../vectors/seal/verification-v1.json"
+              ],
+              "exitCode": null,
+              "signal": "SIGKILL",
+              "error": "ETIMEDOUT",
+              "elapsedMs": 20057
+            }
+          ]
+        },
+        {
+          "round": 2,
+          "rawSourceSha256": "29375986907e7ae29643f808a2b69f2b5dc835a7b1e74e68bd7b98bc777bd41a",
+          "preparedSourceSha256": "99ec4ab89dcb2e4f79cdfa884aca3d792f7a331ed82e1108740f99aebf0d04c3",
+          "tests": [
+            {
+              "args": [
+                "dist/test_vectors.js",
+                "../../test-vectors.json"
+              ],
+              "exitCode": 0,
+              "signal": null,
+              "error": null,
+              "elapsedMs": 253
+            },
+            {
+              "args": [
+                "dist/test_policy_evaluation.js",
+                "../../vectors/policy/profile-v1.json"
+              ],
+              "exitCode": 0,
+              "signal": null,
+              "error": null,
+              "elapsedMs": 259
+            },
+            {
+              "args": [
+                "dist/test_pseudonym_refs.js"
+              ],
+              "exitCode": 0,
+              "signal": null,
+              "error": null,
+              "elapsedMs": 93
+            },
+            {
+              "args": [
+                "dist/test_seal.js",
+                "../../vectors/seal/profile-v1.json",
+                "../../vectors/seal/verification-v1.json"
+              ],
+              "exitCode": null,
+              "signal": "SIGKILL",
+              "error": "ETIMEDOUT",
+              "elapsedMs": 20009
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "1751",
+      "mutatorName": "BlockStatement",
+      "location": {
+        "end": {
+          "column": 4,
+          "line": 1459
+        },
+        "start": {
+          "column": 28,
+          "line": 1406
+        }
+      },
+      "replacement": "{}",
+      "rawStatus": "Timeout",
+      "trials": [
+        {
+          "round": 1,
+          "rawSourceSha256": "5976b6e35df65820f091b64100cffe7b070af90ebbe6caac2aa19a1b8afaf64f",
+          "preparedSourceSha256": "31de67641244c1a922e67296a4071b1a96e76a5e1ba03675140c60aa86b4ac2a",
+          "tests": [
+            {
+              "args": [
+                "dist/test_vectors.js",
+                "../../test-vectors.json"
+              ],
+              "exitCode": 0,
+              "signal": null,
+              "error": null,
+              "elapsedMs": 228
+            },
+            {
+              "args": [
+                "dist/test_policy_evaluation.js",
+                "../../vectors/policy/profile-v1.json"
+              ],
+              "exitCode": 0,
+              "signal": null,
+              "error": null,
+              "elapsedMs": 237
+            },
+            {
+              "args": [
+                "dist/test_pseudonym_refs.js"
+              ],
+              "exitCode": 0,
+              "signal": null,
+              "error": null,
+              "elapsedMs": 78
+            },
+            {
+              "args": [
+                "dist/test_seal.js",
+                "../../vectors/seal/profile-v1.json",
+                "../../vectors/seal/verification-v1.json"
+              ],
+              "exitCode": null,
+              "signal": "SIGKILL",
+              "error": "ETIMEDOUT",
+              "elapsedMs": 20003
+            }
+          ]
+        },
+        {
+          "round": 2,
+          "rawSourceSha256": "5976b6e35df65820f091b64100cffe7b070af90ebbe6caac2aa19a1b8afaf64f",
+          "preparedSourceSha256": "31de67641244c1a922e67296a4071b1a96e76a5e1ba03675140c60aa86b4ac2a",
+          "tests": [
+            {
+              "args": [
+                "dist/test_vectors.js",
+                "../../test-vectors.json"
+              ],
+              "exitCode": 0,
+              "signal": null,
+              "error": null,
+              "elapsedMs": 248
+            },
+            {
+              "args": [
+                "dist/test_policy_evaluation.js",
+                "../../vectors/policy/profile-v1.json"
+              ],
+              "exitCode": 0,
+              "signal": null,
+              "error": null,
+              "elapsedMs": 249
+            },
+            {
+              "args": [
+                "dist/test_pseudonym_refs.js"
+              ],
+              "exitCode": 0,
+              "signal": null,
+              "error": null,
+              "elapsedMs": 81
+            },
+            {
+              "args": [
+                "dist/test_seal.js",
+                "../../vectors/seal/profile-v1.json",
+                "../../vectors/seal/verification-v1.json"
+              ],
+              "exitCode": null,
+              "signal": "SIGKILL",
+              "error": "ETIMEDOUT",
+              "elapsedMs": 20004
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "completed": true
+}

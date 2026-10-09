@@ -30,7 +30,7 @@ The format is vendor-neutral on purpose. Any service making agent authorization 
 - `test-vectors.json` — shared test vectors every implementation must pass.
 - `vectors/seal/` — shared strict-hashing and signed SEAL verification vectors.
 - `spec/profiles/allowly-conditional-evaluation-v1.md` — Allowly's conditional
-  policy replay profile (unreleased).
+  policy replay profile.
 - `vectors/policy/` — shared conditional policy evaluation fixtures.
 - `GOVERNANCE.md` — how decisions about the spec get made.
 - `CONTRIBUTING.md` — how to report bugs, propose changes, and add verifiers.
@@ -109,12 +109,12 @@ try {
 
 ## Status
 
-### Confirmation resolution (staged 4.3.0)
+### Confirmation resolution (4.3.0)
 
 `confirmation.resolve` records a client-reported approval or rejection linked
 to its original check receipt. The approved
 [prelaunch exception](docs/decisions/2026-10-07-confirmation-resolution-wire-4.md)
-keeps wire `"4"` and advances both verifier packages to `4.3.0`. Existing
+keeps wire `"4"` and advanced both verifier packages to `4.3.0`. Existing
 receipt bytes and signatures are unchanged; published `4.2.0` verifiers reject
 the new event. Publish both packages and regenerate consumer registry locks
 before runtime rollout. Branch-local source locks are for testing and do not
@@ -132,7 +132,17 @@ revocation or human-approval state, or establish that the inputs were true.
 Published 4.1.0 packages do not contain policy replay. Use 4.2.0 or later, or
 install `./verifiers/python` into an isolated environment and build
 `verifiers/typescript` locally. See the package READMEs for the function and
-CLI options. The staged confirmation extension above requires 4.3.0.
+CLI options. The confirmation extension above requires 4.3.0 or later.
+
+### Native Execute engine compatibility (prepared 4.3.1)
+
+The maintained source adds conditional replay for engine `2026-10-09.1`,
+including native Execute review metadata, while retaining `2026-09-16.1`,
+`2026-09-24.1`, and `2026-09-27.1`. This is not included in the already
+published 4.3.0 packages. Both verifier packages are prepared as `4.3.1`, not
+yet published. Publish that patch and update consumer registry locks before
+runtime rollout. Local builds can use the sibling verifier source. Receipt
+wire `"4"` and existing signed receipt bytes are unchanged.
 
 ### Receipt wire format
 
