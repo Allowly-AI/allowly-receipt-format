@@ -25,12 +25,13 @@ from .verifier import (
 POLICY_PROFILE = "allowly-conditional-evaluation-v1"
 LEGACY_ENGINE_VERSION = "2026-09-16.1"
 IDENTITY_ENGINE_VERSION = "2026-09-24.1"
-CURRENT_ENGINE_VERSION = "2026-09-27.1"
+EXECUTION_ENGINE_VERSION = "2026-09-27.1"
+CURRENT_ENGINE_VERSION = "2026-10-09.1"
 SUPPORTED_ACTION_ENGINE_VERSIONS = frozenset(
-    {LEGACY_ENGINE_VERSION, IDENTITY_ENGINE_VERSION, CURRENT_ENGINE_VERSION}
+    {LEGACY_ENGINE_VERSION, IDENTITY_ENGINE_VERSION, EXECUTION_ENGINE_VERSION, CURRENT_ENGINE_VERSION}
 )
 SUPPORTED_AUTHORIZATION_ENGINE_VERSIONS = frozenset(
-    {LEGACY_ENGINE_VERSION, IDENTITY_ENGINE_VERSION, CURRENT_ENGINE_VERSION}
+    SUPPORTED_ACTION_ENGINE_VERSIONS
 )
 _BASE_RECEIPT_CONTEXT_KEYS = frozenset({"budget", "escalation", "session_id"})
 _RECEIPT_CONTEXT_KEYS_BY_ENGINE = {
@@ -44,6 +45,7 @@ _RECEIPT_CONTEXT_KEYS_BY_ENGINE = {
     },
 }
 _RECEIPT_CONTEXT_KEYS_BY_ENGINE[IDENTITY_ENGINE_VERSION] = _RECEIPT_CONTEXT_KEYS_BY_ENGINE[CURRENT_ENGINE_VERSION]
+_RECEIPT_CONTEXT_KEYS_BY_ENGINE[EXECUTION_ENGINE_VERSION] = _RECEIPT_CONTEXT_KEYS_BY_ENGINE[CURRENT_ENGINE_VERSION]
 
 _CONDITION_KEYS = ("deny_when", "escalate_when", "confirm_when")
 _OPERATORS = frozenset(
@@ -68,7 +70,7 @@ _MAX_POLICY_CONDITIONS = 10
 def _supported_action_shape(action: dict[str, Any], engine: str) -> bool:
     if set(action) == {"name", "constraints"}:
         return True
-    if engine != CURRENT_ENGINE_VERSION or set(action) != {"name", "constraints", "executable_operations"}:
+    if engine not in {EXECUTION_ENGINE_VERSION, CURRENT_ENGINE_VERSION} or set(action) != {"name", "constraints", "executable_operations"}:
         return False
     grants = action["executable_operations"]
     fields = {"enabled_executable_id", "provider_id", "operation_id", "catalog_revision", "definition_fingerprint", "minimum_evidence_mode"}

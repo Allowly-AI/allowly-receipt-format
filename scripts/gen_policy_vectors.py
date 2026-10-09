@@ -22,7 +22,8 @@ PROFILE = "allowly-conditional-evaluation-v1"
 ENGINE = "2026-09-16.1"
 IDENTITY_ENGINE = "2026-09-24.1"
 CURRENT_ENGINE = "2026-09-27.1"
-SUPPORTED_ENGINES = [ENGINE, IDENTITY_ENGINE, CURRENT_ENGINE]
+REVIEW_ENGINE = "2026-10-09.1"
+SUPPORTED_ENGINES = [ENGINE, IDENTITY_ENGINE, CURRENT_ENGINE, REVIEW_ENGINE]
 WORKSPACE_ID = "ws_policy_replay_v1"
 USER_ID = "user_policy_replay_v1"
 AGENT_ID = "agent_policy_replay_v1"
@@ -69,7 +70,7 @@ def _create_receipt(
     actions = action_entries if action_entries is not None else [
         {"name": ACTION, "constraints": constraints}
     ]
-    if engine_version == CURRENT_ENGINE and action_entries is None:
+    if engine_version in {CURRENT_ENGINE, REVIEW_ENGINE} and action_entries is None:
         actions[0]["executable_operations"] = [{
             "enabled_executable_id": "exe_fixture", "provider_id": "fixture",
             "operation_id": "fixture.records.review", "catalog_revision": "fixture-v1",
@@ -126,7 +127,7 @@ def _action_receipt(
         "budget": {"limit_micros": 1000, "spent_before_micros": 100},
         "escalation": {"id": "esc_fixture", "event": "requested"},
     }
-    if engine_version in {IDENTITY_ENGINE, CURRENT_ENGINE}:
+    if engine_version in {IDENTITY_ENGINE, CURRENT_ENGINE, REVIEW_ENGINE}:
         signed_context.update(
             {
                 "identity_verification": {
@@ -145,8 +146,14 @@ def _action_receipt(
                 },
             }
         )
-        if engine_version == CURRENT_ENGINE:
+        if engine_version in {CURRENT_ENGINE, REVIEW_ENGINE}:
             signed_context["execution"]["approval_sha256"] = "sha256:" + "2" * 64
+        if engine_version == REVIEW_ENGINE:
+            signed_context["execution"]["review"] = {
+                "kind": "escalate" if decision == "escalate" else "confirm",
+                "id": "esc_fixture" if decision == "escalate" else "cnf_fixture",
+                "source_receipt_id": "rcp_fixture_waiting",
+            }
     payload: dict[str, Any] = {
         "schema_version": "4",
         "receipt_id": f"rcp_policy_{index}_action",
@@ -543,6 +550,57 @@ def _runtime_verification_cases() -> list[dict[str, Any]]:
     return cases
 
 
+def _review_engine_verification_cases() -> list[dict[str, Any]]:
+    cases: list[dict[str, Any]] = []
+    pairs = [(REVIEW_ENGINE, engine) for engine in SUPPORTED_ENGINES]
+    pairs += [(engine, REVIEW_ENGINE) for engine in SUPPORTED_ENGINES[:-1]]
+    for action_engine, snapshot_engine in pairs:
+        label = f"review_pair_{action_engine}_{snapshot_engine}"
+        constraints = {"confirm_when": [{"field": "review", "eq": True}]}
+        evaluation = {"matched_condition": _normalized("review", "eq", True), "field_value": True}
+        creation = _create_receipt(label, constraints, authorization_id=label, engine_version=snapshot_engine)
+        action = _action_receipt(label, {"review": True}, authorization_id=label,
+                                 policy_eval=evaluation, engine_version=action_engine)
+        cases.append({"name": label, "receipt": action, "authorization_receipts": [creation],
+                      "expected": _public_result(action, authorization_receipt_id=creation["receipt_id"],
+                                                 status="matched", diagnostic="matched",
+                                                 recorded=evaluation, calculated=evaluation)})
+
+    for kind in ("confirm", "escalate"):
+        label = f"review_engine_{kind}_receipt_metadata_ignored"
+        # Receipt-only metadata cannot route the calculation; customer review
+        # remains an ordinary input despite the nested execution.review object.
+        constraints = {
+            "deny_when": [{"field": field, "exists": True} for field in (
+                "budget", "escalation", "session_id", "client_timestamp",
+                "client_timestamp_source", "execution", "identity_verification",
+            )],
+            f"{kind}_when": [{"field": "review", "eq": True}],
+        }
+        evaluation = {"matched_condition": _normalized("review", "eq", True), "field_value": True}
+        creation = _create_receipt(label, constraints, authorization_id=label, engine_version=REVIEW_ENGINE)
+        action = _action_receipt(label, {"review": True}, authorization_id=label, policy_eval=evaluation,
+                                 engine_version=REVIEW_ENGINE, decision=kind, reason=f"{kind}_condition_matched")
+        cases.append({"name": label, "receipt": action, "authorization_receipts": [creation],
+                      "expected": _public_result(action, authorization_receipt_id=creation["receipt_id"],
+                                                 status="matched", diagnostic="matched",
+                                                 recorded=evaluation, calculated=evaluation)})
+
+    for future_action in (True, False):
+        label = "unknown_future_action_engine" if future_action else "unknown_future_snapshot_engine"
+        creation = _create_receipt(label, constraints, authorization_id=label,
+                                   engine_version=REVIEW_ENGINE if future_action else "2099-01-01.1")
+        action = _action_receipt(label, {"review": True}, authorization_id=label, policy_eval=evaluation,
+                                 engine_version="2099-01-01.1" if future_action else REVIEW_ENGINE)
+        cases.append({"name": label, "receipt": action, "authorization_receipts": [creation],
+                      "expected": _public_result(action,
+                                                 authorization_receipt_id=None if future_action else creation["receipt_id"],
+                                                 status="not_checked",
+                                                 diagnostic="unsupported_engine_version" if future_action else "unsupported_authorization_snapshot",
+                                                 recorded=evaluation, calculated=None)})
+    return cases
+
+
 def _special_verification_cases() -> list[dict[str, Any]]:
     cases: list[dict[str, Any]] = []
     base_constraints = {
@@ -606,6 +664,8 @@ def _special_verification_cases() -> list[dict[str, Any]]:
     for label, snapshot_engine, grants, matches in (
         ("empty_executable_grants", CURRENT_ENGINE, [], True),
         ("malformed_executable_grants", CURRENT_ENGINE, [{"operation_id": "incomplete"}], False),
+        ("review_engine_empty_executable_grants", REVIEW_ENGINE, [], True),
+        ("review_engine_malformed_executable_grants", REVIEW_ENGINE, [{"operation_id": "incomplete"}], False),
         ("old_snapshot_executable_field", IDENTITY_ENGINE, [], False),
     ):
         authorization_id = f"auth_policy_{label}"
@@ -1128,7 +1188,8 @@ def main() -> None:
         "trusted_key_fingerprints": [_FINGERPRINT],
         "runtime_cases": RUNTIME_CASES,
         "verification_cases": _runtime_verification_cases()
-        + _special_verification_cases(),
+        + _special_verification_cases()
+        + _review_engine_verification_cases(),
         "validation_error_cases": _validation_error_cases(),
     }
     output = ROOT / "vectors" / "policy" / "profile-v1.json"

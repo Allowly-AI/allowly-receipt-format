@@ -80,9 +80,16 @@ Verifies a receipt. Resolves on success, throws `VerificationError` on any failu
 
 Authenticates the action receipt and every supplied authorization receipt,
 then repeats the conditional policy calculation for supported engines
-`2026-09-16.1`, `2026-09-24.1`, and `2026-09-27.1`. Both `opts.expectedWorkspaceId` and a non-empty
+`2026-09-16.1`, `2026-09-24.1`, `2026-09-27.1`, and `2026-10-09.1` in maintained source. Both `opts.expectedWorkspaceId` and a non-empty
 `opts.trustedKeyFingerprints` set are required and must come from caller-trusted
 configuration.
+
+Support for `2026-10-09.1` is prepared in 4.3.1, not included in the already
+published 4.3.0 package. Build this source for local tests; publish 4.3.1 and
+update consumer registry locks before runtime rollout.
+Its nested `context.execution.review` metadata is authenticated but excluded
+from the conditional calculation. The generated browser verifier shares this
+source and the same engine support.
 
 ```typescript
 import { loadKeysFromJson, verifyPolicyEvaluation } from "@allowly/verifier";

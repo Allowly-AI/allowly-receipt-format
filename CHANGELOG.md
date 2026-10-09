@@ -1,5 +1,21 @@
 # Changelog
 
+## v4.3.1 — 2026-10-09
+
+- Add conditional policy replay for engine `2026-10-09.1`, which links native
+  Execute continuation to its exact review and original decision receipt.
+  Retain replay support for engines `2026-09-16.1`, `2026-09-24.1`, and
+  `2026-09-27.1` and their immutable authorization snapshots.
+- Authenticate nested `context.execution.review` metadata while excluding the
+  complete receipt-only execution field from the conditional calculation.
+  Customer inputs named `review` at the context's top level are still evaluated.
+- Add shared signed regression vectors for old/new engine combinations and
+  native review metadata. Receipt wire `"4"`, canonicalization, signatures,
+  and event schemas are unchanged.
+- Both verifier packages advance to `4.3.1`. Publish them before replacing
+  branch-local source locks with registry locks and rolling out the new runtime
+  engine. Publication and runtime rollout remain separate release steps.
+
 ## v4.3.0 — 2026-10-08
 
 - Add `confirmation.resolve`, paired with `confirmation_approved` or
