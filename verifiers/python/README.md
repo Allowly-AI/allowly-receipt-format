@@ -8,8 +8,8 @@ Packaged Python verifier for Allowly Receipt Format wire version 5.
 pip install allowly-receipt-format
 ```
 
-Runtime dependencies are `cryptography` for Ed25519 verification and `rfc8785`
-for SEAL record canonicalization.
+Runtime dependencies are PyJWT with `cryptography` for standard JWS Ed25519
+verification, and `rfc8785` for SEAL record canonicalization.
 
 ## CLI
 
@@ -95,7 +95,7 @@ if keys_doc.get("workspace_id") != configured_workspace_id:
 keys = load_keys_from_json(keys_doc)
 
 try:
-    verify_receipt(
+    evidence = verify_receipt(
         receipt,
         keys,
         expected_workspace_id=configured_workspace_id,
@@ -106,12 +106,22 @@ except VerificationError as e:
     print(f"invalid: {e}")
 ```
 
+`verify_receipt` returns the authenticated evidence dictionary. The wire object
+has exactly `protected`, `payload` and `signature`; it is not the evidence
+dictionary. `decode_receipt(wire)` strictly decodes it for display but does
+**not** verify a signature or authorize an action.
+
+`jws_signing_input(evidence, key_id)` supplies standard JWS bytes to an external
+Ed25519 signer such as KMS. `jws_receipt(evidence, key_id, signature)` packages
+the returned 64-byte signature. These helpers do not sign or verify.
+
 ### Separate official OPA replay
 
 `allowly-policy-replay` first verifies the receipt with a caller-trusted
 workspace and key fingerprint, then authenticates the full engine manifest,
 complete policy definition, original inner OPA input, Rego bytes, official OPA
-binary and retained runtime archive. It runs only the pinned official OPA
+binary and retained runtime archive. It verifies the retained evaluator bundle
+using stock OPA and the manifest-bound release public key, then runs the pinned OPA
 query and compares the complete provisional result.
 
 ```bash

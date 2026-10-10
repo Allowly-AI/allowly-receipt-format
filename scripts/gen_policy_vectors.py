@@ -13,7 +13,7 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "verifiers/python/src"))
-from allowly_receipt_format import canonicalize
+from allowly_receipt_format import canonicalize, jws_signing_input, jws_receipt
 
 KEY = Ed25519PrivateKey.from_private_bytes(hashlib.sha256(b"allowly-opa-wire5-fixture").digest())
 PUB = KEY.public_key().public_bytes(serialization.Encoding.Raw, serialization.PublicFormat.Raw)
@@ -26,8 +26,13 @@ def digest(value):
 
 
 def sign(receipt):
-    payload = {key: value for key, value in receipt.items() if key != "signature"}
-    return {**payload, "signature": base64.urlsafe_b64encode(KEY.sign(canonicalize(payload))).decode().rstrip("=")}
+    payload = {key: value for key, value in receipt.items() if key not in {"signature", "alg", "key_id"}}
+    return {**payload, "key_id": "opa-fixture-key", "signature": base64.urlsafe_b64encode(KEY.sign(jws_signing_input(payload, "opa-fixture-key"))).decode().rstrip("=")}
+
+
+def envelope(receipt):
+    payload = {key: value for key, value in receipt.items() if key not in {"signature", "alg", "key_id"}}
+    return jws_receipt(payload, "opa-fixture-key", receipt["signature"])
 
 
 def case(name, decision, target, *, context=None, default=False, final_decision=None):
@@ -94,5 +99,7 @@ document = {"profile": "allowly.basic.v1", "spec_version": "5", "verification_no
         "active_from": "2026-01-01T00:00:00.000Z", "active_until": None}]},
     "signature_cases": cases, "tampered_cases": tampered}
 output = ROOT / "vectors/policy/profile-v1.json"
+for value in cases + tampered:
+    value["receipt"] = envelope(value["receipt"])
 output.write_text(json.dumps(document, ensure_ascii=False, indent=2) + "\n")
 print(f"wrote {output}: {len(cases)} positive and {len(tampered)} tampered OPA evidence vectors")

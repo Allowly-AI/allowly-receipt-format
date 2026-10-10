@@ -26,6 +26,7 @@ from allowly_receipt_format import (  # noqa: E402
     canonicalize,
     checkpoint_merkle_root,
     hash_seal_json,
+    jws_signing_input,
 )
 
 
@@ -113,7 +114,32 @@ def signed_receipt(
     **overrides: Any,
 ) -> dict[str, Any]:
     payload = make_receipt(receipt_id, **overrides)
-    return {**payload, "signature": b64url(signing_key.sign(canonicalize(payload)))}
+    evidence = {key: value for key, value in payload.items() if key not in {"alg", "key_id"}}
+    return {**payload, "signature": b64url(signing_key.sign(jws_signing_input(evidence, payload["key_id"])))}
+
+
+def envelope(receipt: Any) -> Any:
+    """Convert editable test evidence into wire JWS, preserving tampered signatures."""
+    if not isinstance(receipt, dict):
+        return receipt
+    evidence = {key: value for key, value in receipt.items() if key not in {"alg", "key_id", "signature"}}
+    header = {"alg": "EdDSA" if receipt.get("alg") == "Ed25519" else receipt.get("alg"),
+              "kid": receipt.get("key_id"), "typ": "allowly-receipt+jws"}
+    try:
+        raw = canonicalize(evidence)
+    except Exception:
+        # Deliberately malformed numeric, surrogate and depth vectors.
+        raw = json.dumps(evidence, ensure_ascii=True, separators=(",", ":")).encode()
+    return {"protected": b64url(canonicalize(header)), "payload": b64url(raw),
+            "signature": receipt.get("signature")}
+
+
+def wire_vectors(value: Any) -> Any:
+    if isinstance(value, dict):
+        if "receipt_id" in value and "signature" in value:
+            return envelope(value)
+        return {key: wire_vectors(item) for key, item in value.items()}
+    return [wire_vectors(item) for item in value] if isinstance(value, list) else value
 
 
 def ok(name: str, kind: str, description: str, receipt: dict[str, Any]) -> dict[str, Any]:
@@ -384,9 +410,9 @@ budget_settle = signed_receipt(
 )
 
 checkpoint_members = [minimal_allow, deny_null_authorization]
-checkpoint_root = checkpoint_merkle_root(checkpoint_members)
+checkpoint_root = checkpoint_merkle_root([envelope(receipt) for receipt in checkpoint_members])
 previous_checkpoint_root = checkpoint_merkle_root([])
-assert checkpoint_root == "sha256:0ac751c0def06d589baeacf8cefb43b831852c648c59eecf9aabb3229edd07c1"
+assert checkpoint_root == "sha256:dd7acfb4f0391a6a3be89cdc7b470dc6865e571a8c0daa2989e2d456961e6821"
 assert previous_checkpoint_root == "sha256:dbc1b4c900ffe48d575b5da5c638040125f65db0fe3e24494b76ea986457d986"
 previous_checkpoint = signed_receipt(
     "rcp_01HXZCHECKPOINTPREVIOUS000",
@@ -849,7 +875,8 @@ should_reject = [
 # Signed adversarial shapes and post-signing tampering exercise both verifiers.
 def resign(receipt: dict[str, Any]) -> dict[str, Any]:
     payload = {key: value for key, value in receipt.items() if key != "signature"}
-    return {**payload, "signature": b64url(priv.sign(canonicalize(payload)))}
+    evidence = {key: value for key, value in payload.items() if key not in {"alg", "key_id"}}
+    return {**payload, "signature": b64url(priv.sign(jws_signing_input(evidence, payload["key_id"])))}
 
 
 for field in ("policy_ref", "policy_eval", "engine_version"):
@@ -869,7 +896,8 @@ for version in (True, False, 0, -1, 9007199254740992, "1"):
     receipt = copy.deepcopy(minimal_allow)
     receipt["policy_ref"]["policy_version"] = version
     signed = receipt if type(version) is int and version > 9007199254740991 else resign(receipt)
-    should_reject.append((f"invalid_policy_version_{version!r}", "invalid strict policy version", "positive safe integer", signed))
+    error = "safe range" if type(version) is int and version > 9007199254740991 else "positive safe integer"
+    should_reject.append((f"invalid_policy_version_{version!r}", "invalid strict policy version", error, signed))
 for value in (False, 0, [], "policy"):
     receipt = copy.deepcopy(minimal_allow)
     receipt["policy_ref"] = value
@@ -930,7 +958,7 @@ vectors = {
 }
 
 out_path = Path(__file__).parent.parent / "test-vectors.json"
-out = json.dumps(vectors, indent=2, ensure_ascii=False)
+out = json.dumps(wire_vectors(vectors), indent=2, ensure_ascii=False)
 # The lone-surrogate vector cannot be written as raw UTF-8 (it is by definition
 # ill-formed); store it as its \uXXXX escape so the file stays valid UTF-8 and
 # every JSON parser reconstructs the unpaired surrogate on load.
@@ -1301,7 +1329,7 @@ for name, document in [
     ("verification-v1.json", seal_verification_vectors),
 ]:
     path = seal_dir / name
-    path.write_text(json.dumps(document, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    path.write_text(json.dumps(wire_vectors(document), indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
     print(f"wrote {path}")
 
 print(f"wrote {out_path}")

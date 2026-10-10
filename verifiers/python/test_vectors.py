@@ -11,6 +11,7 @@ from pathlib import Path
 from allowly_receipt_format import (
     VerificationError,
     canonicalize,
+    decode_receipt,
     checkpoint_merkle_root,
     load_keys_from_json,
     public_key_fingerprint,
@@ -44,19 +45,15 @@ GOLDEN_PAYLOAD = {
     "authorization_id": "auth_01HXZ2A0K1L2M3N4P5Q6R7S8T9",
     "policy_ref": {"policy_id": "pol_test", "policy_version": 1, "definition_sha256": "a" * 64},
     "engine_version": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-    "alg": "Ed25519",
-    "key_id": "projects/allowly-prod/locations/global/keyRings/allowly-signing/cryptoKeys/ws_01HXA1/cryptoKeyVersions/3",
 }
 GOLDEN_CANONICAL = (
     '{"action":"outreach.send","agent_id":"referral_outreach",'
-    '"alg":"Ed25519",'
     '"authorization_id":"auth_01HXZ2A0K1L2M3N4P5Q6R7S8T9",'
     '"context":{"control":"line\\u000a\\u0009\\u0000","initiated_by":"user",'
     '"origin":"chat","session_id":"sess_7f2","types":[7,true,null],'
     '"😀_key":"emoji","｡_key":"bmp"},'
     '"decision":"allow","engine_version":"sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",'
     '"issued_at":"2026-04-21T14:32:17.482Z",'
-    '"key_id":"projects/allowly-prod/locations/global/keyRings/allowly-signing/cryptoKeys/ws_01HXA1/cryptoKeyVersions/3",'
     '"policy_ref":{"definition_sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","policy_id":"pol_test","policy_version":1},'
     '"reason":"authorization_granted_action_active",'
     '"receipt_id":"rcp_01HXZ2B3QW4N5M6P7R8S9T0V1W",'
@@ -94,7 +91,7 @@ def main(vectors_path: str) -> int:
             failures += 1
 
     for v in vectors["should_verify"]:
-        if v["receipt"].get("event") != "confirmation.resolve":
+        if decode_receipt(v["receipt"]).get("event") != "confirmation.resolve":
             continue
         try:
             verify_receipt(v["receipt"], keys, now=now, expected_workspace_id="ws_other")

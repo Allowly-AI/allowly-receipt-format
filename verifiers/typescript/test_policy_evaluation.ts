@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { loadKeysFromJson, verifyReceipt, VerificationError } from "./verifier.js";
+import { decodeReceipt, loadKeysFromJson, verifyReceipt, VerificationError } from "./verifier.js";
 
 const vectors = JSON.parse(readFileSync(process.argv[2], "utf8"));
 const keys = loadKeysFromJson(vectors.public_keys);
@@ -14,8 +14,9 @@ for (const value of vectors.tampered_cases) {
   await assert.rejects(verifyReceipt(value.receipt, keys, options),
     (error: unknown) => error instanceof VerificationError && error.message.includes("signature verification failed"), value.name);
 }
-const separation = vectors.signature_cases.find((value: { name: string }) => value.name === "opa_allow_final_deny").receipt;
+const separation = decodeReceipt(vectors.signature_cases.find((value: { name: string }) => value.name === "opa_allow_final_deny").receipt);
 assert.equal(separation.decision, "deny");
+assert.ok(separation.policy_eval);
 assert.equal(separation.policy_eval.result.decision, "allow");
 // This package authenticates recorded OPA evidence. Native OPA replay has its own CLI.
 const exports = await import("./verifier.js");

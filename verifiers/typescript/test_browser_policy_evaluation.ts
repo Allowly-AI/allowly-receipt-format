@@ -21,6 +21,15 @@ try {
     await assert.rejects(verifier.verifyReceipt(value.receipt, keys, options), /signature verification failed/, value.name);
   }
   assert.equal("verifyPolicyEvaluation" in verifier, false);
+  const receiptVectors = JSON.parse(readFileSync(new URL("../../../test-vectors.json", import.meta.url), "utf8"));
+  const receiptKeys = await verifier.loadKeysFromJson(receiptVectors.public_keys);
+  for (const value of receiptVectors.checkpoint_cases) {
+    await verifier.verifyCheckpoint(value.checkpoint, value.receipts, receiptKeys, {
+      expectedWorkspaceId: receiptVectors.public_keys.workspace_id,
+      previousCheckpoint: value.previous_checkpoint,
+      now: new Date("2026-12-31T00:00:00.000Z"),
+    });
+  }
 } finally {
   rmSync(output, { recursive: true, force: true });
 }

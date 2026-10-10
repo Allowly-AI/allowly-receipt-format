@@ -41,7 +41,16 @@ The key words **MUST**, **MUST NOT**, **SHOULD**, **SHOULD NOT**, and **MAY** in
 
 ## 3. Receipt structure
 
-A receipt is a JSON object with the following top-level fields. All fields are required except where marked conditional (`action`/`event`, by receipt kind) or optional (`policy_eval`, §3.6). Unknown fields **MUST NOT** be present; verifiers **MUST** reject receipts containing unknown top-level fields.
+A receipt is the RFC 7515 flattened JWS JSON object with exactly three members:
+`protected`, `payload`, and `signature`. Each is canonical unpadded base64url.
+The decoded protected header has exactly `{"alg":"EdDSA","kid":"<key id>","typ":"allowly-receipt+jws"}`.
+Only Ed25519 keys are accepted. Unprotected headers, detached payloads, `b64`,
+`crit`, URLs, certificates and extra envelope/header members are forbidden.
+
+The decoded `payload` is the following evidence object. All fields are required
+except where marked conditional (`action`/`event`) or optional (`policy_eval`).
+Unknown evidence fields **MUST NOT** be present. The example is decoded evidence,
+not the wire envelope. Algorithm and key selection live only in the protected header.
 
 ```json
 {
@@ -62,10 +71,7 @@ A receipt is a JSON object with the following top-level fields. All fields are r
   },
   "authorization_id": "auth_01HXZ2A0K1L2M3N4P5Q6R7S8T9",
   "policy_ref": {"policy_id": "pol_example", "policy_version": 1, "definition_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},
-  "engine_version": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-  "alg": "Ed25519",
-  "key_id": "projects/allowly-prod/locations/global/keyRings/allowly-signing/cryptoKeys/ws_01HXA1/cryptoKeyVersions/3",
-  "signature": "base64url(...)"
+  "engine_version": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 }
 ```
 
@@ -89,9 +95,6 @@ A receipt is a JSON object with the following top-level fields. All fields are r
 | `engine_version` | string | yes | Exactly `sha256:` plus 64 lowercase hex characters, identifying the full canonical `allowly.engine.v1` manifest (§3.6). |
 | `policy_ref` | object \| null | yes | Exact immutable edition reference (§3.6). Null only where no policy applies or no authorization was resolved. |
 | `policy_eval` | object \| absent | optional | Action receipts only; **MUST be absent on event receipts.** Original OPA input commitment and complete provisional result (§3.6). |
-| `alg` | string | yes | MUST be `"Ed25519"`. This field is part of the signed payload. |
-| `key_id` | string | yes | Opaque identifier selecting the issuer public key. SHOULD be the full key-version resource path. This field is part of the signed payload. |
-| `signature` | string | yes | Canonical unpadded base64url encoding of the 64-byte Ed25519 signature. See §5. |
 
 ### 3.2 Extensibility
 
@@ -296,7 +299,7 @@ The checkpoint `issued_at` MUST be at or after `period_end`. At construction tim
 
 The commitment uses SHA-256 with one-byte domain separation and no dependency on presentation order:
 
-1. For each full signed member receipt `R`, including its `signature`, serialize the entire object using §4.2 without applying §4.1's signature removal, then compute `leaf = SHA256(0x00 || full_canonical_bytes)`.
+1. For each full signed member receipt `R`, serialize its entire JWS envelope (`protected`, `payload`, `signature`) using §4.2, then compute `leaf = SHA256(0x00 || full_canonical_bytes)`. Do not decode, reconstruct or remove any segment.
 2. Sort the 32-byte leaf hashes in ascending unsigned byte order.
 3. For each adjacent pair compute `SHA256(0x01 || left || right)`. If a level has an odd count, duplicate its final hash and pair it with itself. Repeat until one hash remains.
 4. For an empty member set, the root bytes are `SHA256(0x02)`.
@@ -312,11 +315,17 @@ A verified checkpoint proves that the presented member set exactly matches the s
 
 ## 4. Canonical serialization
 
-To produce a byte sequence suitable for signing and verification, a verifier **MUST** canonicalize the receipt payload as follows.
+Issuers use the following deterministic serialization for new evidence and its
+hash commitments. JWS verifiers authenticate the exact received segments;
+they **MUST NOT** reconstruct the signing input from parsed evidence.
 
 ### 4.1 Payload
 
-The *payload* is the receipt object with the `signature` field removed. All other top-level fields are included.
+The *payload* is the evidence object decoded from JWS `payload`, without
+algorithm, key selector or signature fields. Issuers serialize it with §4.2 once.
+Verifiers authenticate the exact stored JWS segments, not reconstructed JSON.
+The same canonicalization remains in use for policy/input hashes and checkpoint
+envelope commitments; it is not a custom signature framing algorithm.
 
 ### 4.2 Canonicalization rules
 
@@ -337,10 +346,10 @@ The canonical form is the payload serialized as JSON with the following normativ
 The payload for the example in §3 canonicalizes to (linebreaks for display only; the actual canonical form is one line):
 
 ```
-{"action":"outreach.send","agent_id":"referral_outreach","alg":"Ed25519","authorization_id":"auth_01HXZ2A0K1L2M3N4P5Q6R7S8T9",
+{"action":"outreach.send","agent_id":"referral_outreach","authorization_id":"auth_01HXZ2A0K1L2M3N4P5Q6R7S8T9",
 "context":{"initiated_by":"user","origin":"chat","session_id":"sess_7f2"},
 "decision":"allow","engine_version":"sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","issued_at":
-"2026-04-21T14:32:17.482Z","key_id":"projects/allowly-prod/locations/global/keyRings/allowly-signing/cryptoKeys/ws_01HXA1/cryptoKeyVersions/3","policy_ref":{"definition_sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","policy_id":"pol_example","policy_version":1},"reason":"authorization_granted_action_active",
+"2026-04-21T14:32:17.482Z","policy_ref":{"definition_sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","policy_id":"pol_example","policy_version":1},"reason":"authorization_granted_action_active",
 "receipt_id":"rcp_01HXZ2B3QW4N5M6P7R8S9T0V1W","resource":
 "edge:emp_8821:conn_9f2a","schema_version":"5","user_id":"emp_8821",
 "workspace_id":"ws_01HXA1B2C3D4E5F6G7H8J9K0L1"}
@@ -350,22 +359,26 @@ Note: `action` and `event` are mutually exclusive — the canonical form contain
 
 ## 5. Signature
 
-The receipt carries exactly one signature over the canonical payload: an Ed25519 signature from the issuer's published key.
+The receipt carries one standard JWS signature. The signing input is exactly
+`ASCII(protected + "." + payload)` per RFC 7515. The protected header and payload
+are authenticated together. A separate OPA bundle signature authenticates the
+published evaluator artifact, not a decision, approval or execution outcome.
 
 ### 5.1 Algorithm
 
 - Algorithm: Ed25519 per RFC 8032.
 - Key: an asymmetric key held by the issuer. The public key is published at a well-known URL per §6.
-- Input: the canonical payload bytes from §4, passed to Ed25519's sign operation as the message.
+- Input: the JWS signing input above, passed to Ed25519's sign operation as the message.
 - Output: the 64-byte Ed25519 signature, base64url-encoded without padding per RFC 4648 §5.
 
-Verifiers **MUST** use standard RFC 8032 Ed25519 verification over the raw canonical payload bytes. A signer **MUST NOT** pre-hash the canonical payload before passing it to an Ed25519 sign operation; doing so produces a different scheme that fails this verification algorithm. How a signing service implements the standard Ed25519 operation internally is outside this specification.
+Verifiers **MUST** use a standard JWS verifier restricted to `EdDSA` and Ed25519
+public keys. A signer **MUST NOT** pre-hash the JWS signing input.
 
 ### 5.2 Protected algorithm and key identifier
 
-Format 5 places `alg` and `key_id` at the top level. Removing only the
-`signature` field for canonicalization leaves both fields in the signed bytes,
-so neither the algorithm nor trust-anchor selector can be changed after issue.
+Format 5 places `alg`, `kid` and `typ` only in the JWS protected header.
+Changing any of them invalidates the signature. `kid` selects a caller-trusted
+key; it does not authorize fetching a key from an untrusted location.
 The `signature` field contains only the canonical unpadded base64url signature
 string. It is never empty or a placeholder; see §5.3.
 
@@ -385,11 +398,11 @@ Issuers **MUST NOT** emit any object claiming to be a format-5 receipt with `sig
 
 These notes describe how signers typically produce the Ed25519 signature. They are informative only; none affects the wire format or verification algorithm.
 
-- **Pure-software Ed25519 libraries** (PyNaCl, libsodium, Go's `crypto/ed25519`): pass the raw canonical payload as the message. The library handles RFC 8032 internally.
-- **Google Cloud KMS Ed25519:** pass the raw canonical payload as `data` to `asymmetricSign`; do not send a caller-computed digest. KMS applies the algorithm's required hashing internally, and the resulting signature verifies against the original canonical payload bytes.
-- **AWS KMS:** Ed25519 is signed in MESSAGE mode (raw payload). Pre-hashing is not required.
+- **Software Ed25519 signers:** pass the exact ASCII JWS signing input from §5.1 as the message. The library handles RFC 8032 internally.
+- **Google Cloud KMS Ed25519:** pass those exact JWS signing bytes as `data` to `asymmetricSign`; do not send a caller-computed digest. KMS applies the required hashing internally.
 
-In all cases the verifier's behavior is identical: standard Ed25519 verification over the raw canonical payload. If a signer produces signatures that fail standard verification, the bug is in the signer, not the format.
+In all cases the verifier uses a standard JWS library, restricted to EdDSA with
+Ed25519 keys, over the exact protected-header and payload segments.
 
 ### 5.5 Internal integrity checks (non-normative)
 
@@ -447,7 +460,10 @@ acceptable; otherwise they may send `no-store`.
 
 A verifier given a receipt `R` and the issuer's public keys **MUST** perform all of the following steps in order, and **MUST** reject the receipt if any step fails.
 
-1. **Version check.** Assert `R.schema_version` is exactly `"5"`.
+1. **Envelope and version check.** Validate the exact JWS envelope and protected
+   header above; decode strict UTF-8 JSON rejecting duplicate names, BOM,
+   fractional/exponent number tokens and resource-limit violations. Let `R` be
+   that decoded evidence. Assert `R.schema_version` is exactly `"5"`.
 2. **Schema check.** Assert all required fields are present with correct types and no unknown top-level fields. The signature MUST be canonical unpadded base64url decoding to exactly 64 bytes; decode and re-encode to reject non-zero unused pad bits. Validate required `policy_ref` and `engine_version`, and optional `policy_eval`, against §3.6.
 3. **Receipt kind and pairing check.** Determine the receipt kind from which discriminator field is present, and enforce the corresponding constraints:
    - Exactly one of `action` and `event` MUST be present. Reject if both are present, or if neither is present.
@@ -465,16 +481,16 @@ A verifier given a receipt `R` and the issuer's public keys **MUST** perform all
    - **If `action` is present** (action receipt):
      - `decision` MUST be one of `"allow"`, `"deny"`, `"confirm"`, or `"escalate"`.
      - The reserved event-only decisions (`authorization_granted`, `authorization_revoked`, `budget_settled`, `confirmation_approved`, `confirmation_rejected`, `escalation_approved`, `escalation_rejected`, `receipt_set_committed`) MUST NOT appear.
-4. **Algorithm check.** Assert `R.alg` equals `"Ed25519"`.
+4. **Algorithm check.** Assert protected `alg` equals `"EdDSA"` and key is Ed25519.
 5. **Timestamp sanity.** Parse `R.issued_at` using the exact `YYYY-MM-DDTHH:MM:SS.sssZ` profile. Assert it is a real calendar instant, is not in the future (allowing a small skew, e.g. 5 minutes), and is not absurdly far in the past (spec does not mandate a cutoff; verifier policy).
-6. **Canonicalize.** Produce the canonical payload bytes per §4.
+6. **Signing input.** Retain the exact protected and payload segments received.
 7. **Signature verification.**
-   - Look up the public key matching `R.key_id` from the published key document.
+   - Look up the public key matching protected `kid` from the published key document.
    - If the key is not found, reject.
    - Assert the selected key entry's `alg` equals `"Ed25519"`; if an advertised `public_key_fingerprint` is present, recompute and compare it.
    - If the caller supplied trusted public-key fingerprints, assert the selected key's `sha256:<hex>` fingerprint is in that trusted set.
    - If the key's active window does not include `R.issued_at`, reject.
-   - Verify the Ed25519 signature against the canonical payload bytes per RFC 8032. If verification fails, reject.
+   - Verify the standard JWS signature over the exact signing input. If verification fails, reject.
 8. **Accept.** If all checks pass, the receipt is valid.
 
 **Workspace and key binding.** A `key_id` identifies a key, not a workspace, and a key document's own `workspace_id` claim does not authenticate that document. The caller **MUST** obtain the expected workspace ID and keys, or their fingerprints, through trusted configuration or an authenticated channel. The reference libraries expose optional `expected_workspace_id` / `expectedWorkspaceId` and trusted-fingerprint arguments. The Python CLI requires caller-supplied `--workspace-id` and at least one repeatable `--trusted-key-fingerprint`; it compares the workspace against both the key document and every receipt, then requires each selected receipt key to be pinned. A key document or fingerprint bundled beside receipts is useful input but is not independently trusted by its location in the bundle.
@@ -540,8 +556,8 @@ Vectors include:
 - A `confirmation.resolve` event paired with an escalation decision, or without its parent authorization ID.
 - A confirmation-only decision on an action receipt, or an unknown confirmation event.
 - A receipt with a forged signature (zero bytes).
-- A receipt with an unknown `key_id`.
-- A receipt whose signed `key_id` was changed to another published key.
+- A receipt with an unknown protected `kid`.
+- A receipt whose protected `kid` was changed to another published key.
 - A receipt with previous wire `schema_version: "4"` or future wire `"6"`.
 - A `receipt.checkpoint` with a negative `receipt_count`.
 - A receipt with an unknown top-level field.
@@ -573,12 +589,15 @@ Vectors include:
 
 If an issuer's Ed25519 private key is compromised, all receipts signed under that key are untrustworthy from the moment of compromise until rotation. Issuers **SHOULD** rotate keys at least annually. Verifiers **SHOULD** consult the key document's `active_until` field when verifying old receipts; a key retired for compromise should have `active_until` set to the compromise time. Note the limit of this mitigation: the window check compares `active_until` against the receipt's *claimed* `issued_at`, and an attacker holding the key controls that claim — a receipt backdated to before the compromise time still verifies (§7 item 6). Retiring a key bounds honest use; it does not detect backdated forgeries. Detecting those requires evidence outside this format, such as an external timestamp or the issuer's own receipt log.
 
-Format 5 signs `alg` and `key_id`, so changing either one invalidates the
+Format 5 protects `alg`, `kid` and `typ` in its JWS header, so changing them invalidates the
 signature.
 
 ### 10.2 Canonicalization fragility
 
-Incorrect canonicalization is the most common implementation bug in JSON signing schemes. Two pitfalls deserve specific warning, because a naive use of stdlib JSON serializers gets them wrong while still passing simple test vectors:
+JWS verification does not require evidence recanonicalization: it authenticates
+the exact received bytes. Deterministic issuance, policy/input hashes and
+checkpoint commitments still depend on §4. Two pitfalls deserve specific
+warning because simple test vectors can miss them:
 
 - **Key sort order (rule 3).** A stdlib "sort keys" option typically sorts by Unicode code point, not UTF-16 code unit. The two agree for all-BMP keys and diverge only for keys containing supplementary characters — so the bug is invisible until such a key appears. Python's `json.dumps(sort_keys=True)` is wrong here; sort keys explicitly by `encode("utf-16-be")` instead (see rule 3).
 - **Control-character escaping (rule 5).** Stdlib serializers emit short escapes (`\n`, `\t`) for control characters; rule 5 requires the `\uXXXX` form. Python's `json.dumps` is wrong here too. A hand-rolled string encoder (as in both reference verifiers) is required.
@@ -786,6 +805,12 @@ The normative cross-language profile vectors are
 `vectors/seal/verification-v1.json`. Implementations **MUST** pass both files.
 
 ## 11. Changelog
+
+- **5.0.0 (local, unpublished)** — Replace the custom signature wrapper with
+  strict RFC 7515 flattened JWS and standard PyJWT/jose verification.
+  Keep Ed25519/KMS keys, native identity, policy editions, exact approval links,
+  checkpoints and witnessed execution. Add signed OPA evaluator bundles with
+  stock OPA verification during replay. No previous wire parser is retained.
 
 - **Verifier packages 4.3.0 (staged; wire format unchanged at 4)** — Add
   `confirmation.resolve` with `confirmation_approved` and

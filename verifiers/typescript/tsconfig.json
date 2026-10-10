@@ -14,6 +14,7 @@
   "include": [
     "verifier.ts",
     "test_vectors.ts",
+    "test_jws.ts",
     "test_policy_evaluation.ts",
     "test_browser_policy_evaluation.ts",
     "test_pseudonym_refs.ts",

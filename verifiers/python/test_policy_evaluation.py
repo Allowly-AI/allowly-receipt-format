@@ -4,15 +4,17 @@ from __future__ import annotations
 import base64
 import copy
 import hashlib
+import io
 import json
 import os
+import tarfile
 from datetime import datetime, timezone
 from pathlib import Path
 
 import pytest
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
-from allowly_receipt_format import VerificationError, canonicalize, load_keys_from_json, verify_receipt
+from allowly_receipt_format import VerificationError, canonicalize, decode_receipt, jws_signing_input, jws_receipt, load_keys_from_json, verify_receipt
 from allowly_receipt_format import policy as native_policy
 from allowly_receipt_format.policy import main, replay_policy
 
@@ -27,8 +29,7 @@ PRIVATE_KEY = Ed25519PrivateKey.from_private_bytes(hashlib.sha256(b"allowly-opa-
 
 
 def signed(receipt):
-    payload = {key: value for key, value in receipt.items() if key != "signature"}
-    return {**payload, "signature": base64.urlsafe_b64encode(PRIVATE_KEY.sign(canonicalize(payload))).decode().rstrip("=")}
+    return jws_receipt(receipt, "opa-fixture-key", PRIVATE_KEY.sign(jws_signing_input(receipt, "opa-fixture-key")))
 
 
 def replay(case, **overrides):
@@ -73,8 +74,9 @@ def test_manifest_is_complete_and_authenticated_before_binary_execution():
     assert replay(case, manifest=manifest)["diagnostic"] == "engine_manifest_digest_mismatch"
     manifest = {"schema": "allowly.engine.v1"}
     case = copy.deepcopy(case)
-    case["receipt"]["engine_version"] = "sha256:" + hashlib.sha256(canonicalize(manifest)).hexdigest()
-    case["receipt"] = signed(case["receipt"])
+    payload = decode_receipt(case["receipt"])
+    payload["engine_version"] = "sha256:" + hashlib.sha256(canonicalize(manifest)).hexdigest()
+    case["receipt"] = signed(payload)
     assert replay(case, manifest=manifest)["policy_replay"] == "not_checked"
 
 
@@ -117,6 +119,34 @@ def test_workspace_and_pin_checks_precede_missing_artifacts():
         replay_policy(case["receipt"], KEYS, **{**OPTIONS, "trusted_key_fingerprints": {"sha256:" + "a" * 64}})
 
 
+@pytest.mark.parametrize("change", ["module", "metadata", "extra", "duplicate", "missing", "symlink"])
+def test_bundle_content_pin_rejects_other_executable_contents(change):
+    module = b"pinned module"
+    metadata = MANIFEST["evaluator"]["bundle"]
+    members = [(".manifest", json.dumps(metadata).encode()),
+               (".signatures.json", b"{}"), ("policies/opa/allowly_basic.rego", module)]
+    if change == "module":
+        members[-1] = (members[-1][0], b"changed module")
+    elif change == "metadata":
+        members[0] = (".manifest", b'{"roots":["other"]}')
+    elif change == "extra":
+        members.append(("unexpected.rego", b"additional executable policy"))
+    elif change == "duplicate":
+        members.append(members[-1])
+    elif change == "missing":
+        members.pop(1)
+    output = io.BytesIO()
+    with tarfile.open(fileobj=output, mode="w:gz") as archive:
+        for name, value in members:
+            member = tarfile.TarInfo(name)
+            member.size = len(value)
+            if change == "symlink" and name == ".manifest":
+                member.type = tarfile.SYMTYPE
+                member.linkname = "elsewhere"
+            archive.addfile(member, io.BytesIO(value))
+    assert native_policy._bundle_matches(output.getvalue(), metadata, module) is False
+
+
 def cli_files(case, tmp_path):
     paths = {}
     for name, value in (("receipt", case["receipt"]), ("keys", VECTORS["public_keys"]),
@@ -142,7 +172,9 @@ def test_cli_authenticates_first_and_does_not_expose_private_artifacts(tmp_path,
     assert json.loads(output.out)["diagnostic"] == "replay_artifact_unavailable_or_invalid"
     assert "PRIVATE-MALFORMED-INPUT" not in output.out + output.err
 
-    case["receipt"]["policy_eval"]["result"]["decision"] = "deny"
+    payload = decode_receipt(case["receipt"])
+    payload["policy_eval"]["result"]["decision"] = "deny"
+    case["receipt"] = jws_receipt(payload, "opa-fixture-key", case["receipt"]["signature"])
     Path(paths["receipt"]).write_text(json.dumps(case["receipt"]))
     assert main(args + ["--input", paths["input"]]) == 1
     output = capsys.readouterr()
@@ -175,7 +207,7 @@ def test_real_opa_copy_and_cli_roundtrip(tmp_path, monkeypatch, capsys):
     monkeypatch.setattr(native_policy.subprocess, "run", replace_caller_path)
     result = replay(VECTORS["signature_cases"][0], **{**paths, "opa_binary": original})
     assert result["policy_replay"] == "matched", result
-    assert len(calls) == 2 and calls[0][0] == calls[1][0]
+    assert len(calls) == 3 and len({call[0] for call in calls}) == 1
 
     files, args = cli_files(VECTORS["signature_cases"][0], tmp_path)
     for name in ("manifest", "definition", "input"):
@@ -200,9 +232,10 @@ def test_real_official_opa_replay(case, tmp_path):
     assert result["transactional_enforcement"] == result["witnessed_execution"] == "not_checked"
 
     forged = copy.deepcopy(case)
-    forged["receipt"]["policy_eval"]["result"]["decision"] = "allow" if case["receipt"]["policy_eval"]["result"]["decision"] == "deny" else "deny"
-    forged["receipt"]["policy_eval"]["result"]["target"] = None
-    forged["receipt"] = signed(forged["receipt"])
+    payload = decode_receipt(forged["receipt"])
+    payload["policy_eval"]["result"]["decision"] = "allow" if payload["policy_eval"]["result"]["decision"] == "deny" else "deny"
+    payload["policy_eval"]["result"]["target"] = None
+    forged["receipt"] = signed(payload)
     assert replay(forged, **paths)["diagnostic"] == "provisional_result_mismatch"
 
     altered = tmp_path / "modified-artifact"
@@ -210,3 +243,58 @@ def test_real_official_opa_replay(case, tmp_path):
     assert replay(case, **{**paths, "rego_file": altered})["diagnostic"] == "rego_artifact_digest_mismatch"
     assert replay(case, **{**paths, "runtime_artifact": altered})["diagnostic"] == "runtime_artifact_digest_mismatch"
     assert replay(case, **{**paths, "opa_binary": altered})["diagnostic"] == "opa_artifact_digest_mismatch"
+
+
+def test_stock_opa_rejects_bad_bundle_signature_even_with_rebound_manifest(tmp_path, monkeypatch):
+    paths = {key: os.getenv(env) for key, env in [
+        ("opa_binary", "ALLOWLY_OPA_BINARY"), ("rego_file", "ALLOWLY_OPA_MODULE_FILE"),
+        ("runtime_artifact", "ALLOWLY_OPA_RUNTIME_ARTIFACT")]}
+    if not all(paths.values()):
+        pytest.skip("supply checksum-pinned official OPA, retained Rego and runtime archive")
+
+    def read_tar(raw, mode):
+        with tarfile.open(fileobj=io.BytesIO(raw), mode=mode) as archive:
+            return {member.name: archive.extractfile(member).read() for member in archive.getmembers()}
+
+    def pack_tar(files, mode):
+        output = io.BytesIO()
+        with tarfile.open(fileobj=output, mode=mode) as archive:
+            for name, data in files.items():
+                member = tarfile.TarInfo(name)
+                member.size = len(data)
+                archive.addfile(member, io.BytesIO(data))
+        return output.getvalue()
+
+    manifest = copy.deepcopy(MANIFEST)
+    files = read_tar(Path(paths["runtime_artifact"]).read_bytes(), "r:")
+    bundle_path = manifest["evaluator"]["signed_bundle"]["path"]
+    bundle = read_tar(files[bundle_path], "r:gz")
+    signature_path = next(name for name in bundle if name.endswith(".signatures.json"))
+    signatures = json.loads(bundle[signature_path])
+    protected, payload, _ = signatures["signatures"][0].split(".")
+    signatures["signatures"][0] = protected + "." + payload + "." + base64.urlsafe_b64encode(bytes(64)).decode().rstrip("=")
+    bundle[signature_path] = json.dumps(signatures).encode()
+    files[bundle_path] = pack_tar(bundle, "w:gz")
+    manifest["evaluator"]["signed_bundle"]["artifact_sha256"] = hashlib.sha256(files[bundle_path]).hexdigest()
+    altered_runtime = pack_tar(files, "w:")
+    manifest["runtime"]["artifact_sha256"] = hashlib.sha256(altered_runtime).hexdigest()
+    for member in manifest["runtime"]["files"]:
+        member["sha256"] = hashlib.sha256(files[member["path"]]).hexdigest()
+    artifact = tmp_path / "runtime.tar"
+    artifact.write_bytes(altered_runtime)
+    case = copy.deepcopy(VECTORS["signature_cases"][0])
+    evidence = decode_receipt(case["receipt"])
+    evidence["engine_version"] = "sha256:" + hashlib.sha256(canonicalize(manifest)).hexdigest()
+    case["receipt"] = signed(evidence)
+    commands = []
+    run = native_policy.subprocess.run
+
+    def record(command, **options):
+        commands.append(command)
+        return run(command, **options)
+
+    monkeypatch.setattr(native_policy.subprocess, "run", record)
+    result = replay(case, manifest=manifest, **{**paths, "runtime_artifact": artifact})
+    assert result["policy_replay"] == "not_checked", result
+    assert result["diagnostic"] == "invalid_replay_artifact_or_opa_result"
+    assert [command[1] for command in commands] == ["version", "build"]

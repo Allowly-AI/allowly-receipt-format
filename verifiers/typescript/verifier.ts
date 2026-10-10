@@ -23,6 +23,7 @@
 import { createHash, createHmac, timingSafeEqual, webcrypto } from "node:crypto";
 import jcsCanonicalize from "canonicalize";
 import { isSafeNumber, parse as parseLosslessJson } from "lossless-json";
+import { base64url, compactVerify, importJWK } from "jose";
 
 const SPEC_VERSION = "5";
 const ACTION_DECISIONS = new Set(["allow", "deny", "confirm", "escalate"]);
@@ -39,7 +40,7 @@ const EVENT_ONLY_DECISIONS = new Set(Object.values(EVENT_DECISIONS).flatMap((dec
 const REQUIRED_FIELDS = new Set([
   "schema_version", "receipt_id", "workspace_id", "issued_at", "decision", "reason",
   "user_id", "agent_id", "resource", "context",
-  "authorization_id", "policy_ref", "engine_version", "alg", "key_id", "signature",
+  "authorization_id", "policy_ref", "engine_version",
 ]);
 const OPTIONAL_FIELDS = new Set(["policy_eval"]);
 const DISCRIMINATOR_FIELDS = new Set(["action", "event"]);
@@ -97,11 +98,71 @@ interface ReceiptBase {
   };
 }
 
-export interface Receipt extends ReceiptBase {
+export interface ReceiptPayload extends ReceiptBase, Record<string, unknown> {
   schema_version: "5";
-  alg: string;
-  key_id: string;
+}
+
+export interface JwsReceipt extends Record<string, unknown> {
+  protected: string;
+  payload: string;
   signature: string;
+}
+export type Receipt = JwsReceipt;
+
+/** Standard JWS signing bytes for external Ed25519 signing (for example KMS). */
+export function jwsSigningInput(payload: unknown, keyId: string): Uint8Array {
+  if (typeof keyId !== "string" || !keyId) throw new VerificationError("JWS kid must be a nonempty string");
+  const header = { alg: "EdDSA", kid: keyId, typ: "allowly-receipt+jws" };
+  return new TextEncoder().encode([header, payload].map(value => base64url.encode(canonicalize(value))).join("."));
+}
+
+/** Package an external signature. This does not sign or verify the evidence. */
+export function jwsReceipt(payload: unknown, keyId: string, signature: Uint8Array | string): JwsReceipt {
+  const [protectedHeader, encoded] = new TextDecoder().decode(jwsSigningInput(payload, keyId)).split(".");
+  const encodedSignature = typeof signature === "string" ? signature : base64url.encode(signature);
+  if (b64urlDecode(encodedSignature).length !== 64) throw new VerificationError("signature must decode to 64 bytes (Ed25519)");
+  return { protected: protectedHeader, payload: encoded, signature: encodedSignature };
+}
+
+function jwsParts(receipt: unknown): { envelope: JwsReceipt; header: { kid: string }; payload: ReceiptPayload } {
+  const envelope = snapshotJson(receipt, "receipt") as Record<string, unknown>;
+  if (typeof envelope !== "object" || envelope === null || Array.isArray(envelope)) throw new VerificationError("receipt must be an object");
+  checkExactKeys(envelope, ["protected", "payload", "signature"], "JWS envelope");
+  if (Object.values(envelope).some(value => typeof value !== "string")) throw new VerificationError("JWS segments must be strings");
+  const wire = envelope as unknown as JwsReceipt;
+  if (wire.protected.length + wire.payload.length + wire.signature.length > 8 * 1024 * 1024) throw new VerificationError("JWS exceeds size limit");
+  const parse = (encoded: string): Record<string, unknown> => {
+    try {
+      const text = new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(b64urlDecode(encoded));
+      parseLosslessJson(namespaceObjectKeysForValidation(text), undefined, { parseNumber: token => {
+        if (!/^-?(?:0|[1-9][0-9]*)$/.test(token)) throw new VerificationError("receipts must not contain non-integer numbers");
+        const number = Number(token);
+        if (!Number.isSafeInteger(number)) throw new VerificationError("integer exceeds the safe range ±(2^53-1)");
+        return number;
+      }});
+      const value = JSON.parse(text);
+      validateTree(value);
+      if (typeof value !== "object" || value === null || Array.isArray(value)) throw new VerificationError("JWS JSON must be an object");
+      return value;
+    } catch (error) {
+      if (error instanceof VerificationError) throw error;
+      throw new VerificationError(`invalid JWS strict UTF-8 JSON: ${error instanceof Error ? error.message : "invalid JSON"}`);
+    }
+  };
+  const header = parse(wire.protected);
+  checkExactKeys(header, ["alg", "kid", "typ"], "JWS protected header");
+  if (header.alg !== "EdDSA" || header.typ !== "allowly-receipt+jws") throw new VerificationError("unsupported JWS algorithm or type");
+  if (typeof header.kid !== "string" || !header.kid) throw new VerificationError("JWS kid must be a nonempty string");
+  if (b64urlDecode(wire.signature).length !== 64) throw new VerificationError("signature must decode to 64 bytes (Ed25519)");
+  const payload = parse(wire.payload);
+  if (payload.schema_version !== SPEC_VERSION) throw new VerificationError(`unsupported schema_version: ${JSON.stringify(payload.schema_version)}`);
+  checkSchema(payload);
+  return { envelope: wire, header: header as { kid: string }, payload: payload as unknown as ReceiptPayload };
+}
+
+/** Strict UNVERIFIED decoding for display, never for authorization. */
+export function decodeReceipt(receipt: unknown): ReceiptPayload {
+  return jwsParts(receipt).payload;
 }
 
 // ---------------------------------------------------------------------------
@@ -180,13 +241,17 @@ function hex(bytes: Uint8Array): string {
 export async function checkpointMerkleRoot(receipts: Array<Record<string, unknown>>): Promise<string> {
   const seenIds = new Set<string>();
   let level = await Promise.all(receipts.map(async (receipt) => {
-    if (typeof receipt !== "object" || receipt === null || typeof receipt.receipt_id !== "string") {
+    if (typeof receipt !== "object" || receipt === null || !Object.hasOwn(receipt, "protected")) {
       throw new VerificationError("checkpoint member must be a receipt object with receipt_id");
     }
-    if (seenIds.has(receipt.receipt_id)) {
-      throw new VerificationError(`duplicate checkpoint member receipt_id: ${JSON.stringify(receipt.receipt_id)}`);
+    const payload = decodeReceipt(receipt);
+    if (typeof payload.receipt_id !== "string") {
+      throw new VerificationError("checkpoint member must be a receipt object with receipt_id");
     }
-    seenIds.add(receipt.receipt_id);
+    if (seenIds.has(payload.receipt_id)) {
+      throw new VerificationError(`duplicate checkpoint member receipt_id: ${JSON.stringify(payload.receipt_id)}`);
+    }
+    seenIds.add(payload.receipt_id);
     return sha256(new Uint8Array([0x00]), canonicalize(receipt));
   }));
   level.sort(compareBytes);
@@ -324,11 +389,12 @@ export async function verifyReceipt(
     expectedWorkspaceId?: string;
     trustedKeyFingerprints?: ReadonlySet<string>;
   } = {},
-): Promise<void> {
+): Promise<ReceiptPayload> {
   if (typeof receipt !== "object" || receipt === null || Array.isArray(receipt)) {
     throw new VerificationError("receipt must be an object");
   }
-  const ownReceipt = snapshotJson(receipt, "receipt", false) as Record<string, unknown>;
+  const { envelope, header, payload: decoded } = jwsParts(receipt);
+  const ownReceipt = decoded as unknown as Record<string, unknown>;
   if (!Array.isArray(publicKeys)) {
     throw new VerificationError("publicKeys must be an array");
   }
@@ -370,7 +436,7 @@ export async function verifyReceipt(
 
   // Step 2: schema check (includes signature shape — rejects placeholders)
   checkSchema(ownReceipt);
-  const r = ownReceipt as unknown as Receipt;
+  const r = decoded;
 
   // Step 3: receipt kind and pairing
   const hasAction = Object.hasOwn(ownReceipt, "action");
@@ -456,11 +522,6 @@ export async function verifyReceipt(
     throw new VerificationError("governed action must have non-null policy_ref");
   }
 
-  // Step 4: algorithm check
-  if (r.alg !== "Ed25519") {
-    throw new VerificationError(`unsupported signature alg: ${JSON.stringify(r.alg)}`);
-  }
-
   // Step 5: timestamp sanity
   const issuedAt = parseRFC3339(r.issued_at);
   if (issuedAt.getTime() > nowMs + MAX_FUTURE_SKEW_MS) {
@@ -469,12 +530,8 @@ export async function verifyReceipt(
     );
   }
 
-  // Step 6: canonicalize
-  const { signature, ...payload } = r;
-  const canonical = canonicalize(payload);
-
   // Step 7: signature verification
-  const key = findKey(keySnapshots, r.key_id, issuedAt);
+  const key = findKey(keySnapshots, header.kid, issuedAt);
   const fingerprint = publicKeyFingerprint(key);
   if (
     opts.trustedKeyFingerprints !== undefined &&
@@ -484,22 +541,13 @@ export async function verifyReceipt(
       `public key fingerprint is not trusted: ${fingerprint}`,
     );
   }
-  const sigBytes = b64urlDecode(r.signature);  // length already validated in schema check
-
-  const cryptoKey = await webcrypto.subtle.importKey(
-    "raw",
-    key.publicKeyBytes,
-    { name: "Ed25519" },
-    false,
-    ["verify"],
-  );
-
-  const ok = await webcrypto.subtle.verify("Ed25519", cryptoKey, sigBytes, canonical);
-  if (!ok) {
+  try {
+    const cryptoKey = await importJWK({ kty: "OKP", crv: "Ed25519", x: base64url.encode(key.publicKeyBytes) }, "EdDSA");
+    await compactVerify([envelope.protected, envelope.payload, envelope.signature].join("."), cryptoKey, { algorithms: ["EdDSA"] });
+  } catch {
     throw new VerificationError("signature verification failed");
   }
-
-  // Step 8: accept (implicit — no throw)
+  return decoded;
 }
 
 const PUBLIC_KEY_FINGERPRINT_RE = /^sha256:[0-9a-f]{64}$/;
@@ -698,8 +746,7 @@ async function verifySeal(
   }
   let ownReceipt: Record<string, unknown>;
   try {
-    ownReceipt = snapshotJson(receipt, "receipt", false) as Record<string, unknown>;
-    await verifyReceipt(ownReceipt, publicKeys, opts);
+    ownReceipt = await verifyReceipt(receipt, publicKeys, opts) as unknown as Record<string, unknown>;
   } catch (error) {
     if (error instanceof VerificationError) {
       return sealResult(false, false, "receipt_verification_failed");
@@ -931,28 +978,6 @@ function checkSchema(receipt: Record<string, unknown>): void {
     throw new VerificationError("context must be an object");
   }
 
-  for (const f of ["alg", "key_id", "signature"]) {
-    if (typeof receipt[f] !== "string") {
-      throw new VerificationError(`${f} must be a string`);
-    }
-  }
-  const sigValue = receipt.signature as string;
-
-  // Signature text must be canonical base64url and decode to exactly 64 bytes.
-  // This rejects placeholder strings ("pending", empty, anything malformed)
-  // before the verification path even starts.
-  let sigBytes: Uint8Array;
-  try {
-    sigBytes = b64urlDecode(sigValue);
-  } catch {
-    throw new VerificationError(`signature is not valid canonical base64url: ${JSON.stringify(sigValue)}`);
-  }
-  if (sigBytes.length !== 64) {
-    throw new VerificationError(
-      `signature must decode to 64 bytes (Ed25519), got ${sigBytes.length}`,
-    );
-  }
-
   checkPolicyRef(receipt.policy_ref);
   if ((receipt.engine_version as string).length !== 71 || !PUBLIC_KEY_FINGERPRINT_RE.test(receipt.engine_version as string)) throw new VerificationError("engine_version must be sha256: followed by 64 lowercase hex characters");
   if (Object.hasOwn(receipt, "policy_eval")) {
@@ -1106,22 +1131,22 @@ export async function verifyCheckpoint(
       : new Set(opts.trustedKeyFingerprints),
   };
 
-  await verifyReceipt(ownCheckpoint, ownPublicKeys, receiptOptions);
-  if (ownCheckpoint.event !== "receipt.checkpoint") {
+  const checkpointPayload = await verifyReceipt(ownCheckpoint, ownPublicKeys, receiptOptions);
+  if (checkpointPayload.event !== "receipt.checkpoint") {
     throw new VerificationError("checkpoint receipt must have event='receipt.checkpoint'");
   }
-  const context = ownCheckpoint.context as Record<string, unknown>;
+  const context = checkpointPayload.context;
   const periodStart = parseRFC3339(context.period_start as string);
   const periodEnd = parseRFC3339(context.period_end as string);
   for (const receipt of ownReceipts) {
-    await verifyReceipt(receipt, ownPublicKeys, receiptOptions);
-    if (receipt.event === "receipt.checkpoint") {
+    const payload = await verifyReceipt(receipt, ownPublicKeys, receiptOptions);
+    if (payload.event === "receipt.checkpoint") {
       throw new VerificationError("receipt.checkpoint cannot be a checkpoint member");
     }
-    const issuedAt = parseRFC3339(receipt.issued_at as string);
+    const issuedAt = parseRFC3339(payload.issued_at);
     if (issuedAt < periodStart || issuedAt >= periodEnd) {
       throw new VerificationError(
-        `checkpoint member ${JSON.stringify(receipt.receipt_id)} falls outside checkpoint period`,
+        `checkpoint member ${JSON.stringify(payload.receipt_id)} falls outside checkpoint period`,
       );
     }
   }
@@ -1137,12 +1162,12 @@ export async function verifyCheckpoint(
     );
   }
   if (ownPreviousCheckpoint !== undefined) {
-    await verifyReceipt(ownPreviousCheckpoint, ownPublicKeys, receiptOptions);
-    if (ownPreviousCheckpoint.event !== "receipt.checkpoint") {
+    const previousPayload = await verifyReceipt(ownPreviousCheckpoint, ownPublicKeys, receiptOptions);
+    if (previousPayload.event !== "receipt.checkpoint") {
       throw new VerificationError("previous checkpoint must have event='receipt.checkpoint'");
     }
-    const previousContext = ownPreviousCheckpoint.context as Record<string, unknown>;
-    if (context.previous_checkpoint_id !== ownPreviousCheckpoint.receipt_id) {
+    const previousContext = previousPayload.context;
+    if (context.previous_checkpoint_id !== previousPayload.receipt_id) {
       throw new VerificationError("checkpoint previous_checkpoint_id mismatch");
     }
     if (context.previous_merkle_root !== previousContext.merkle_root) {

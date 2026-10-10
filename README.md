@@ -6,6 +6,13 @@ A receipt is a signed record of one decision: *at time T, issuer W decided that 
 
 Every receipt carries `policy_ref`, naming its immutable policy edition or null when no policy applies. Action receipts can include `policy_eval`, the exact OPA input commitment and complete provisional result. Daily `receipt.checkpoint` events commit to the issuer's registered signed receipt set for one UTC day. The current wire format is `"5"` (wire versions are plain integer strings).
 
+Format 5 uses standard flattened JWS: `{protected, payload, signature}`. Its
+protected header is `{alg: "EdDSA", kid: "<key id>", typ: "allowly-receipt+jws"}`.
+PyJWT and jose verify the exact stored bytes with Ed25519 keys. Allowly adds
+strict evidence validation, workspace binding and key-window checks. This
+5.0.0 rebuild is local and unpublished; earlier flat receipt formats are not
+accepted.
+
 Specification Appendix A also defines an optional `hmac-v1` convention for
 customer-recomputable pseudonymous values inside `context`; it does not change
 the receipt wire format or verification algorithm.
@@ -65,12 +72,12 @@ from allowly_receipt_format import verify_receipt, load_keys_from_json
 configured_workspace_id = os.environ["ALLOWLY_WORKSPACE_ID"]
 if keys_doc.get("workspace_id") != configured_workspace_id:
     raise ValueError("key document workspace does not match configuration")
-verify_receipt(
+evidence = verify_receipt(
     receipt,
     load_keys_from_json(keys_doc),
     expected_workspace_id=configured_workspace_id,
     trusted_key_fingerprints={os.environ["ALLOWLY_TRUSTED_KEY_FINGERPRINT"]},
-)  # raises VerificationError if invalid
+)  # returns verified evidence, or raises VerificationError
 ```
 
 Verify a receipt in TypeScript:
@@ -82,7 +89,7 @@ npm install @allowly/verifier
 ```typescript
 import { verifyReceipt, loadKeysFromJson, VerificationError } from "@allowly/verifier";
 
-// verifyReceipt resolves on success and throws VerificationError on failure —
+// verifyReceipt returns verified evidence and throws VerificationError on failure —
 // it does not return a boolean. Load the workspace id from caller-trusted
 // configuration, never from the receipt or key document.
 const configuredWorkspaceId = process.env.ALLOWLY_WORKSPACE_ID;
@@ -95,7 +102,7 @@ if (keysDoc.workspace_id !== configuredWorkspaceId) {
   throw new Error("key document workspace does not match configuration");
 }
 try {
-  await verifyReceipt(receipt, loadKeysFromJson(keysDoc), {
+  const evidence = await verifyReceipt(receipt, loadKeysFromJson(keysDoc), {
     expectedWorkspaceId: configuredWorkspaceId,
     trustedKeyFingerprints: new Set([configuredKeyFingerprint]),
   });

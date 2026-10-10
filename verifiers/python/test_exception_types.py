@@ -6,6 +6,7 @@ Usage: python test_exception_types.py ../../test-vectors.json
 from __future__ import annotations
 
 import copy
+import base64
 import io
 import json
 import sys
@@ -22,6 +23,8 @@ from allowly_receipt_format import (
     SignatureMismatchError,
     UnknownKeyError,
     VerificationError,
+    decode_receipt,
+    jws_receipt,
     load_keys_from_json,
     main as verifier_main,
     public_key_fingerprint,
@@ -91,15 +94,17 @@ def main(vectors_path: str) -> int:
     _expect(SchemaError, receipt, [replace(keys[0], alg="RSA"), *keys[1:]], now=now)
 
     retired_keys_doc = copy.deepcopy(keys_doc)
-    key_id = receipt["key_id"]
+    key_id = json.loads(base64.urlsafe_b64decode(receipt["protected"] + "=="))["kid"]
     for key in retired_keys_doc["keys"]:
         if key["key_id"] == key_id:
-            key["active_until"] = receipt["issued_at"]
+            key["active_until"] = decode_receipt(receipt)["issued_at"]
             break
     _expect(KeyOutsideActiveWindowError, receipt, load_keys_from_json(retired_keys_doc), now=now)
 
     tampered = copy.deepcopy(receipt)
-    tampered["reason"] = "tampered"
+    payload = decode_receipt(receipt)
+    payload["reason"] = "tampered"
+    tampered = jws_receipt(payload, key_id, receipt["signature"])
     _expect(SignatureMismatchError, tampered, keys, now=now)
 
     malformed = copy.deepcopy(receipt)
@@ -196,7 +201,7 @@ def main(vectors_path: str) -> int:
 
         duplicate_path = tmp_path / "duplicate.jsonl"
         encoded = json.dumps(receipt, separators=(",", ":"))
-        duplicate_path.write_text(encoded[:-1] + ',"decision":"allow"}\n', encoding="utf-8")
+        duplicate_path.write_text(encoded[:-1] + ',"payload":' + json.dumps(receipt["payload"]) + '}\n', encoding="utf-8")
         stdout, stderr = io.StringIO(), io.StringIO()
         with redirect_stdout(stdout), redirect_stderr(stderr):
             rc = verifier_main([
@@ -263,7 +268,7 @@ def main(vectors_path: str) -> int:
             "checkpoints": [{
                 "checkpoint": checkpoint_case["checkpoint"],
                 "member_receipt_ids": [
-                    receipt["receipt_id"] for receipt in checkpoint_case["receipts"]
+                    decode_receipt(receipt)["receipt_id"] for receipt in checkpoint_case["receipts"]
                 ],
             }],
         }
@@ -318,7 +323,7 @@ def main(vectors_path: str) -> int:
         evidence["checkpoints"] = [{
             "checkpoint": checkpoint_case["checkpoint"],
             "member_receipt_ids": [
-                receipt["receipt_id"] for receipt in checkpoint_case["receipts"]
+                decode_receipt(receipt)["receipt_id"] for receipt in checkpoint_case["receipts"]
             ][:-1],
         }]
 

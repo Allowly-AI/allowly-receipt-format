@@ -59,11 +59,11 @@ def _check_manifest(manifest: dict) -> None:
     if manifest["schema"] != "allowly.engine.v1" or manifest["policy_profile"] != "allowly.policy.v1":
         raise ValueError("unsupported engine manifest")
     evaluator = manifest["evaluator"]
-    _exact(evaluator, {"profile", "entrypoint", "module", "opa", "bundle"}, "evaluator")
+    _exact(evaluator, {"profile", "entrypoint", "module", "opa", "bundle", "signed_bundle"}, "evaluator")
     if evaluator["profile"] != "allowly.basic.v1" or evaluator["entrypoint"] != "/v1/data/allowly/basic/result":
         raise ValueError("unsupported evaluator")
     if evaluator["module"] != {"path": "policies/opa/allowly_basic.rego",
-        "api_id": "policies/opa/policies/opa/allowly_basic.rego", "sha256": MODULE_SHA256}:
+        "api_id": "ops/opa/evaluator.bundle.tar.gz/policies/opa/allowly_basic.rego", "sha256": MODULE_SHA256}:
         raise ValueError("unsupported Rego module")
     opa = evaluator["opa"]
     _exact(opa, {"version", "commit", "platform", "artifact_sha256"}, "official OPA artifact")
@@ -72,6 +72,15 @@ def _check_manifest(manifest: dict) -> None:
         raise ValueError("unsupported official OPA artifact")
     if evaluator["bundle"] != {"roots": [""], "revision": "allowly.basic.v1", "rego_version": 1} or type(evaluator["bundle"].get("rego_version")) is not int:
         raise ValueError("unsupported full-root bundle")
+    signed = evaluator["signed_bundle"]
+    _exact(signed, {"path", "artifact_sha256", "public_key_sha256", "key_id", "scope", "algorithm", "development"}, "signed OPA bundle")
+    if (signed["path"] != "ops/opa/evaluator.bundle.tar.gz" or signed["scope"] != "allowly/evaluator/v1"
+            or signed["algorithm"] != "EdDSA" or type(signed["development"]) is not bool
+            or not isinstance(signed["key_id"], str) or not signed["key_id"]):
+        raise ValueError("unsupported signed OPA bundle")
+    for field in ("artifact_sha256", "public_key_sha256"):
+        if not isinstance(signed[field], str) or not _PUBLIC_KEY_FINGERPRINT_RE.fullmatch("sha256:" + signed[field]):
+            raise ValueError("invalid signed OPA artifact digest")
     runtime = manifest["runtime"]
     _exact(runtime, {"artifact_sha256", "format", "files"}, "runtime")
     if runtime["format"] != "tar" or not isinstance(runtime["files"], list) or not 1 <= len(runtime["files"]) <= 5000:
@@ -106,6 +115,24 @@ def _runtime_matches(raw: bytes, runtime: dict) -> bool:
     return True
 
 
+def _bundle_matches(raw: bytes, manifest: dict, module: bytes) -> bool:
+    """Pin executable contents before handing the archive to stock OPA."""
+    expected = {".manifest", ".signatures.json", "policies/opa/allowly_basic.rego"}
+    seen = set()
+    with tarfile.open(fileobj=io.BytesIO(raw), mode="r|gz") as archive:
+        for member in archive:
+            if (not member.isfile() or member.name not in expected or member.name in seen
+                    or member.size > 65536):
+                return False
+            seen.add(member.name)
+            value = archive.extractfile(member).read()
+            if member.name == "policies/opa/allowly_basic.rego" and value != module:
+                return False
+            if member.name == ".manifest" and canonicalize(json.loads(value)) != canonicalize(manifest):
+                return False
+    return seen == expected
+
+
 def replay_policy(
     receipt: dict[str, Any], public_keys: list[PublicKey], *,
     expected_workspace_id: str, trusted_key_fingerprints: set[str] | frozenset[str],
@@ -127,7 +154,7 @@ def replay_policy(
         raise SchemaError("caller-trusted key fingerprints are required")
     receipt = _snapshot(receipt)
     keys = [replace(key, public_key_bytes=bytes(key.public_key_bytes)) for key in public_keys]
-    verify_receipt(receipt, keys, expected_workspace_id=expected_workspace_id,
+    receipt = verify_receipt(receipt, keys, expected_workspace_id=expected_workspace_id,
         trusted_key_fingerprints=frozenset(trusted_key_fingerprints), now=now)
 
     def report(status: str, diagnostic: str) -> dict:
@@ -172,8 +199,18 @@ def replay_policy(
         module = _artifact(rego_file)
         if hashlib.sha256(module).hexdigest() != MODULE_SHA256:
             return report("mismatched", "rego_artifact_digest_mismatch")
-        if not _runtime_matches(_artifact(runtime_artifact), manifest["runtime"]):
+        runtime_bytes = _artifact(runtime_artifact)
+        if not _runtime_matches(runtime_bytes, manifest["runtime"]):
             return report("mismatched", "runtime_artifact_digest_mismatch")
+        signed_bundle = manifest["evaluator"]["signed_bundle"]
+        with tarfile.open(fileobj=io.BytesIO(runtime_bytes), mode="r:") as archive:
+            bundle_bytes = archive.extractfile(signed_bundle["path"]).read()
+            bundle_public_key = archive.extractfile("ops/opa/bundle-public.pem").read()
+        if (hashlib.sha256(bundle_bytes).hexdigest() != signed_bundle["artifact_sha256"]
+                or hashlib.sha256(bundle_public_key).hexdigest() != signed_bundle["public_key_sha256"]):
+            return report("mismatched", "signed_bundle_artifact_digest_mismatch")
+        if not _bundle_matches(bundle_bytes, manifest["evaluator"]["bundle"], module):
+            return report("mismatched", "signed_bundle_content_mismatch")
         binary_bytes = _artifact(Path(opa_binary).resolve(strict=True))
         opa = manifest["evaluator"]["opa"]
         if hashlib.sha256(binary_bytes).hexdigest() != opa["artifact_sha256"]:
@@ -186,14 +223,20 @@ def replay_policy(
             binary = Path(directory) / "opa"
             binary.write_bytes(binary_bytes)
             binary.chmod(0o500)
-            pinned_module = Path(directory) / "allowly_basic.rego"
-            pinned_module.write_bytes(module)
+            pinned_bundle = Path(directory) / "evaluator.bundle.tar.gz"
+            pinned_bundle.write_bytes(bundle_bytes)
+            pinned_public_key = Path(directory) / "bundle-public.pem"
+            pinned_public_key.write_bytes(bundle_public_key)
             version = subprocess.run([str(binary), "version"], check=True, capture_output=True, timeout=5)
             actual = dict(line.split(": ", 1) for line in version.stdout.decode().splitlines() if ": " in line)
             if (actual["Version"], actual["Build Commit"], actual["Platform"]) != (opa["version"], opa["commit"], opa["platform"]):
                 return report("not_checked", "unsupported_opa_build")
+            subprocess.run([str(binary), "build", "--bundle", str(pinned_bundle),
+                "--verification-key", str(pinned_public_key), "--verification-key-id", signed_bundle["key_id"],
+                "--signing-alg", "EdDSA", "--scope", "allowly/evaluator/v1", "--output", str(Path(directory) / "verified.tar.gz")],
+                check=True, capture_output=True, timeout=5)
             result = subprocess.run([str(binary), "eval", "--format=json", "--stdin-input",
-                "--data", str(pinned_module), "data.allowly.basic.result"],
+                "--bundle", str(pinned_bundle), "data.allowly.basic.result"],
                 input=inner_bytes, check=True, capture_output=True, timeout=5)
         if len(result.stdout) > 32768:
             return report("not_checked", "invalid_opa_result")

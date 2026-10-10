@@ -5,6 +5,7 @@ Usage: build-browser.py RECEIPT_OUTPUT SEAL_JSON_OUTPUT [DECLARATION_OUTPUT]
 """
 import json
 import pathlib
+import subprocess
 import sys
 
 SRC_DIR = pathlib.Path(__file__).resolve().parent.parent
@@ -12,7 +13,6 @@ SRC = SRC_DIR / "dist" / "verifier.js"
 
 NODE_IMPORT = 'import { createHash, createHmac, timingSafeEqual, webcrypto } from "node:crypto";'
 JCS_IMPORT = 'import jcsCanonicalize from "canonicalize";\n'
-LOSSLESS_IMPORT = 'import { isSafeNumber, parse as parseLosslessJson } from "lossless-json";\n'
 NODE_FINGERPRINT = '''export function publicKeyFingerprint(key) {
     return "sha256:" + createHash("sha256").update(key.publicKeyBytes).digest("hex");
 }'''
@@ -91,8 +91,14 @@ const webcrypto = globalThis.crypto;"""
         print("SEAL section markers not found; update the browser adapter", file=sys.stderr)
         return 1
     section_start = source.rfind("// ---------------------------------------------------------------------------", 0, seal_start)
-    source = source[:section_start] + source[seal_end:]
-    source = source.replace(JCS_IMPORT, "", 1).replace(LOSSLESS_IMPORT, "", 1)
+    # JWS reuses the existing raw-JSON duplicate-name check rather than another parser.
+    namespace_start = source.index("function namespaceObjectKeysForValidation(")
+    namespace_end = source.index("export function hashSealValue(", namespace_start)
+    namespace = source[namespace_start:namespace_end]
+    error_start = source.index("export class SealInputError")
+    error_end = source.index("export function hashSealJson", error_start)
+    source = source[:section_start] + source[error_start:error_end] + namespace + source[seal_end:]
+    source = source.replace(JCS_IMPORT, "", 1)
     source = source.replace(NODE_FINGERPRINT, BROWSER_FINGERPRINT, 1)
     source = source.replace(NODE_B64, BROWSER_B64, 1)
     source = source.replace(
@@ -131,6 +137,14 @@ const webcrypto = globalThis.crypto;"""
     if "Buffer.from(standard" in source or "createHash(" in source:
         print("Node-only verification code remains after browser transform", file=sys.stderr)
         return 1
+
+    # Bundle the maintained OSS JWS/parser implementations for offline browsers.
+    bundled = subprocess.run([str(SRC_DIR / "node_modules/.bin/esbuild"),
+        "--bundle", "--format=esm", "--platform=browser", "--target=es2022",
+        "--log-level=warning", f"--banner:js=// Vendored browser build of @allowly/verifier {version} (Apache-2.0)."],
+        input=source, text=True, capture_output=True, cwd=SRC_DIR, check=True)
+    source = bundled.stdout
+    source = source.replace('var SPEC_VERSION = "5";', 'const SPEC_VERSION = "5";', 1)
 
     header = f"""// Vendored browser SEAL helpers from @allowly/verifier {version} (Apache-2.0).
 // Generated from verifiers/typescript/browser/sealJson.ts — do not hand-edit.

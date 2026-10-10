@@ -10,7 +10,7 @@
  */
 import assert from "node:assert/strict";
 import { createHmac, generateKeyPairSync, randomBytes, sign } from "node:crypto";
-import { matchesRef, VerificationError, verifyReceipt } from "./verifier.js";
+import { jwsReceipt, jwsSigningInput, matchesRef, VerificationError, verifyReceipt } from "./verifier.js";
 
 const KEY = new Uint8Array(Array.from({ length: 32 }, (_, i) => i));
 const RECORD_REF =
@@ -149,8 +149,9 @@ const canonicalReceipt = '{"action":"test","agent_id":"agent","alg":"Ed25519",' 
   '"policy_ref":{"definition_sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","policy_id":"pol_test","policy_version":1},"reason":"test","receipt_id":"receipt","resource":null,"schema_version":"5",' +
   '"user_id":"user","workspace_id":"workspace"}';
 const { privateKey, publicKey } = generateKeyPairSync("ed25519");
-const signature = sign(null, Buffer.from(canonicalReceipt, "utf8"), privateKey);
-const receipt = { ...JSON.parse(canonicalReceipt), signature: signature.toString("base64url") };
+const { alg, key_id, ...evidence } = JSON.parse(canonicalReceipt);
+const signature = sign(null, jwsSigningInput(evidence, key_id), privateKey);
+const receipt = jwsReceipt(evidence, key_id, signature) as unknown as Record<string, unknown>;
 const keys = [{ keyId: "ephemeral", alg: "Ed25519" as const,
   publicKeyBytes: new Uint8Array(publicKey.export({ type: "spki", format: "der" }).subarray(-32)),
   activeFrom: new Date("2026-09-01T00:00:00.000Z"), activeUntil: null }];

@@ -2,6 +2,12 @@
 
 ## v5.0.0 — 2026-10-09 (local, unpublished)
 
+- Replace the custom signature wrapper with strict RFC 7515 flattened JWS,
+  fixed protected EdDSA/Ed25519 headers, and stock PyJWT/jose verification.
+  Verify exact stored segments; expose separate unverified display decoding
+  and external KMS signing helpers.
+- Verify retained signed OPA evaluator bundles with stock OPA before replay;
+  bind the bundle and separate release trust anchor to the engine manifest.
 - Fresh wire 5 requires signed immutable `policy_ref` and a content-addressed full engine identity.
 - Replace conditional snapshots with exact OPA input commitments and complete provisional results; final Allowly decisions remain separate.
 - Remove Python/TypeScript rule interpreters. Separate replay uses pinned official OPA and authenticates original inputs, definitions, full manifest and retained artifacts.

@@ -12,12 +12,39 @@ import jcsCanonicalize from "canonicalize";
 import {
   VerificationError,
   canonicalize,
-  checkpointMerkleRoot,
+  checkpointMerkleRoot as wireCheckpointMerkleRoot,
+  decodeReceipt,
+  jwsSigningInput,
   loadKeysFromJson,
   publicKeyFingerprint,
-  verifyCheckpoint,
-  verifyReceipt,
+  verifyCheckpoint as wireVerifyCheckpoint,
+  verifyReceipt as wireVerifyReceipt,
 } from "./verifier.js";
+
+// Keep the existing evidence/key/checkpoint boundary cases editable, but send
+// ONLY actual JWS envelopes into the maintained verifier. No legacy parser.
+function evidenceFixture(receipt: Record<string, unknown>): Record<string, unknown> {
+  const header = JSON.parse(Buffer.from(receipt.protected as string, "base64url").toString());
+  return { ...decodeReceipt(receipt), alg: "Ed25519", key_id: header.kid, signature: receipt.signature };
+}
+function wireFixture(receipt: Record<string, unknown>): Record<string, unknown> {
+  if (typeof receipt !== "object" || receipt === null || Object.hasOwn(receipt, "protected") || !Object.hasOwn(receipt, "signature")) return receipt;
+  const { alg, key_id, signature, ...payload } = receipt;
+  const encoded = Buffer.from(canonicalize(payload)).toString("base64url");
+  const header = { alg: alg === "Ed25519" ? "EdDSA" : alg, kid: key_id, typ: "allowly-receipt+jws" };
+  return { protected: Buffer.from(canonicalize(header)).toString("base64url"), payload: encoded, signature };
+}
+async function verifyReceipt(receipt: Record<string, unknown>, ...args: Parameters<typeof wireVerifyReceipt> extends [unknown, ...infer A] ? A : never) {
+  return wireVerifyReceipt(wireFixture(receipt), ...args);
+}
+async function checkpointMerkleRoot(receipts: Array<Record<string, unknown>>) {
+  return wireCheckpointMerkleRoot(receipts.map(wireFixture));
+}
+async function verifyCheckpoint(checkpoint: Record<string, unknown>, receipts: Array<Record<string, unknown>>,
+  keys: Parameters<typeof wireVerifyCheckpoint>[2], opts: Parameters<typeof wireVerifyCheckpoint>[3]) {
+  return wireVerifyCheckpoint(wireFixture(checkpoint), receipts.map(wireFixture), keys,
+    { ...opts, previousCheckpoint: opts.previousCheckpoint === undefined ? undefined : wireFixture(opts.previousCheckpoint) });
+}
 
 // Hand-written expected canonical form for the spec §4.3 reference example.
 // Deliberately NOT produced by the reference canonicalizer: if canonicalization
@@ -45,19 +72,15 @@ const GOLDEN_PAYLOAD = {
   authorization_id: "auth_01HXZ2A0K1L2M3N4P5Q6R7S8T9",
   policy_ref: { policy_id: "pol_test", policy_version: 1, definition_sha256: "a".repeat(64) },
   engine_version: "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-  alg: "Ed25519",
-  key_id: "projects/allowly-prod/locations/global/keyRings/allowly-signing/cryptoKeys/ws_01HXA1/cryptoKeyVersions/3",
 };
 const GOLDEN_CANONICAL =
   '{"action":"outreach.send","agent_id":"referral_outreach",' +
-  '"alg":"Ed25519",' +
   '"authorization_id":"auth_01HXZ2A0K1L2M3N4P5Q6R7S8T9",' +
   '"context":{"control":"line\\u000a\\u0009\\u0000","initiated_by":"user",' +
   '"origin":"chat","session_id":"sess_7f2","types":[7,true,null],' +
   '"😀_key":"emoji","｡_key":"bmp"},' +
   '"decision":"allow","engine_version":"sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",' +
   '"issued_at":"2026-04-21T14:32:17.482Z",' +
-  '"key_id":"projects/allowly-prod/locations/global/keyRings/allowly-signing/cryptoKeys/ws_01HXA1/cryptoKeyVersions/3",' +
   '"policy_ref":{"definition_sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","policy_id":"pol_test","policy_version":1},' +
   '"reason":"authorization_granted_action_active",' +
   '"receipt_id":"rcp_01HXZ2B3QW4N5M6P7R8S9T0V1W",' +
@@ -67,6 +90,12 @@ const GOLDEN_CANONICAL =
 async function main(vectorsPath: string): Promise<number> {
   const raw = readFileSync(vectorsPath, "utf-8");
   const vectors = JSON.parse(raw);
+  for (const vector of vectors.should_verify) vector.receipt = evidenceFixture(vector.receipt);
+  for (const value of vectors.checkpoint_cases) {
+    value.checkpoint = evidenceFixture(value.checkpoint);
+    value.previous_checkpoint = evidenceFixture(value.previous_checkpoint);
+    value.receipts = value.receipts.map(evidenceFixture);
+  }
 
   const keys = loadKeysFromJson(vectors.public_keys);
   // All vectors use issued_at in 2026; pin "now" for deterministic timestamp checks.
@@ -107,8 +136,11 @@ async function main(vectorsPath: string): Promise<number> {
   const signBoundaryReceipt = (receipt: Record<string, unknown>) => {
     const { signature, ...payload } = receipt;
     payload.key_id = boundaryKey.keyId;
+    const { alg, key_id, ...evidence } = payload;
+    const header = { alg: "EdDSA", kid: key_id, typ: "allowly-receipt+jws" };
+    const signingInput = [header, evidence].map(value => Buffer.from(jcsCanonicalize(value)!).toString("base64url")).join(".");
     return { ...payload, signature: signBytes(null,
-      Buffer.from(jcsCanonicalize(payload)!), privateKey).toString("base64url") };
+      Buffer.from(signingInput), privateKey).toString("base64url") };
   };
   const baseline = vectors.should_verify[0].receipt;
   await verifyReceipt(signBoundaryReceipt(baseline), [boundaryKey], { now });
@@ -268,7 +300,7 @@ async function main(vectorsPath: string): Promise<number> {
     // Independent two-leaf commitment keeps the signatures, count and root
     // correct. Only the member's period membership can cause rejection.
     const leaves = members.map(member => createHash("sha256").update(Buffer.from([0]))
-      .update(jcsCanonicalize(member)!).digest()).sort(Buffer.compare);
+      .update(jcsCanonicalize(wireFixture(member))!).digest()).sort(Buffer.compare);
     const merkle_root = "sha256:" + createHash("sha256").update(Buffer.from([1]))
       .update(leaves[0]).update(leaves[1]).digest("hex");
     const verification = verifyCheckpoint(signBoundaryReceipt({ ...checkpoint,
@@ -344,7 +376,7 @@ async function main(vectorsPath: string): Promise<number> {
   const members = vectors.should_verify.slice(0, 3).map((vector: { receipt: Record<string, unknown> }) => vector.receipt);
   const root = await checkpointMerkleRoot(members);
   // Independent SHA-256 calculation with the spec's 00/01 domains and odd leaf.
-  assert.equal(root, "sha256:370e58dda92e9d84d51405e21f7cb906623a3d15694fde33633682aed9b9a3ba");
+  assert.equal(root, "sha256:5931192c4790f253a159c266889fa6c9a06fecb5604f29b924232e9cb3b1d694");
   assert.equal(await checkpointMerkleRoot([...members].reverse()), root);
   assert.equal(await checkpointMerkleRoot([]), "sha256:dbc1b4c900ffe48d575b5da5c638040125f65db0fe3e24494b76ea986457d986");
   await assert.rejects(
@@ -839,7 +871,7 @@ async function main(vectorsPath: string): Promise<number> {
     // These fresh signed fixtures are control-free. JCS and Node crypto are
     // independent of the verifier; the 00/01/02 domains come from spec §3.7.1.
     const leaf = (receipt: Record<string, unknown>) => createHash("sha256")
-      .update(Buffer.from([0])).update(jcsCanonicalize(receipt)!).digest();
+      .update(Buffer.from([0])).update(jcsCanonicalize(wireFixture(receipt))!).digest();
     const independentRoot = (receipts: Array<Record<string, unknown>>) => {
       let hashes = receipts.map(leaf).sort(Buffer.compare);
       if (!hashes.length) return "sha256:" + createHash("sha256").update(Buffer.from([2])).digest("hex");
@@ -1012,7 +1044,8 @@ async function main(vectorsPath: string): Promise<number> {
     const signRotation = (receipt: Record<string, unknown>) => {
       const { signature, ...payload } = receipt;
       payload.key_id = rotationKey.keyId;
-      return { ...payload, signature: signBytes(null, Buffer.from(jcsCanonicalize(payload)!),
+      const { alg, key_id, ...evidence } = payload;
+      return { ...payload, signature: signBytes(null, jwsSigningInput(evidence, String(key_id)),
         rotationPair.privateKey).toString("base64url") };
     };
     const trusted = new Set([boundaryKey, rotationKey].map(key =>

@@ -79,11 +79,17 @@ successful evidence and never authorize execution.
     profile: "allowly.basic.v1",
     entrypoint: "/v1/data/allowly/basic/result",
     module: {path: "policies/opa/allowly_basic.rego",
-             api_id: "policies/opa/policies/opa/allowly_basic.rego",
+             api_id: "ops/opa/evaluator.bundle.tar.gz/policies/opa/allowly_basic.rego",
              sha256: <raw Rego SHA-256>},
     opa: {version: <exact official version>, commit: <build commit>,
           platform: <actual platform>, artifact_sha256: <official artifact SHA-256>},
-    bundle: {roots: [""], revision: "allowly.basic.v1", rego_version: 1}
+    bundle: {roots: [""], revision: "allowly.basic.v1", rego_version: 1},
+    signed_bundle: {path: "ops/opa/evaluator.bundle.tar.gz",
+                    artifact_sha256: <complete gzip bundle SHA-256>,
+                    public_key_sha256: <release PEM bytes SHA-256>,
+                    key_id: <OPA release signing key ID>,
+                    scope: "allowly/evaluator/v1", algorithm: "EdDSA",
+                    development: <boolean>}
   },
   runtime: {artifact_sha256: <retained full runtime tar SHA-256>, format: "tar",
             files: [{path: <relative path>, sha256: <raw file SHA-256>}, ...]}
@@ -102,7 +108,12 @@ The current local replay pin is official OPA 1.21.1, commit
 `a00a6469a0968c47c01137ed0dacaa88148be5d0eaa8524310cd371f3a98a169`, and Rego SHA-256
 `76d8e826f88e0e1fc34d274687044609b2c298e562289f502b712e907928b40c`.
 These are actual local artifacts, not production or Linux pins.
-The native full-root bundle prevents policy/data replacement after readiness.
+The retained runtime archive contains this signed bundle and its separate
+release trust anchor at `ops/opa/bundle-public.pem`. These hashes bind both to
+the receipt's authenticated engine manifest. A development key is clearly
+marked; it is not a production signing claim. The evaluator bundle is shared
+code, not the customer's immutable policy edition named by `policy_ref`.
+The native signed full-root bundle prevents policy/data replacement after readiness.
 The runtime OPA listener remains private: full-root ownership does not make
 ad-hoc query endpoints an untrusted sandbox.
 
@@ -111,7 +122,12 @@ ad-hoc query endpoints an untrusted sandbox.
 The Python `allowly-policy-replay` command authenticates the receipt using
 caller-trusted workspace/key fingerprints, then checks manifest identity,
 complete definition digest, selected BasicPolicy, original input digest, Rego
-and official OPA build, and retained runtime archive. It invokes only official
+and official OPA build, and retained runtime archive. It verifies the archived
+bundle and separate trust anchor against the signed manifest, then uses stock
+OPA bundle-signature verification with the fixed key ID, scope and EdDSA
+algorithm before evaluation. The bundle must contain only `.manifest`,
+`.signatures.json` and the exact pinned Rego module; its bundle metadata and
+module bytes must match the retained manifest and source. It invokes only official
 OPA with fixed `data.allowly.basic.result`, never a Python/TypeScript rule
 interpreter or caller-supplied query. No private input or result is logged.
 
