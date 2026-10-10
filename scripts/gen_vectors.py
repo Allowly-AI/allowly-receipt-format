@@ -35,7 +35,8 @@ SECOND_SEED = bytes([1] * 32)
 SECOND_KEY_ID = "test-key/v2"
 WORKSPACE_ID = "ws_test"
 DEFAULT_AUTHORIZATION_ID = "auth_01HXZ2A0K1L2M3N4P5Q6R7S8T9"
-DEFAULT_ENGINE_VERSION = "2026-04-17.1"
+DEFAULT_ENGINE_VERSION = "sha256:" + hashlib.sha256(b"allowly-wire-5-signed-fixture-engine").hexdigest()
+DEFAULT_POLICY_REF = {"policy_id": "pol_fixture", "policy_version": 1, "definition_sha256": "a" * 64}
 _MISSING = object()
 
 priv = Ed25519PrivateKey.from_private_bytes(SEED)
@@ -75,9 +76,10 @@ def make_receipt(
     engine_version: str = DEFAULT_ENGINE_VERSION,
     key_id: str = KEY_ID,
     policy_eval: Any = _MISSING,
+    policy_ref: Any = _MISSING,
 ) -> dict[str, Any]:
     receipt: dict[str, Any] = {
-        "schema_version": "4",
+        "schema_version": "5",
         "receipt_id": receipt_id,
         "workspace_id": WORKSPACE_ID,
         "issued_at": issued_at,
@@ -95,6 +97,7 @@ def make_receipt(
         "context": {} if context is None else context,
         "authorization_id": authorization_id,
         "engine_version": engine_version,
+        "policy_ref": (None if authorization_id is None or event == "receipt.checkpoint" else copy.deepcopy(DEFAULT_POLICY_REF)) if policy_ref is _MISSING else policy_ref,
         "alg": "Ed25519",
         "key_id": key_id,
     })
@@ -193,111 +196,45 @@ escalate_action = signed_receipt(
     authorization_id="auth_escalate",
 )
 
-deny_condition_matched = signed_receipt(
-    "rcp_01J0Z7Q4DENYCONDITION00",
-    issued_at="2026-06-09T17:03:39.114Z",
-    decision="deny",
-    reason="deny_condition_matched",
-    action="record.publish",
-    resource="record:2207",
-    context={"record_status": "blocked"},
-    authorization_id="auth_conditional_deny",
-    engine_version="2026-06-01.2",
-    policy_eval={
-        "matched_condition": {"field": "record_status", "op": "eq", "value": "blocked"},
-        "field_value": "blocked",
-    },
-)
-
-confirm_condition_matched = signed_receipt(
-    "rcp_01J0Z7Q4BORDERLINE0CONFIRM",
-    issued_at="2026-06-09T17:04:09.114Z",
-    decision="confirm",
-    reason="confirm_condition_matched",
-    user_id="cand_55ab2",
-    agent_id="scout_referrals",
-    action="hiring.publish_feedback",
-    resource="application:req_2207:cand_55ab2",
-    context={
-        "initiated_by": "agent",
-        "reviewer_id": "emp_3301",
-        "transcript_completeness": 82,
-        "candidate_ai_opt_out": False,
-    },
-    authorization_id="auth_conditional",
-    engine_version="2026-06-01.2",
-    policy_eval={
-        "matched_condition": {"field": "transcript_completeness", "op": "lt", "value": 100},
-        "field_value": 82,
-    },
-)
-
-confirm_condition_in_matched = signed_receipt(
-    "rcp_01J0Z7Q4INRULE00CONFIRM",
-    issued_at="2026-06-09T17:04:39.114Z",
-    decision="confirm",
-    reason="condition_requires_user_confirmation",
-    user_id="cand_55ab2",
-    agent_id="scout_referrals",
-    action="hiring.publish_feedback",
-    resource="application:req_2207:cand_55ab2",
-    context={
-        "initiated_by": "agent",
-        "checks_failed": "pii_detected",
-    },
-    authorization_id="auth_conditional",
-    engine_version="2026-06-01.2",
-    policy_eval={
-        "matched_condition": {
-            "field": "checks_failed",
-            "op": "in",
-            "value": ["pii_detected", "tone_flag"],
+def evaluation(decision: str, *, rule: str | None = None, fields: dict[str, Any] | None = None) -> dict[str, Any]:
+    return {
+        "input_sha256": "b" * 64,
+        "result": {
+            "profile": "allowly.basic.v1", "status": "ok", "decision": decision,
+            "target": "agent_owner" if decision == "confirm" else "member:reviewer" if decision == "escalate" else None,
+            "matched_rule_id": rule, "evaluated_fields": fields or {},
         },
-        "field_value": "pii_detected",
-    },
+    }
+
+
+opa_deny_rule = signed_receipt(
+    "rcp_opa_deny", decision="deny", reason="policy_rule_matched",
+    policy_eval=evaluation("deny", rule="blocked", fields={"record_status": "blocked"}),
+)
+opa_confirm_rule = signed_receipt(
+    "rcp_opa_confirm", decision="confirm", reason="policy_rule_matched",
+    policy_eval=evaluation("confirm", rule="review", fields={"transcript_completeness": 82}),
+)
+opa_escalate_rule = signed_receipt(
+    "rcp_opa_escalate", decision="escalate", reason="policy_rule_matched",
+    policy_eval=evaluation("escalate", rule="risk", fields={"checks_failed": "pii_detected"}),
+)
+opa_default_allow = signed_receipt(
+    "rcp_opa_default_allow", policy_eval=evaluation("allow"),
+)
+# OPA is provisional: transactional budget enforcement may deny an OPA allow.
+opa_allow_final_deny = signed_receipt(
+    "rcp_opa_allow_final_deny", decision="deny", reason="budget_exceeded",
+    policy_eval=evaluation("allow"),
+)
+record_only_seal = signed_receipt(
+    "rcp_record_only_seal", action="record.seal", policy_ref=None,
+)
+unicode_policy_result = signed_receipt(
+    "rcp_opa_unicode_bounds", policy_eval=evaluation("allow", rule="😀" * 128, fields={"😀" * 128: [None, True, 9007199254740991]}),
+    policy_ref={**DEFAULT_POLICY_REF, "policy_version": 9007199254740991},
 )
 
-allow_conditions_evaluated = signed_receipt(
-    "rcp_01J0Z7Q4CONDITIONOKALLOW",
-    issued_at="2026-06-09T17:05:09.114Z",
-    user_id="cand_55ab2",
-    agent_id="scout_referrals",
-    action="hiring.publish_feedback",
-    resource="application:req_2207:cand_55ab2",
-    context={
-        "initiated_by": "agent",
-        "reviewer_id": "emp_3301",
-        "transcript_completeness": 100,
-        "candidate_ai_opt_out": False,
-    },
-    authorization_id="auth_conditional",
-    engine_version="2026-06-01.2",
-    policy_eval={
-        "matched_condition": None,
-        "field_value": None,
-    },
-)
-
-confirm_context_field_missing = signed_receipt(
-    "rcp_01J0Z7Q4MISSING0CONFIRM",
-    issued_at="2026-06-09T17:06:09.114Z",
-    decision="confirm",
-    reason="context_field_missing",
-    user_id="cand_55ab2",
-    agent_id="scout_referrals",
-    action="hiring.publish_feedback",
-    resource="application:req_2207:cand_55ab2",
-    context={
-        "initiated_by": "agent",
-        "reviewer_id": "emp_3301",
-    },
-    authorization_id="auth_conditional",
-    engine_version="2026-06-01.2",
-    policy_eval={
-        "matched_condition": {"field": "transcript_completeness", "op": "lt", "value": 100},
-        "field_value": None,
-    },
-)
 
 # --- Event receipts (should verify) ---
 
@@ -329,26 +266,13 @@ authorization_create_replaces = signed_receipt(
     event="authorization.create",
     resource=None,
     context={
-        "actions": [
-            {
-                "name": "hiring.publish_feedback",
-                "constraints": {
-                    "confirm_when": [
-                        {"field": "transcript_completeness", "lt": 100},
-                        {"field": "candidate_ai_opt_out", "eq": True},
-                    ],
-                    "escalate_when": [
-                        {"field": "reviewer_id", "exists": False},
-                    ],
-                },
-            }
-        ],
-        "replaces": "auth_previous_conditional",
+        "actions": ["hiring.publish_feedback"],
+        "replaces": "auth_previous_policy",
         "expires_at": "2026-12-31T00:00:00Z",
         "source": "customer_policy_upload",
     },
-    authorization_id="auth_conditional",
-    engine_version="2026-06-01.2",
+    authorization_id="auth_opa_policy",
+    engine_version=DEFAULT_ENGINE_VERSION,
 )
 
 authorization_revoke = signed_receipt(
@@ -400,17 +324,17 @@ for resolution in ("approved", "rejected"):
         issued_at="2026-06-09T17:04:39.114Z",
         decision=f"confirmation_{resolution}",
         reason="confirmation_resolution_reported_by_client",
-        user_id=confirm_condition_matched["user_id"],
-        agent_id=confirm_condition_matched["agent_id"],
+        user_id=opa_confirm_rule["user_id"],
+        agent_id=opa_confirm_rule["agent_id"],
         action=None,
         event="confirmation.resolve",
-        resource=confirm_condition_matched["resource"],
-        authorization_id=confirm_condition_matched["authorization_id"],
+        resource=opa_confirm_rule["resource"],
+        authorization_id=opa_confirm_rule["authorization_id"],
         context={"confirmation": {
             "id": f"cnf_monitor_{resolution}",
-            "source_receipt_id": confirm_condition_matched["receipt_id"],
-            "action": confirm_condition_matched["action"],
-            "resource": confirm_condition_matched["resource"],
+            "source_receipt_id": opa_confirm_rule["receipt_id"],
+            "action": opa_confirm_rule["action"],
+            "resource": opa_confirm_rule["resource"],
             "resolution": resolution,
             "resolved_at": "2026-06-09T17:04:39.114Z",
             "child_authorization_id": "auth_confirmation_child" if resolution == "approved" else None,
@@ -462,7 +386,7 @@ budget_settle = signed_receipt(
 checkpoint_members = [minimal_allow, deny_null_authorization]
 checkpoint_root = checkpoint_merkle_root(checkpoint_members)
 previous_checkpoint_root = checkpoint_merkle_root([])
-assert checkpoint_root == "sha256:af44bf9860a3d0683129eee278e81a7574adcdb90f753ab04bbf438a014123a5"
+assert checkpoint_root == "sha256:0ac751c0def06d589baeacf8cefb43b831852c648c59eecf9aabb3229edd07c1"
 assert previous_checkpoint_root == "sha256:dbc1b4c900ffe48d575b5da5c638040125f65db0fe3e24494b76ea986457d986"
 previous_checkpoint = signed_receipt(
     "rcp_01HXZCHECKPOINTPREVIOUS000",
@@ -542,7 +466,7 @@ authorization_revoke_superseded = signed_receipt(
     resource=None,
     context={
         "revoked_by": "superseded",
-        "superseded_by": "auth_conditional",
+        "superseded_by": "auth_opa_policy",
     },
 )
 
@@ -581,7 +505,7 @@ key_id_swapped = copy.deepcopy(minimal_allow)
 key_id_swapped["key_id"] = SECOND_KEY_ID
 
 future_receipt = copy.deepcopy(minimal_allow)
-future_receipt["schema_version"] = "5"
+future_receipt["schema_version"] = "6"
 
 checkpoint_negative_count = signed_receipt(
     "rcp_01HXZCHECKPOINTBADCOUNT00",
@@ -698,7 +622,7 @@ authorization_update_event = signed_receipt(
     event="authorization.update",
     resource=None,
     authorization_id="auth_bad",
-    engine_version="2026-06-01.2",
+    engine_version=DEFAULT_ENGINE_VERSION,
 )
 
 prototype_event_name = signed_receipt(
@@ -711,101 +635,26 @@ prototype_event_name = signed_receipt(
 )
 
 policy_eval_on_event = signed_receipt(
-    "rcp_01J0Z7Q4POLICYEVENT000",
-    issued_at="2026-06-09T17:11:00.000Z",
-    decision="authorization_granted",
-    reason="bad_policy_eval_on_event",
-    action=None,
-    event="authorization.create",
-    resource=None,
-    authorization_id="auth_bad",
-    engine_version="2026-06-01.2",
-    policy_eval={
-        "matched_condition": None,
-        "field_value": None,
-    },
+    "rcp_bad_event_eval", action=None, event="authorization.create",
+    decision="authorization_granted", resource=None, policy_eval=evaluation("allow"),
 )
-
-policy_eval_missing_field_value = signed_receipt(
-    "rcp_01J0Z7Q4POLICYMISS000",
-    issued_at="2026-06-09T17:13:00.000Z",
-    decision="confirm",
-    reason="confirm_condition_matched",
-    user_id="cand_55ab2",
-    agent_id="scout_referrals",
-    action="hiring.publish_feedback",
-    resource="application:req_2207:cand_55ab2",
-    context={"transcript_completeness": 82},
-    authorization_id="auth_bad",
-    engine_version="2026-06-01.2",
-    policy_eval={
-        "matched_condition": {"field": "transcript_completeness", "op": "lt", "value": 100},
-    },
+policy_eval_missing_result = signed_receipt(
+    "rcp_bad_eval_missing", policy_eval={"input_sha256": "b" * 64},
 )
-
-policy_eval_condition_missing_op = signed_receipt(
-    "rcp_01J0Z7Q4POLICYNOOP000",
-    issued_at="2026-06-09T17:14:00.000Z",
-    decision="confirm",
-    reason="confirm_condition_matched",
-    user_id="cand_55ab2",
-    agent_id="scout_referrals",
-    action="hiring.publish_feedback",
-    resource="application:req_2207:cand_55ab2",
-    context={"transcript_completeness": 82},
-    authorization_id="auth_bad",
-    engine_version="2026-06-01.2",
-    policy_eval={
-        "matched_condition": {"field": "transcript_completeness", "value": 100},
-        "field_value": 82,
-    },
+policy_eval_result_missing_decision = signed_receipt(
+    "rcp_bad_result_missing", policy_eval=evaluation("confirm"),
 )
-
-policy_eval_condition_extra_member = signed_receipt(
-    "rcp_01J0Z7Q4POLICYCONDEX",
-    issued_at="2026-06-09T17:15:00.000Z",
-    decision="confirm",
-    reason="confirm_condition_matched",
-    user_id="cand_55ab2",
-    agent_id="scout_referrals",
-    action="hiring.publish_feedback",
-    resource="application:req_2207:cand_55ab2",
-    context={"transcript_completeness": 82},
-    authorization_id="auth_bad",
-    engine_version="2026-06-01.2",
-    policy_eval={
-        "matched_condition": {
-            "field": "transcript_completeness",
-            "op": "lt",
-            "value": 100,
-            "debug": True,
-        },
-        "field_value": 82,
-    },
+del policy_eval_result_missing_decision["policy_eval"]["result"]["decision"]
+policy_eval_result_extra_member = signed_receipt(
+    "rcp_bad_result_extra", policy_eval=evaluation("confirm"),
 )
-
+policy_eval_result_extra_member["policy_eval"]["result"]["extra"] = True
 policy_eval_float_value = signed_receipt(
-    "rcp_01J0Z7Q4POLICYFLOAT0",
-    issued_at="2026-06-09T17:16:00.000Z",
-    decision="confirm",
-    reason="confirm_condition_matched",
-    user_id="cand_55ab2",
-    agent_id="scout_referrals",
-    action="hiring.publish_feedback",
-    resource="application:req_2207:cand_55ab2",
-    context={"transcript_completeness": 82},
-    authorization_id="auth_bad",
-    engine_version="2026-06-01.2",
-    policy_eval={
-        "matched_condition": {"field": "transcript_completeness", "op": "lt", "value": 100},
-        "field_value": 82,
-    },
+    "rcp_bad_eval_float", policy_eval=evaluation("confirm", rule="review", fields={"score": 82}),
 )
-policy_eval_float_value["policy_eval"]["field_value"] = 82.5
+policy_eval_float_value["policy_eval"]["result"]["evaluated_fields"]["score"] = 82.5
 
-# Integer outside the I-JSON safe range ±(2^53-1) in context. Signed clean with a
-# placeholder, then the out-of-range value is injected: the verifier rejects it at
-# canonicalization (rule 6), before signature verification.
+
 integer_out_of_range = signed_receipt(
     "rcp_01HXZBIGINT00000000000000",
     context={"amount": 0},
@@ -925,13 +774,15 @@ should_verify = [
     ("action_unicode", "action", "non-ASCII characters in multiple fields", unicode_resource),
     ("action_rich_context", "action", "nested context exercising canonicalization", rich_context),
     ("action_escalate", "action", "escalate action receipt with escalation context", escalate_action),
-    ("action_deny_condition_matched", "action", "deny action receipt with policy_eval matched_condition", deny_condition_matched),
-    ("action_confirm_condition_matched", "action", "confirm action receipt with policy_eval matched_condition", confirm_condition_matched),
-    ("action_confirm_condition_in_matched", "action", "confirm action receipt with policy_eval in-condition array value", confirm_condition_in_matched),
-    ("action_allow_conditions_evaluated", "action", "allow action receipt with policy_eval attesting no condition matched", allow_conditions_evaluated),
-    ("action_confirm_context_field_missing", "action", "confirm action receipt with fail-closed missing context field", confirm_context_field_missing),
+    ("action_opa_deny_rule", "action", "deny action receipt with complete provisional OPA result", opa_deny_rule),
+    ("action_opa_confirm_rule", "action", "confirm action receipt with complete provisional OPA result", opa_confirm_rule),
+    ("action_opa_escalate_rule", "action", "escalate action receipt with complete provisional OPA result", opa_escalate_rule),
+    ("action_opa_default_allow", "action", "allow action receipt with complete default OPA result", opa_default_allow),
+    ("action_opa_allow_final_deny", "action", "final deny receipt with provisional OPA allow", opa_allow_final_deny),
+    ("record_only_seal_null_reference", "action", "record-only SEAL without governed evaluation", record_only_seal),
+    ("policy_unicode_and_integer_bounds", "action", "Unicode scalar and safe-integer upper bounds", unicode_policy_result),
     ("authorization_create", "authorization", "authorization.create receipt with event field", authorization_create),
-    ("authorization_create_replaces", "authorization", "authorization.create receipt with replaces lineage and conditional constraints", authorization_create_replaces),
+    ("authorization_create_replaces", "authorization", "authorization.create receipt with immutable policy reference and replaces lineage", authorization_create_replaces),
     ("authorization_revoke", "authorization", "authorization.revoke receipt with event field", authorization_revoke),
     ("authorization_revoke_superseded", "authorization", "authorization.revoke with revoked_by=superseded and superseded_by forward pointer", authorization_revoke_superseded),
     ("budget_settle", "event", "budget.settle receipt with exact post-execution cost", budget_settle),
@@ -962,7 +813,7 @@ should_reject = [
     ("forged_signature", "signature bytes replaced with zeros", "signature verification failed", forged),
     ("unknown_key_id", "key_id not in published keys", "no public key found", unknown_key),
     ("key_id_swapped", "signed key_id changed to another published key", "signature verification failed", key_id_swapped),
-    ("future_version", "schema_version 5 receipt", "unsupported schema_version", future_receipt),
+    ("future_version", "schema_version 6 receipt", "unsupported schema_version", future_receipt),
     ("checkpoint_negative_count", "receipt.checkpoint with negative receipt_count", "non-negative integer", checkpoint_negative_count),
     ("unknown_top_level_field", "extra field not in spec", "unknown top-level fields", unknown_field),
     ("missing_required_field", "authorization_id field missing", "missing top-level fields", missing_field),
@@ -976,10 +827,10 @@ should_reject = [
     ("pairing_event_revoke_null_authorization", "event=authorization.revoke but authorization_id=null", "must have non-null authorization_id", event_null_authorization),
     ("pairing_event_with_resource", "event=authorization.create but resource is non-null", "must have null resource", event_with_resource),
     ("policy_eval_on_event_receipt", "event receipt carrying policy_eval", "policy_eval must be absent on event receipts", policy_eval_on_event),
-    ("policy_eval_missing_field_value", "policy_eval missing required field_value", "policy_eval missing fields", policy_eval_missing_field_value),
-    ("policy_eval_matched_condition_missing_op", "matched_condition missing required op", "policy_eval.matched_condition missing fields", policy_eval_condition_missing_op),
-    ("policy_eval_matched_condition_extra_member", "matched_condition carrying an unknown member", "policy_eval.matched_condition has unknown fields", policy_eval_condition_extra_member),
-    ("policy_eval_field_value_float", "policy_eval field_value uses a non-integer number", "policy_eval.field_value must be", policy_eval_float_value),
+    ("policy_eval_missing_result", "policy_eval missing required result", "policy_eval missing fields", policy_eval_missing_result),
+    ("policy_eval_result_missing_decision", "complete result missing required decision", "policy_eval.result missing fields", policy_eval_result_missing_decision),
+    ("policy_eval_result_extra_member", "complete result carrying an unknown member", "policy_eval.result has unknown fields", policy_eval_result_extra_member),
+    ("policy_eval_result_field_float", "OPA evaluated field uses a non-integer number", "non-integer", policy_eval_float_value),
     ("integer_out_of_safe_range", "context integer exceeds the I-JSON safe range ±(2^53-1)", "safe range", integer_out_of_range),
     ("issued_at_no_timezone", "issued_at lacks the required UTC millisecond shape", "millisecond precision", timestamp_no_timezone),
     ("signature_value_padded", "signature carries base64 padding / non-base64url characters", "base64url", signature_padded),
@@ -995,8 +846,75 @@ should_reject = [
     ("key_retired_at_issued_at", "receipt is at the signing key's exclusive active_until boundary", "retired before issued_at", key_retired),
 ]
 
+# Signed adversarial shapes and post-signing tampering exercise both verifiers.
+def resign(receipt: dict[str, Any]) -> dict[str, Any]:
+    payload = {key: value for key, value in receipt.items() if key != "signature"}
+    return {**payload, "signature": b64url(priv.sign(canonicalize(payload)))}
+
+
+for field in ("policy_ref", "policy_eval", "engine_version"):
+    receipt = copy.deepcopy(opa_default_allow)
+    if field == "policy_ref":
+        receipt[field]["policy_version"] = 2
+    elif field == "policy_eval":
+        receipt[field]["input_sha256"] = "c" * 64
+    else:
+        receipt[field] = "sha256:" + "c" * 64
+    should_reject.append((f"tampered_{field}", f"unsigned change to {field}", "signature verification failed", receipt))
+tampered_result = copy.deepcopy(opa_default_allow)
+tampered_result["policy_eval"]["result"]["decision"] = "deny"
+should_reject.append(("tampered_policy_result", "unsigned change to provisional result", "signature verification failed", tampered_result))
+
+for version in (True, False, 0, -1, 9007199254740992, "1"):
+    receipt = copy.deepcopy(minimal_allow)
+    receipt["policy_ref"]["policy_version"] = version
+    signed = receipt if type(version) is int and version > 9007199254740991 else resign(receipt)
+    should_reject.append((f"invalid_policy_version_{version!r}", "invalid strict policy version", "positive safe integer", signed))
+for value in (False, 0, [], "policy"):
+    receipt = copy.deepcopy(minimal_allow)
+    receipt["policy_ref"] = value
+    should_reject.append((f"invalid_policy_ref_type_{type(value).__name__}", "invalid policy reference type", "policy_ref must be", resign(receipt)))
+for name, original, reference, error in [
+    ("event_null_reference", authorization_create, None, "authorization event must have non-null policy_ref"),
+    ("checkpoint_nonnull_reference", daily_checkpoint, DEFAULT_POLICY_REF, "receipt.checkpoint must have null policy_ref"),
+    ("unresolved_nonnull_reference", deny_null_authorization, DEFAULT_POLICY_REF, "unresolved authorization must have null policy_ref"),
+]:
+    receipt = copy.deepcopy(original)
+    receipt["policy_ref"] = reference
+    should_reject.append((name, name, error, resign(receipt)))
+for name, mutate, error in [
+    ("missing_policy_ref", lambda r: r.pop("policy_ref"), "missing top-level fields"),
+    ("unknown_policy_ref_member", lambda r: r["policy_ref"].update(extra=1), "policy_ref has unknown fields"),
+    ("partial_policy_ref", lambda r: r["policy_ref"].pop("definition_sha256"), "policy_ref missing fields"),
+    ("invalid_policy_digest", lambda r: r["policy_ref"].update(definition_sha256="A" * 64), "lowercase hex"),
+    ("policy_digest_trailing_newline", lambda r: r["policy_ref"].update(definition_sha256="a" * 64 + "\n"), "lowercase hex"),
+    ("empty_policy_id", lambda r: r["policy_ref"].update(policy_id=""), "nonempty string"),
+    ("governed_null_policy_ref", lambda r: r.update(policy_ref=None), "non-null policy_ref"),
+    ("invalid_engine_identity", lambda r: r.update(engine_version="2026-10-09.1"), "engine_version must be"),
+    ("engine_identity_trailing_newline", lambda r: r.update(engine_version="sha256:" + "a" * 64 + "\n"), "engine_version must be"),
+]:
+    receipt = copy.deepcopy(minimal_allow)
+    mutate(receipt)
+    should_reject.append((name, name, error, resign(receipt)))
+for name, mutate, error in [
+    ("invalid_input_digest", lambda r: r["policy_eval"].update(input_sha256="B" * 64), "lowercase hex"),
+    ("input_digest_trailing_newline", lambda r: r["policy_eval"].update(input_sha256="a" * 64 + "\n"), "lowercase hex"),
+    ("unknown_eval_member", lambda r: r["policy_eval"].update(extra=1), "policy_eval has unknown fields"),
+    ("invalid_result_status", lambda r: r["policy_eval"]["result"].update(status="invalid_input"), "successful status"),
+    ("invalid_review_target", lambda r: r["policy_eval"]["result"].update(decision="confirm", target="member:other"), "target does not match"),
+    ("invalid_allow_target", lambda r: r["policy_eval"]["result"].update(target="agent_owner"), "target does not match"),
+    ("empty_rule_id", lambda r: r["policy_eval"]["result"].update(matched_rule_id=""), "nonempty string"),
+    ("default_with_fields", lambda r: r["policy_eval"]["result"].update(evaluated_fields={"x": None}), "empty evaluated_fields"),
+    ("evaluation_null_reference", lambda r: r.update(policy_ref=None), "policy_eval requires"),
+]:
+    receipt = copy.deepcopy(opa_default_allow)
+    mutate(receipt)
+    should_reject.append((name, name, error, resign(receipt)))
+previous_wire = copy.deepcopy(minimal_allow)
+previous_wire["schema_version"] = "4"
+should_reject.append(("previous_wire_rejected", "no wire4 compatibility parser", "unsupported schema_version", resign(previous_wire)))
 vectors = {
-    "spec_version": "4",
+    "spec_version": "5",
     "public_keys": keys_doc,
     "should_verify": [ok(*row) for row in should_verify],
     "should_reject": [bad(*row) for row in should_reject],

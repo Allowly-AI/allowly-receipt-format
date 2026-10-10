@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "allowly-receipt-format"
-version = "4.3.1"
+version = "5.0.0"
 description = "Reference Python verifier for the Allowly Receipt Format"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -36,6 +36,7 @@ Issues = "https://github.com/Allowly-AI/allowly-receipt-format/issues"
 
 [project.scripts]
 allowly-receipt-verify = "allowly_receipt_format.verifier:main"
+allowly-policy-replay = "allowly_receipt_format.policy:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]

@@ -1,6 +1,6 @@
 # @allowly/verifier
 
-TypeScript reference verifier for [Allowly Receipt Format wire version 4](https://github.com/Allowly-AI/allowly-receipt-format).
+TypeScript reference verifier for [Allowly Receipt Format wire version 5](https://github.com/Allowly-AI/allowly-receipt-format).
 
 Uses Node.js's built-in WebCrypto for Ed25519 verification, plus focused RFC
 8785 canonicalization and strict JSON parsing dependencies for SEAL records.
@@ -76,65 +76,17 @@ Verifies a receipt. Resolves on success, throws `VerificationError` on any failu
   fingerprint. Include every trusted rotation key that may have signed the
   selected receipts.
 
-### `verifyPolicyEvaluation(receipt, authorizationReceipts, publicKeys, opts)`
+### Policy evidence and replay
 
-Authenticates the action receipt and every supplied authorization receipt,
-then repeats the conditional policy calculation for supported engines
-`2026-09-16.1`, `2026-09-24.1`, `2026-09-27.1`, and `2026-10-09.1` in maintained source. Both `opts.expectedWorkspaceId` and a non-empty
-`opts.trustedKeyFingerprints` set are required and must come from caller-trusted
-configuration.
+This verifier checks required `policy_ref`, content-addressed `engine_version`,
+and optional strict `policy_eval` inside the signature. It does not evaluate
+rules. The browser build uses the same schema checks. Wire 4 and the former
+TypeScript policy interpreter are not supported by this fresh wire-5 package.
 
-Support for `2026-10-09.1` is prepared in 4.3.1, not included in the already
-published 4.3.0 package. Build this source for local tests; publish 4.3.1 and
-update consumer registry locks before runtime rollout.
-Its nested `context.execution.review` metadata is authenticated but excluded
-from the conditional calculation. The generated browser verifier shares this
-source and the same engine support.
-
-```typescript
-import { loadKeysFromJson, verifyPolicyEvaluation } from "@allowly/verifier";
-
-const result = await verifyPolicyEvaluation(
-  actionReceipt,
-  authorizationReceipts,
-  loadKeysFromJson(keysDoc),
-  {
-    expectedWorkspaceId: configuredWorkspaceId,
-    trustedKeyFingerprints: new Set(configuredKeyFingerprints),
-  },
-);
-
-if (result.status === "mismatch") {
-  console.error(result.diagnostic, result.recorded_evaluation, result.calculated_evaluation);
-}
-```
-
-The result uses the same snake-case contract as the Python verifier:
-
-```typescript
-interface PolicyEvaluationResult {
-  profile: "allowly-conditional-evaluation-v1";
-  engine_version: string;
-  receipt_id: string;
-  authorization_receipt_id: string | null;
-  status: "matched" | "mismatch" | "not_checked";
-  diagnostic: string;
-  recorded_evaluation: Record<string, unknown> | null;
-  calculated_evaluation: Record<string, unknown> | null;
-}
-```
-
-`matched` means the signed rules and reconstructed signed context produce the
-recorded complete `policy_eval` object. It does not reproduce the final
-`allow`, `deny`, `confirm`, or `escalate` decision. Runtime state such as
-revocation, expiry, rate limits, budgets, confirmations, and escalations can
-change that decision. `not_checked` keeps missing evidence and unsupported
-historical profiles visible instead of treating them as successful checks.
-
-See the
-[`allowly-conditional-evaluation-v1` profile](../../spec/profiles/allowly-conditional-evaluation-v1.md)
-for the exact pairing, context reconstruction, operator, precedence, and
-diagnostic rules.
+The separate Python `allowly-policy-replay` command runs pinned official OPA
+with original inputs and retained artifacts. Signature verification,
+provisional replay, final enforcement and witnessed execution are separate.
+See [the replay profile](../../spec/profiles/allowly-opa-evaluation-v1.md).
 
 ### `canonicalize(payload)`
 
@@ -172,7 +124,7 @@ boundaries because it can reject duplicate decoded object keys and
 precision-losing number tokens. `hashSealValue(record)` is the explicit
 already-parsed boundary; parsing has already erased those details.
 
-`verifySealJson` and `verifySealValue` first verify the full wire-4 receipt,
+`verifySealJson` and `verifySealValue` first verify the full wire-5 receipt,
 including a caller-supplied `expectedWorkspaceId` and optional trusted key
 fingerprints. They then require the fixed SEAL action and identities, the
 signed profile and digest, and a matching local record. The result keeps
@@ -227,8 +179,8 @@ A valid receipt proves that the selected private key signed the exact recorded d
 After building this directory, run `python3 scripts/refresh-verifier.py` in
 each consumer repo. Those wrappers use `scripts/build-browser.py` here to
 generate the self-hosted receipt verifier and JSON helper. The generated
-receipt verifier includes `verifyPolicyEvaluation` and its conditional
-evaluator without a runtime package dependency. Edit these sources instead of
+receipt verifier includes the wire-5 evidence schema without an embedded
+policy interpreter or runtime package dependency. Edit these sources instead of
 the generated consumer files.
 
 ## License

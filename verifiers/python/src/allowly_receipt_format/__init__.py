@@ -11,7 +11,6 @@ from .verifier import (
     main,
     matches_ref,
     public_key_fingerprint,
-    verify_policy_evaluation,
     verify_receipt,
     verify_checkpoint,
 )
@@ -43,7 +42,6 @@ __all__ = [
     "main",
     "matches_ref",
     "public_key_fingerprint",
-    "verify_policy_evaluation",
     "verify_receipt",
     "verify_checkpoint",
     "SEAL_ACTION",

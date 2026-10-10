@@ -8,7 +8,7 @@ __pycache__/
 verifiers/python/build/
 
 # Node
-node_modules/
+node_modules
 dist/
 .stryker-tmp/
 reports/mutation/

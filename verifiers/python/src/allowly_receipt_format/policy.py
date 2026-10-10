@@ -1,666 +1,251 @@
-"""Offline replay for Allowly conditional policy evidence.
-
-This module intentionally reimplements the small, versioned policy evaluator.
-It does not import the Allowly API and it does not claim to reproduce the full
-decision engine.  The public function first authenticates every supplied
-receipt, then compares only the recorded and calculated ``policy_eval``
-objects.
-"""
-
+"""Separate offline replay using pinned official OPA; no Python rule interpreter."""
 from __future__ import annotations
 
-from dataclasses import dataclass
+import hashlib
+import io
+import json
+import platform
+import subprocess
+import tarfile
+import tempfile
+from dataclasses import replace
 from datetime import datetime
+from pathlib import Path, PurePosixPath
 from typing import Any
 
-from .verifier import (
-    _PUBLIC_KEY_FINGERPRINT_RE,
-    PublicKey,
-    SchemaError,
-    _parse_rfc3339,
-    canonicalize,
-    verify_receipt,
-)
+from .verifier import (PublicKey, SchemaError, VerificationError, _PUBLIC_KEY_FINGERPRINT_RE,
+    _check_exact_keys, _check_policy_result, _load_json_file, canonicalize,
+    load_keys_from_json, verify_receipt)
 
-POLICY_PROFILE = "allowly-conditional-evaluation-v1"
-LEGACY_ENGINE_VERSION = "2026-09-16.1"
-IDENTITY_ENGINE_VERSION = "2026-09-24.1"
-EXECUTION_ENGINE_VERSION = "2026-09-27.1"
-CURRENT_ENGINE_VERSION = "2026-10-09.1"
-SUPPORTED_ACTION_ENGINE_VERSIONS = frozenset(
-    {LEGACY_ENGINE_VERSION, IDENTITY_ENGINE_VERSION, EXECUTION_ENGINE_VERSION, CURRENT_ENGINE_VERSION}
-)
-SUPPORTED_AUTHORIZATION_ENGINE_VERSIONS = frozenset(
-    SUPPORTED_ACTION_ENGINE_VERSIONS
-)
-_BASE_RECEIPT_CONTEXT_KEYS = frozenset({"budget", "escalation", "session_id"})
-_RECEIPT_CONTEXT_KEYS_BY_ENGINE = {
-    LEGACY_ENGINE_VERSION: _BASE_RECEIPT_CONTEXT_KEYS,
-    CURRENT_ENGINE_VERSION: _BASE_RECEIPT_CONTEXT_KEYS
-    | {
-        "client_timestamp",
-        "client_timestamp_source",
-        "execution",
-        "identity_verification",
-    },
+OPA_COMMIT = "2a109e54103370d2ef288782ef3cb4c8a37902b2"
+OPA_ARTIFACTS = {
+    "darwin/arm64": {"commit": OPA_COMMIT, "artifact_sha256": "a00a6469a0968c47c01137ed0dacaa88148be5d0eaa8524310cd371f3a98a169"},
+    "linux/arm64": {"commit": OPA_COMMIT + "-dirty", "artifact_sha256": "9a1f3625529c6f01240fe68286dde06aa0b23c5253da700ac48f4d943ff8a4de"},
+    "linux/amd64": {"commit": OPA_COMMIT + "-dirty", "artifact_sha256": "668506eb17a2eaa1fce6cc0d1f42ef85125d4ac5bda5fc74d1152d0c77145031"},
 }
-_RECEIPT_CONTEXT_KEYS_BY_ENGINE[IDENTITY_ENGINE_VERSION] = _RECEIPT_CONTEXT_KEYS_BY_ENGINE[CURRENT_ENGINE_VERSION]
-_RECEIPT_CONTEXT_KEYS_BY_ENGINE[EXECUTION_ENGINE_VERSION] = _RECEIPT_CONTEXT_KEYS_BY_ENGINE[CURRENT_ENGINE_VERSION]
-
-_CONDITION_KEYS = ("deny_when", "escalate_when", "confirm_when")
-_OPERATORS = frozenset(
-    {
-        "eq",
-        "neq",
-        "lt",
-        "lte",
-        "gt",
-        "gte",
-        "in",
-        "nin",
-        "contains_any",
-        "contains_none",
-        "empty",
-        "exists",
-    }
-)
-_MAX_POLICY_CONDITIONS = 10
+MODULE_SHA256 = "76d8e826f88e0e1fc34d274687044609b2c298e562289f502b712e907928b40c"
+MAX_ARTIFACT_BYTES = 64 * 1024 * 1024
 
 
-def _supported_action_shape(action: dict[str, Any], engine: str) -> bool:
-    if set(action) == {"name", "constraints"}:
-        return True
-    if engine not in {EXECUTION_ENGINE_VERSION, CURRENT_ENGINE_VERSION} or set(action) != {"name", "constraints", "executable_operations"}:
+def _host_platform() -> str | None:
+    return {("Darwin", "arm64"): "darwin/arm64", ("Linux", "aarch64"): "linux/arm64",
+            ("Linux", "arm64"): "linux/arm64", ("Linux", "x86_64"): "linux/amd64"}.get((platform.system(), platform.machine()))
+
+
+def _digest(value: Any) -> str:
+    return hashlib.sha256(canonicalize(value)).hexdigest()
+
+
+def _snapshot(value: Any) -> Any:
+    return json.loads(canonicalize(value))
+
+
+def _exact(value: Any, fields: set[str], label: str) -> None:
+    if not isinstance(value, dict):
+        raise SchemaError(f"{label} must be an object")
+    _check_exact_keys(value, fields, label)
+
+
+def _artifact(path: str | Path) -> bytes:
+    with open(path, "rb") as stream:
+        value = stream.read(MAX_ARTIFACT_BYTES + 1)
+    if len(value) > MAX_ARTIFACT_BYTES:
+        raise ValueError("artifact exceeds replay size bound")
+    return value
+
+
+def _check_manifest(manifest: dict) -> None:
+    _exact(manifest, {"schema", "policy_profile", "evaluator", "runtime"}, "engine manifest")
+    if manifest["schema"] != "allowly.engine.v1" or manifest["policy_profile"] != "allowly.policy.v1":
+        raise ValueError("unsupported engine manifest")
+    evaluator = manifest["evaluator"]
+    _exact(evaluator, {"profile", "entrypoint", "module", "opa", "bundle"}, "evaluator")
+    if evaluator["profile"] != "allowly.basic.v1" or evaluator["entrypoint"] != "/v1/data/allowly/basic/result":
+        raise ValueError("unsupported evaluator")
+    if evaluator["module"] != {"path": "policies/opa/allowly_basic.rego",
+        "api_id": "policies/opa/policies/opa/allowly_basic.rego", "sha256": MODULE_SHA256}:
+        raise ValueError("unsupported Rego module")
+    opa = evaluator["opa"]
+    _exact(opa, {"version", "commit", "platform", "artifact_sha256"}, "official OPA artifact")
+    artifact = OPA_ARTIFACTS.get(opa["platform"])
+    if artifact is None or opa != {"version": "1.21.1", "platform": opa["platform"], **artifact}:
+        raise ValueError("unsupported official OPA artifact")
+    if evaluator["bundle"] != {"roots": [""], "revision": "allowly.basic.v1", "rego_version": 1} or type(evaluator["bundle"].get("rego_version")) is not int:
+        raise ValueError("unsupported full-root bundle")
+    runtime = manifest["runtime"]
+    _exact(runtime, {"artifact_sha256", "format", "files"}, "runtime")
+    if runtime["format"] != "tar" or not isinstance(runtime["files"], list) or not 1 <= len(runtime["files"]) <= 5000:
+        raise ValueError("unsupported runtime artifact")
+    for entry in runtime["files"]:
+        _exact(entry, {"path", "sha256"}, "runtime file")
+        path = entry["path"]
+        if not isinstance(path, str) or not path or PurePosixPath(path).is_absolute() or ".." in PurePosixPath(path).parts:
+            raise ValueError("invalid runtime member path")
+        if not isinstance(entry["sha256"], str) or not _PUBLIC_KEY_FINGERPRINT_RE.fullmatch("sha256:" + entry["sha256"]):
+            raise ValueError("invalid runtime member digest")
+    if not isinstance(runtime["artifact_sha256"], str) or not _PUBLIC_KEY_FINGERPRINT_RE.fullmatch("sha256:" + runtime["artifact_sha256"]):
+        raise ValueError("invalid runtime artifact digest")
+
+
+def _runtime_matches(raw: bytes, runtime: dict) -> bool:
+    if hashlib.sha256(raw).hexdigest() != runtime["artifact_sha256"]:
         return False
-    grants = action["executable_operations"]
-    fields = {"enabled_executable_id", "provider_id", "operation_id", "catalog_revision", "definition_fingerprint", "minimum_evidence_mode"}
-    return isinstance(grants, list) and len(grants) <= 100 and all(
-        isinstance(grant, dict) and set(grant) == fields
-        and all(isinstance(value, str) and value for value in grant.values())
-        and bool(_PUBLIC_KEY_FINGERPRINT_RE.fullmatch(grant["definition_fingerprint"]))
-        and grant["minimum_evidence_mode"] in {"receipt", "witnessed"}
-        for grant in grants
-    )
-
-__all__ = [
-    "POLICY_PROFILE",
-    "SUPPORTED_ACTION_ENGINE_VERSIONS",
-    "SUPPORTED_AUTHORIZATION_ENGINE_VERSIONS",
-    "verify_policy_evaluation",
-]
+    expected = {entry["path"]: entry["sha256"] for entry in runtime["files"]}
+    if len(expected) != len(runtime["files"]):
+        return False
+    with tarfile.open(fileobj=io.BytesIO(raw), mode="r:") as archive:
+        members = archive.getmembers()
+        if len(members) != len(expected) or len({member.name for member in members}) != len(members):
+            return False
+        for member in members:
+            if not member.isfile() or member.name not in expected or member.size > MAX_ARTIFACT_BYTES:
+                return False
+            stream = archive.extractfile(member)
+            if stream is None or hashlib.sha256(stream.read()).hexdigest() != expected[member.name]:
+                return False
+    return True
 
 
-class _UnsupportedPolicy(ValueError):
-    """Internal marker for a signed policy shape this profile cannot replay."""
-
-
-@dataclass(frozen=True)
-class _ConditionResult:
-    kind: str
-    reason: str
-    policy_eval: dict[str, Any]
-
-
-def _result(
-    receipt: dict[str, Any],
-    *,
-    authorization_receipt_id: str | None,
-    status: str,
-    diagnostic: str,
-    recorded_evaluation: dict[str, Any] | None,
-    calculated_evaluation: dict[str, Any] | None,
-) -> dict[str, Any]:
-    return {
-        "profile": POLICY_PROFILE,
-        "engine_version": receipt["engine_version"],
-        "receipt_id": receipt["receipt_id"],
-        "authorization_receipt_id": authorization_receipt_id,
-        "status": status,
-        "diagnostic": diagnostic,
-        "recorded_evaluation": recorded_evaluation,
-        "calculated_evaluation": calculated_evaluation,
-    }
-
-
-def verify_policy_evaluation(
-    receipt: dict[str, Any],
-    authorization_receipts: list[dict[str, Any]],
-    public_keys: list[PublicKey],
-    *,
-    expected_workspace_id: str,
-    trusted_key_fingerprints: set[str] | frozenset[str],
+def replay_policy(
+    receipt: dict[str, Any], public_keys: list[PublicKey], *,
+    expected_workspace_id: str, trusted_key_fingerprints: set[str] | frozenset[str],
+    manifest: dict | None = None, definition: dict | None = None,
+    input_document: dict | None = None, opa_binary: str | Path | None = None,
+    rego_file: str | Path | None = None, runtime_artifact: str | Path | None = None,
     now: datetime | None = None,
 ) -> dict[str, Any]:
-    """Authenticate and replay one action receipt's conditional evaluation.
+    """Authenticate first, then replay only the complete provisional result.
 
-    ``matched`` means only that the signed authorization conditions and the
-    reconstructed signed context produce the same complete ``policy_eval``
-    object.  It does not reproduce the final decision or prove that caller
-    supplied facts were true.
-
-    Malformed receipts, invalid signatures, workspace mismatches, and trust
-    failures raise :class:`VerificationError`.  Missing or unsupported replay
-    evidence returns ``status == "not_checked"`` with a stable diagnostic.
+    Missing artifacts or unsupported engines return not_checked. Commitment or
+    result comparison failures return mismatched. Invalid signatures raise
+    VerificationError. This does not check final enforcement or TLSNotary.
     """
-
-    # Work only from one frozen view. Callers may hold and mutate the original
-    # dictionaries while verification runs; later evaluation must use exactly
-    # the bytes whose signatures were checked.
     if type(expected_workspace_id) is not str or not expected_workspace_id:
-        raise SchemaError("expected_workspace_id must be a non-empty string")
-    if type(trusted_key_fingerprints) not in (set, frozenset):
-        raise SchemaError("trusted_key_fingerprints must be a non-empty set")
-    if type(public_keys) is not list:
-        raise SchemaError("public_keys must be a list")
+        raise SchemaError("expected_workspace_id must be a nonempty string")
+    if type(trusted_key_fingerprints) not in (set, frozenset) or not trusted_key_fingerprints or any(
+        not isinstance(value, str) or not _PUBLIC_KEY_FINGERPRINT_RE.fullmatch(value) for value in trusted_key_fingerprints):
+        raise SchemaError("caller-trusted key fingerprints are required")
+    receipt = _snapshot(receipt)
+    keys = [replace(key, public_key_bytes=bytes(key.public_key_bytes)) for key in public_keys]
+    verify_receipt(receipt, keys, expected_workspace_id=expected_workspace_id,
+        trusted_key_fingerprints=frozenset(trusted_key_fingerprints), now=now)
+
+    def report(status: str, diagnostic: str) -> dict:
+        return {"receipt_id": receipt["receipt_id"], "signature_verified": True,
+            "policy_replay": status, "diagnostic": diagnostic,
+            "transactional_enforcement": "not_checked", "witnessed_execution": "not_checked"}
+
+    if "policy_eval" not in receipt:
+        return report("not_checked", "policy_evaluation_not_recorded")
+    if any(value is None for value in (manifest, definition, input_document, opa_binary, rego_file, runtime_artifact)):
+        return report("not_checked", "missing_replay_artifacts")
     try:
-        receipt = _snapshot_json(receipt)
-        authorization_receipts = _snapshot_json(authorization_receipts)
-        public_keys = [
-            PublicKey(
-                key_id=key.key_id,
-                alg=key.alg,
-                public_key_bytes=bytes(key.public_key_bytes),
-                active_from=key.active_from,
-                active_until=key.active_until,
-            )
-            for key in public_keys
-        ]
-        trusted_key_fingerprints = frozenset(trusted_key_fingerprints)
-    except SchemaError:
-        raise
-    except (AttributeError, TypeError, ValueError, RuntimeError) as exc:
-        raise SchemaError(f"policy evaluation inputs could not be copied: {exc}") from None
-
-    if not trusted_key_fingerprints:
-        raise SchemaError("trusted_key_fingerprints must be a non-empty set")
-    if any(
-        not isinstance(fingerprint, str)
-        or not _PUBLIC_KEY_FINGERPRINT_RE.fullmatch(fingerprint)
-        for fingerprint in trusted_key_fingerprints
-    ):
-        raise SchemaError(
-            "trusted_key_fingerprints entries must be sha256: followed by 64 lowercase hex characters"
-        )
-
-    # Authenticate the action receipt and every supplied candidate before any
-    # replay-status result is returned.  A bad extra candidate cannot be hidden
-    # merely because another candidate is usable.
-    verify_receipt(
-        receipt,
-        public_keys,
-        now=now,
-        expected_workspace_id=expected_workspace_id,
-        trusted_key_fingerprints=trusted_key_fingerprints,
-    )
-    if not isinstance(authorization_receipts, list):
-        raise SchemaError("authorization_receipts must be a list")
-    for candidate in authorization_receipts:
-        if not isinstance(candidate, dict):
-            raise SchemaError("authorization_receipts entries must be receipt objects")
-        verify_receipt(
-            candidate,
-            public_keys,
-            now=now,
-            expected_workspace_id=expected_workspace_id,
-            trusted_key_fingerprints=trusted_key_fingerprints,
-        )
-
-    if "action" not in receipt:
-        raise SchemaError("policy evaluation requires an action receipt")
-
-    recorded = receipt.get("policy_eval")
-    if recorded is None:
-        return _result(
-            receipt,
-            authorization_receipt_id=None,
-            status="not_checked",
-            diagnostic="policy_evaluation_not_recorded",
-            recorded_evaluation=None,
-            calculated_evaluation=None,
-        )
-
-    if receipt["engine_version"] not in SUPPORTED_ACTION_ENGINE_VERSIONS:
-        return _result(
-            receipt,
-            authorization_receipt_id=None,
-            status="not_checked",
-            diagnostic="unsupported_engine_version",
-            recorded_evaluation=recorded,
-            calculated_evaluation=None,
-        )
-
-    authorization_id = receipt["authorization_id"]
-    if not isinstance(authorization_id, str) or not authorization_id:
-        return _result(
-            receipt,
-            authorization_receipt_id=None,
-            status="not_checked",
-            diagnostic="authorization_receipt_not_found",
-            recorded_evaluation=recorded,
-            calculated_evaluation=None,
-        )
-
-    matching = [
-        candidate
-        for candidate in authorization_receipts
-        if candidate.get("event") == "authorization.create"
-        and candidate.get("authorization_id") == authorization_id
-    ]
-    distinct: dict[bytes, dict[str, Any]] = {}
-    for candidate in matching:
-        distinct.setdefault(canonicalize(candidate), candidate)
-    if not distinct:
-        return _result(
-            receipt,
-            authorization_receipt_id=None,
-            status="not_checked",
-            diagnostic="authorization_receipt_not_found",
-            recorded_evaluation=recorded,
-            calculated_evaluation=None,
-        )
-    if len(distinct) > 1:
-        return _result(
-            receipt,
-            authorization_receipt_id=None,
-            status="not_checked",
-            diagnostic="conflicting_authorization_receipts",
-            recorded_evaluation=recorded,
-            calculated_evaluation=None,
-        )
-
-    authorization_receipt = next(iter(distinct.values()))
-    authorization_receipt_id = authorization_receipt["receipt_id"]
-    if (
-        authorization_receipt["engine_version"]
-        not in SUPPORTED_AUTHORIZATION_ENGINE_VERSIONS
-        or _parse_rfc3339(authorization_receipt["issued_at"])
-        > _parse_rfc3339(receipt["issued_at"])
-    ):
-        return _result(
-            receipt,
-            authorization_receipt_id=authorization_receipt_id,
-            status="not_checked",
-            diagnostic="unsupported_authorization_snapshot",
-            recorded_evaluation=recorded,
-            calculated_evaluation=None,
-        )
-
-    if (
-        authorization_receipt["user_id"] != receipt["user_id"]
-        or authorization_receipt["agent_id"] != receipt["agent_id"]
-    ):
-        return _result(
-            receipt,
-            authorization_receipt_id=authorization_receipt_id,
-            status="not_checked",
-            diagnostic="authorization_subject_mismatch",
-            recorded_evaluation=recorded,
-            calculated_evaluation=None,
-        )
-
-    actions = authorization_receipt["context"].get("actions")
-    if not isinstance(actions, list) or not actions:
-        return _result(
-            receipt,
-            authorization_receipt_id=authorization_receipt_id,
-            status="not_checked",
-            diagnostic="unsupported_authorization_snapshot",
-            recorded_evaluation=recorded,
-            calculated_evaluation=None,
-        )
-    if any(
-        not isinstance(action, dict)
-        or not _supported_action_shape(action, authorization_receipt["engine_version"])
-        or not isinstance(action.get("name"), str)
-        or not action["name"]
-        or not isinstance(action.get("constraints"), dict)
-        for action in actions
-    ):
-        return _result(
-            receipt,
-            authorization_receipt_id=authorization_receipt_id,
-            status="not_checked",
-            diagnostic="unsupported_authorization_snapshot",
-            recorded_evaluation=recorded,
-            calculated_evaluation=None,
-        )
-
-    selected_actions = [action for action in actions if action["name"] == receipt["action"]]
-    if not selected_actions:
-        return _result(
-            receipt,
-            authorization_receipt_id=authorization_receipt_id,
-            status="not_checked",
-            diagnostic="authorization_action_not_found",
-            recorded_evaluation=recorded,
-            calculated_evaluation=None,
-        )
-    if len(selected_actions) > 1:
-        return _result(
-            receipt,
-            authorization_receipt_id=authorization_receipt_id,
-            status="not_checked",
-            diagnostic="authorization_action_ambiguous",
-            recorded_evaluation=recorded,
-            calculated_evaluation=None,
-        )
-    if len({action["name"] for action in actions}) != len(actions):
-        return _result(
-            receipt,
-            authorization_receipt_id=authorization_receipt_id,
-            status="not_checked",
-            diagnostic="unsupported_authorization_snapshot",
-            recorded_evaluation=recorded,
-            calculated_evaluation=None,
-        )
-
-    constraints = selected_actions[0]["constraints"]
-    replay_context = {
-        key: value
-        for key, value in receipt["context"].items()
-        if key not in _RECEIPT_CONTEXT_KEYS_BY_ENGINE[receipt["engine_version"]]
-    }
+        manifest, definition, input_document = map(_snapshot, (manifest, definition, input_document))
+        if "sha256:" + _digest(manifest) != receipt["engine_version"]:
+            return report("mismatched", "engine_manifest_digest_mismatch")
+        _check_manifest(manifest)
+    except (VerificationError, ValueError, TypeError, KeyError):
+        return report("not_checked", "unsupported_engine_manifest")
     try:
-        calculated_result = _evaluate_policy_conditions(constraints, replay_context)
-    except _UnsupportedPolicy:
-        return _result(
-            receipt,
-            authorization_receipt_id=authorization_receipt_id,
-            status="not_checked",
-            diagnostic="unsupported_policy",
-            recorded_evaluation=recorded,
-            calculated_evaluation=None,
-        )
+        _exact(definition, {"profile", "agent_id", "actions", "default_expiry_days"}, "policy definition")
+        if definition["profile"] != "allowly.policy.v1" or definition["agent_id"] != receipt["agent_id"]:
+            return report("mismatched", "policy_definition_binding_mismatch")
+        if _digest(definition) != receipt["policy_ref"]["definition_sha256"]:
+            return report("mismatched", "policy_definition_digest_mismatch")
+        _exact(input_document, {"policy", "action", "context"}, "original OPA input")
+        if not isinstance(input_document["context"], dict) or input_document["action"] != receipt["action"]:
+            return report("mismatched", "policy_input_binding_mismatch")
+        actions = definition["actions"]
+        if not isinstance(actions, list) or not actions:
+            raise ValueError("invalid actions")
+        for action in actions:
+            _exact(action, {"policy", "guards", "executable_operations"}, "policy action")
+        names = [action["policy"]["action"] for action in actions]
+        selected = [action["policy"] for action in actions if action["policy"]["action"] == receipt["action"]]
+        if len(set(names)) != len(names) or len(selected) != 1 or canonicalize(selected[0]) != canonicalize(input_document["policy"]):
+            return report("mismatched", "selected_policy_mismatch")
+        inner_bytes = canonicalize(input_document)
+        if len(inner_bytes) > 65536:
+            return report("not_checked", "policy_input_size_exceeded")
+        if hashlib.sha256(inner_bytes).hexdigest() != receipt["policy_eval"]["input_sha256"]:
+            return report("mismatched", "policy_input_digest_mismatch")
+        module = _artifact(rego_file)
+        if hashlib.sha256(module).hexdigest() != MODULE_SHA256:
+            return report("mismatched", "rego_artifact_digest_mismatch")
+        if not _runtime_matches(_artifact(runtime_artifact), manifest["runtime"]):
+            return report("mismatched", "runtime_artifact_digest_mismatch")
+        binary_bytes = _artifact(Path(opa_binary).resolve(strict=True))
+        opa = manifest["evaluator"]["opa"]
+        if hashlib.sha256(binary_bytes).hexdigest() != opa["artifact_sha256"]:
+            return report("mismatched", "opa_artifact_digest_mismatch")
+        if _host_platform() != opa["platform"]:
+            return report("not_checked", "unsupported_replay_platform")
+        # Only checksum-pinned Rego and a fixed query execute. No private input
+        # is logged, no network configuration or alternate interpreter is used.
+        with tempfile.TemporaryDirectory(prefix="allowly-opa-replay-") as directory:
+            binary = Path(directory) / "opa"
+            binary.write_bytes(binary_bytes)
+            binary.chmod(0o500)
+            pinned_module = Path(directory) / "allowly_basic.rego"
+            pinned_module.write_bytes(module)
+            version = subprocess.run([str(binary), "version"], check=True, capture_output=True, timeout=5)
+            actual = dict(line.split(": ", 1) for line in version.stdout.decode().splitlines() if ": " in line)
+            if (actual["Version"], actual["Build Commit"], actual["Platform"]) != (opa["version"], opa["commit"], opa["platform"]):
+                return report("not_checked", "unsupported_opa_build")
+            result = subprocess.run([str(binary), "eval", "--format=json", "--stdin-input",
+                "--data", str(pinned_module), "data.allowly.basic.result"],
+                input=inner_bytes, check=True, capture_output=True, timeout=5)
+        if len(result.stdout) > 32768:
+            return report("not_checked", "invalid_opa_result")
+        values = json.loads(result.stdout)["result"]
+        if len(values) != 1 or len(values[0]["expressions"]) != 1:
+            return report("not_checked", "undefined_opa_result")
+        calculated = values[0]["expressions"][0]["value"]
+        calculated_bytes = canonicalize(calculated)
+        _check_policy_result(calculated)
+        if calculated_bytes != canonicalize(receipt["policy_eval"]["result"]):
+            return report("mismatched", "provisional_result_mismatch")
+        return report("matched", "provisional_result_matches")
+    except OSError:
+        return report("not_checked", "replay_artifact_unavailable")
+    except (subprocess.SubprocessError, VerificationError, ValueError, TypeError, KeyError, tarfile.TarError):
+        return report("not_checked", "invalid_replay_artifact_or_opa_result")
 
-    calculated = None if calculated_result is None else calculated_result.policy_eval
-    if _json_equal(recorded, calculated):
-        return _result(
-            receipt,
-            authorization_receipt_id=authorization_receipt_id,
-            status="matched",
-            diagnostic="matched",
-            recorded_evaluation=recorded,
-            calculated_evaluation=calculated,
-        )
-    return _result(
-        receipt,
-        authorization_receipt_id=authorization_receipt_id,
-        status="mismatch",
-        diagnostic="policy_evaluation_mismatch",
-        recorded_evaluation=recorded,
-        calculated_evaluation=calculated,
-    )
 
-
-def _snapshot_json(value: Any) -> Any:
-    """Copy built-in JSON containers and reject behavior-changing subclasses."""
-    nodes = 0
-
-    def snapshot(item: Any, depth: int) -> Any:
-        nonlocal nodes
-        nodes += 1
-        if depth > 32:
-            raise SchemaError("policy evaluation input nesting exceeds max depth 32")
-        if nodes > 50_000:
-            raise SchemaError("policy evaluation input exceeds max node count 50000")
-        if item is None or type(item) in (str, int, bool, float):
-            return item
-        if type(item) is list:
-            return [snapshot(member, depth + 1) for member in item]
-        if type(item) is dict:
-            copied: dict[str, Any] = {}
-            for key, member in item.items():
-                if type(key) is not str:
-                    raise SchemaError("policy evaluation object keys must be strings")
-                copied[key] = snapshot(member, depth + 1)
-            return copied
-        raise SchemaError(
-            f"policy evaluation inputs must contain plain JSON values, got {type(item).__name__}"
-        )
-
+def main(argv: list[str] | None = None) -> int:
+    import argparse
+    import sys
+    parser = argparse.ArgumentParser(description="Verify one receipt and replay its provisional result with official OPA.")
+    parser.add_argument("receipt")
+    parser.add_argument("keys")
+    parser.add_argument("--workspace-id", required=True)
+    parser.add_argument("--trusted-key-fingerprint", action="append", required=True)
+    for name in ("manifest", "definition", "input", "opa-binary", "rego-file", "runtime-artifact"):
+        parser.add_argument("--" + name)
+    args = parser.parse_args(argv)
     try:
-        return snapshot(value, 1)
-    except RuntimeError as exc:
-        raise SchemaError(f"policy evaluation input changed while being copied: {exc}") from None
+        keys_doc = _load_json_file(args.keys)
+        if keys_doc.get("workspace_id") != args.workspace_id:
+            raise SchemaError("key document workspace_id mismatch")
+        receipt, keys = _load_json_file(args.receipt), load_keys_from_json(keys_doc)
+        options = {"expected_workspace_id": args.workspace_id,
+            "trusted_key_fingerprints": set(args.trusted_key_fingerprint)}
+        # Authenticate receipt evidence before inspecting optional artifacts.
+        report = replay_policy(receipt, keys, **options)
+        try:
+            artifacts = {key: _load_json_file(path) if path else None for key, path in (
+                ("manifest", args.manifest), ("definition", args.definition), ("input_document", args.input))}
+        except (OSError, ValueError, RecursionError, VerificationError):
+            report["diagnostic"] = "replay_artifact_unavailable_or_invalid"
+        else:
+            report = replay_policy(receipt, keys, **options, **artifacts,
+                opa_binary=args.opa_binary, rego_file=args.rego_file, runtime_artifact=args.runtime_artifact)
+        print(json.dumps(report))
+        return {"matched": 0, "mismatched": 3, "not_checked": 4}[report["policy_replay"]]
+    except (OSError, ValueError, RecursionError, VerificationError) as exc:
+        print(f"INVALID receipt evidence: {exc}", file=sys.stderr)
+        return 1
 
 
-def _evaluate_policy_conditions(
-    constraints: dict[str, Any] | None,
-    context: dict[str, Any] | None,
-) -> _ConditionResult | None:
-    constraints = constraints or {}
-    context = context or {}
-    _validate_policy(constraints)
-
-    deny_result = _evaluate_condition_list(
-        kind="deny",
-        reason="deny_condition_matched",
-        conditions=constraints.get("deny_when"),
-        context=context,
-        missing_kind="confirm",
-    )
-    if deny_result is not None and deny_result.reason == "deny_condition_matched":
-        return deny_result
-    deny_missing_fallback = deny_result
-
-    escalate_result = _evaluate_condition_list(
-        kind="escalate",
-        reason="escalate_condition_matched",
-        conditions=constraints.get("escalate_when"),
-        context=context,
-    )
-    if escalate_result is not None:
-        return escalate_result
-
-    confirm_result = _evaluate_condition_list(
-        kind="confirm",
-        reason="confirm_condition_matched",
-        conditions=constraints.get("confirm_when"),
-        context=context,
-    )
-    if confirm_result is not None:
-        return confirm_result
-
-    if deny_missing_fallback is not None:
-        return deny_missing_fallback
-    if _has_policy_conditions(constraints):
-        return _ConditionResult(
-            kind="none",
-            reason="policy_conditions_not_matched",
-            policy_eval={"matched_condition": None, "field_value": None},
-        )
-    return None
-
-
-def _validate_policy(constraints: dict[str, Any]) -> None:
-    if not isinstance(constraints, dict):
-        raise _UnsupportedPolicy("constraints must be an object")
-    total = 0
-    for key in _CONDITION_KEYS:
-        conditions = constraints.get(key)
-        if conditions is None:
-            continue
-        if not isinstance(conditions, list):
-            raise _UnsupportedPolicy(f"{key} must be a list")
-        total += len(conditions)
-        if total > _MAX_POLICY_CONDITIONS:
-            raise _UnsupportedPolicy("too many policy conditions")
-        for condition in conditions:
-            _normalize_condition(condition)
-
-
-def _has_policy_conditions(constraints: dict[str, Any]) -> bool:
-    return any(bool(constraints.get(key)) for key in _CONDITION_KEYS)
-
-
-def _evaluate_condition_list(
-    *,
-    kind: str,
-    reason: str,
-    conditions: Any,
-    context: dict[str, Any],
-    missing_kind: str | None = None,
-) -> _ConditionResult | None:
-    if not isinstance(conditions, list):
-        return None
-    missing_result = None
-    for condition in conditions:
-        normalized = _normalize_condition(condition)
-        field = normalized["field"]
-        op = normalized["op"]
-        expected = normalized["value"]
-        present = field in context
-        actual = context.get(field)
-        policy_eval = {
-            "matched_condition": normalized,
-            "field_value": _policy_eval_field_value(
-                op=op,
-                actual=actual,
-                expected=expected,
-                present=present,
-            ),
-        }
-
-        if op == "exists":
-            if present == expected:
-                return _ConditionResult(kind=kind, reason=reason, policy_eval=policy_eval)
-            continue
-        matched = _condition_matches(op=op, actual=actual, expected=expected) if present else None
-        if matched is None:
-            result = _ConditionResult(
-                kind=missing_kind or kind,
-                reason="context_field_missing",
-                policy_eval=policy_eval,
-            )
-            if missing_kind is None:
-                return result
-            if missing_result is None:
-                missing_result = result
-            continue
-        if matched:
-            return _ConditionResult(kind=kind, reason=reason, policy_eval=policy_eval)
-    return missing_result
-
-
-def _condition_matches(*, op: str, actual: Any, expected: Any) -> bool | None:
-    try:
-        if op in {"eq", "neq"}:
-            if not _same_json_scalar_type(actual, expected):
-                return None
-            return actual == expected if op == "eq" else actual != expected
-        if op == "lt":
-            return actual < expected if _is_int(actual) else None
-        if op == "lte":
-            return actual <= expected if _is_int(actual) else None
-        if op == "gt":
-            return actual > expected if _is_int(actual) else None
-        if op == "gte":
-            return actual >= expected if _is_int(actual) else None
-        if op in {"in", "nin"}:
-            comparable = [item for item in expected if _same_json_scalar_type(actual, item)]
-            if not comparable:
-                return None
-            return actual in comparable if op == "in" else actual not in comparable
-        if op in {"contains_any", "contains_none"}:
-            if (
-                not isinstance(actual, list)
-                or any(not _is_scalar(item) for item in actual)
-                or any(not _is_scalar(item) for item in expected)
-            ):
-                return None
-            disjoint = _typed_scalar_set(actual).isdisjoint(_typed_scalar_set(expected))
-            return not disjoint if op == "contains_any" else disjoint
-        if op == "empty":
-            if not isinstance(actual, list):
-                return None
-            return (len(actual) == 0) == expected
-    except TypeError:
-        return None
-    return False
-
-
-def _policy_eval_field_value(*, op: str, actual: Any, expected: Any, present: bool) -> Any:
-    if not present:
-        return None
-    if op == "contains_any" and isinstance(actual, list) and isinstance(expected, list):
-        expected_keys = _typed_scalar_set(expected)
-        for item in actual:
-            key = _typed_scalar_key(item)
-            if key is not None and key in expected_keys:
-                return item
-        return None
-    if op in {"contains_none", "empty"}:
-        return None
-    return actual if _is_scalar(actual) else None
-
-
-def _normalize_condition(condition: Any) -> dict[str, Any]:
-    if not isinstance(condition, dict):
-        raise _UnsupportedPolicy("policy conditions must be objects")
-    field = condition.get("field")
-    if not isinstance(field, str) or not field:
-        raise _UnsupportedPolicy("policy condition field must be a non-empty string")
-    operator_keys = [key for key in condition if key in _OPERATORS]
-    if set(condition) - {"field", *_OPERATORS}:
-        raise _UnsupportedPolicy("policy condition has unsupported keys")
-    if len(operator_keys) != 1 or len(condition) != 2:
-        raise _UnsupportedPolicy("policy condition must contain field and exactly one operator")
-    op = operator_keys[0]
-    value = condition[op]
-    if op == "exists":
-        if not isinstance(value, bool):
-            raise _UnsupportedPolicy("exists value must be boolean")
-    elif op in {"in", "nin", "contains_any", "contains_none"}:
-        if not isinstance(value, list) or not value or any(not _is_scalar(item) for item in value):
-            raise _UnsupportedPolicy(f"{op} value must be a non-empty scalar list")
-    elif op == "empty":
-        if not isinstance(value, bool):
-            raise _UnsupportedPolicy("empty value must be boolean")
-    elif op in {"lt", "lte", "gt", "gte"}:
-        if not _is_int(value):
-            raise _UnsupportedPolicy(f"{op} value must be an integer")
-    elif not _is_scalar(value):
-        raise _UnsupportedPolicy("policy condition value must be a JSON scalar")
-    return {"field": field, "op": op, "value": value}
-
-
-def _is_scalar(value: Any) -> bool:
-    return value is None or isinstance(value, (str, bool)) or _is_int(value)
-
-
-def _same_json_scalar_type(left: Any, right: Any) -> bool:
-    return _is_scalar(left) and _is_scalar(right) and type(left) is type(right)
-
-
-def _typed_scalar_key(value: Any) -> tuple[type, Any] | None:
-    if not _is_scalar(value):
-        return None
-    return type(value), value
-
-
-def _typed_scalar_set(values: list[Any]) -> set[tuple[type, Any]]:
-    return {
-        key
-        for value in values
-        if (key := _typed_scalar_key(value)) is not None
-    }
-
-
-def _is_int(value: Any) -> bool:
-    return isinstance(value, int) and not isinstance(value, bool)
-
-
-def _json_equal(left: Any, right: Any) -> bool:
-    """Compare JSON values without Python's ``True == 1`` coercion."""
-    if type(left) is not type(right):
-        return False
-    if isinstance(left, dict):
-        return left.keys() == right.keys() and all(
-            _json_equal(left[key], right[key]) for key in left
-        )
-    if isinstance(left, list):
-        return len(left) == len(right) and all(
-            _json_equal(left_item, right_item)
-            for left_item, right_item in zip(left, right)
-        )
-    return left == right
+if __name__ == "__main__":
+    raise SystemExit(main())

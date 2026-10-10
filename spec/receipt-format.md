@@ -1,7 +1,7 @@
 # Allowly Receipt Format Specification
 
-**Version:** 4
-**Status:** Stable
+**Version:** 5
+**Status:** Local draft (unpublished)
 **License:** This specification is published under CC-BY 4.0. Reference implementations are Apache 2.0.
 
 ---
@@ -45,7 +45,7 @@ A receipt is a JSON object with the following top-level fields. All fields are r
 
 ```json
 {
-  "schema_version": "4",
+  "schema_version": "5",
   "receipt_id": "rcp_01HXZ2B3QW4N5M6P7R8S9T0V1W",
   "workspace_id": "ws_01HXA1B2C3D4E5F6G7H8J9K0L1",
   "issued_at": "2026-04-21T14:32:17.482Z",
@@ -61,7 +61,8 @@ A receipt is a JSON object with the following top-level fields. All fields are r
     "session_id": "sess_7f2"
   },
   "authorization_id": "auth_01HXZ2A0K1L2M3N4P5Q6R7S8T9",
-  "engine_version": "2026-04-17.1",
+  "policy_ref": {"policy_id": "pol_example", "policy_version": 1, "definition_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},
+  "engine_version": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
   "alg": "Ed25519",
   "key_id": "projects/allowly-prod/locations/global/keyRings/allowly-signing/cryptoKeys/ws_01HXA1/cryptoKeyVersions/3",
   "signature": "base64url(...)"
@@ -72,7 +73,7 @@ A receipt is a JSON object with the following top-level fields. All fields are r
 
 | Field | Type | Required | Notes |
 |---|---|---|---|
-| `schema_version` | string | yes | Receipt wire-format version. MUST be exactly `"4"`. Wire versions are plain integers; each distinct wire format has exactly one identity. |
+| `schema_version` | string | yes | Receipt wire-format version. MUST be exactly `"5"`. Wire versions are plain integers; each distinct wire format has exactly one identity. |
 | `receipt_id` | string | yes | Unique receipt identifier. Conventionally `rcp_` plus a ULID; ULID random suffixes are not necessarily monotonic within the same millisecond. |
 | `workspace_id` | string | yes | Issuer identifier. Used to look up the verification key. |
 | `issued_at` | string | yes | RFC 3339 timestamp in the exact `YYYY-MM-DDTHH:MM:SS.sssZ` UTC millisecond profile. |
@@ -85,22 +86,16 @@ A receipt is a JSON object with the following top-level fields. All fields are r
 | `resource` | string \| null | yes | An identifier for the target of the action, or `null`. Always `null` for authorization create/revoke receipts. For `budget.settle`, `confirmation.resolve`, and `escalation.resolve`, this MAY carry the resource the event was bound to. Issuers MUST NOT include the resource's contents, only an identifier. |
 | `context` | object | yes | An opaque object of additional facts the issuer considered. Contents are issuer-defined. Verifiers MUST canonicalize the object by the same §4 rules as the rest of the payload and MUST NOT alter its values, drop or add keys, or reorder arrays; nested object keys are re-sorted per rule 3 like any other object. MAY be empty (`{}`). |
 | `authorization_id` | string \| null | yes | The authorization record this receipt relates to. For action receipts: the authorization that authorized the decision, or `null` if no authorization matched. For authorization-related event receipts: the related `authorization_id`. For workspace-wide `receipt.checkpoint`, MUST be `null`. |
-| `engine_version` | string | yes | Version of the issuer's decision logic at time of issue. Format is issuer-defined. |
-| `policy_eval` | object \| absent | optional | Action receipts only; **MUST be absent on event receipts.** Records the outcome of per-action condition evaluation: which condition (if any) routed the decision, and the evaluated context value. The rules in force are pinned by `authorization_id` (§3.3). See §3.6. |
+| `engine_version` | string | yes | Exactly `sha256:` plus 64 lowercase hex characters, identifying the full canonical `allowly.engine.v1` manifest (§3.6). |
+| `policy_ref` | object \| null | yes | Exact immutable edition reference (§3.6). Null only where no policy applies or no authorization was resolved. |
+| `policy_eval` | object \| absent | optional | Action receipts only; **MUST be absent on event receipts.** Original OPA input commitment and complete provisional result (§3.6). |
 | `alg` | string | yes | MUST be `"Ed25519"`. This field is part of the signed payload. |
 | `key_id` | string | yes | Opaque identifier selecting the issuer public key. SHOULD be the full key-version resource path. This field is part of the signed payload. |
 | `signature` | string | yes | Canonical unpadded base64url encoding of the 64-byte Ed25519 signature. See §5. |
 
 ### 3.2 Extensibility
 
-Verifiers implementing this specification accept only `"4"` and **MUST** reject every other value. Future incompatible receipt shapes require a new wire version and matching verifier release. Issuers **MUST NOT** emit fields or event values under a version that does not define them.
-
-The approved [2026-10-07 prelaunch exception](../docs/decisions/2026-10-07-confirmation-resolution-wire-4.md)
-defines `confirmation.resolve` under wire `"4"` starting with verifier
-packages `4.3.0`. Published `4.2.0` verifiers remain unchanged and reject this
-event. Issuers MUST update verification consumers before emitting it. This
-exception adds no top-level fields and changes no canonicalization or
-signature rules; other breaking changes retain the normal governance process.
+Verifiers implementing this specification accept only `"5"` and **MUST** reject every other value. Future incompatible receipt shapes require a new wire version and matching verifier release. Issuers **MUST NOT** emit fields or event values under a version that does not define them.
 
 ### 3.3 Receipt kinds
 
@@ -135,9 +130,9 @@ Receipts come in two kinds, distinguished by which of two mutually exclusive fie
   - `"receipt_set_committed"` — paired with `event: "receipt.checkpoint"`.
 - `authorization_id` — the authorization being created, revoked, settled, confirmed, or escalated. **MUST NOT** be `null` on those event receipts. It **MUST** be `null` on `receipt.checkpoint`. Confirmation resolution refers to the original parent authorization, not the short-lived approval child.
 - `resource` — **MUST** be `null` for authorization create/revoke receipts. For `budget.settle`, `confirmation.resolve`, and `escalation.resolve`, this MAY carry the resource the event was bound to.
-- `context` — conventionally carries lifecycle metadata: the full action set at creation, `expires_at`, `requires_confirm_for`, `requires_escalation_for`, the creation source (`csv_upload`, `onboarding_modal`), an optional `csv_hash` or similar integrity identifier, an optional `replaces` field (see below); for revocations a `revoked_by` field (`user`, `admin`, `expired`, `tombstone`, or `superseded` when the revocation is part of a rule change) and, when `revoked_by` is `superseded`, an optional `superseded_by: "<authorization_id of the successor>"` forward pointer (see below); for budget settlements the originating check receipt id and client-reported estimated/actual cost evidence; and for escalation resolution an `escalation` object containing the escalation id, action, approver label, reported resolution status, and client-reported resolver identity.
+- `context` — conventionally carries lifecycle metadata: the narrower granted action scope, `expires_at`, snapshotted owner/identity provenance, the creation source (`csv_upload`, `onboarding_modal`), an optional `csv_hash` or similar integrity identifier, an optional `replaces` field (see below); for revocations a `revoked_by` field (`user`, `admin`, `expired`, `tombstone`, or `superseded` when the revocation is part of a rule change) and, when `revoked_by` is `superseded`, an optional `superseded_by: "<authorization_id of the successor>"` forward pointer (see below); for budget settlements the originating check receipt id and client-reported estimated/actual cost evidence; and for escalation resolution an `escalation` object containing the escalation id, action, approver label, reported resolution status, and client-reported resolver identity.
 
-**Authorizations are immutable.** There is no update event. Any change to an authorization — its actions, per-action constraints, or verb-routing rules (`requires_confirm_for`, `requires_escalation_for`, conditional routing) — is expressed as revoking the existing authorization and creating a new one, producing one signed `authorization.revoke` receipt and one signed `authorization.create` receipt. Because each `authorization_id` therefore refers to exactly one immutable rule set, the id alone pins the rules in force for every action receipt that references it; no revision counter is needed.
+**Authorizations are immutable.** There is no update event. Any change to an authorization — its granted scope or pinned policy edition — is expressed as revoking the existing authorization and creating a new one, producing one signed `authorization.revoke` receipt and one signed `authorization.create` receipt. Each grant pins one immutable policy edition through `policy_ref`. Successor grants receive the newly published reference; revocation and pending review receipts retain their original reference.
 
 **Lineage convention (non-normative).** When a new authorization supersedes an old one, the change surfaces as a revoke of the predecessor plus a create of the successor. To make that supersession auditable rather than guessable, the two receipts SHOULD cross-reference each other:
 
@@ -152,6 +147,7 @@ Verifiers **MUST** enforce the following:
 
 - Exactly one of `action` and `event` is present. Receipts with both fields, or with neither, are rejected.
 - If `event` is present, it MUST be one of `"authorization.create"`, `"authorization.revoke"`, `"budget.settle"`, `"confirmation.resolve"`, `"escalation.resolve"`, or `"receipt.checkpoint"`. The corresponding `decision` MUST be valid for that event. `authorization_id` MUST NOT be `null` except on `receipt.checkpoint`, where it MUST be `null`. `resource` MUST be `null` for authorization create/revoke and checkpoint receipts. `policy_eval` MUST be absent. Checkpoint context MUST conform to §3.7.
+- The `policy_ref` pairing rules in §3.6 MUST hold for each receipt kind.
 - If `action` is present, `decision` MUST be one of `"allow"`, `"deny"`, `"confirm"`, or `"escalate"`. The reserved event-only decisions (`authorization_granted`, `authorization_revoked`, `budget_settled`, `confirmation_approved`, `confirmation_rejected`, `escalation_approved`, `escalation_rejected`, `receipt_set_committed`) MUST NOT appear on action receipts. If `policy_eval` is present, it MUST conform to §3.6.
 
 The two-field discriminator design (rather than a single overloaded field) makes the receipt kind explicit at the schema level. A field's presence tells you what kind of receipt it is; pairing rules become trivial to enforce.
@@ -170,55 +166,24 @@ receipt is present, a named human's identity, or an approval ceremony.
 Confirmation approval can also create an `authorization.create` receipt for
 the short-lived child; that receipt does not replace the resolution event.
 
-### 3.4 Example authorization receipt
+### 3.4 Authorization receipt evidence
 
-```json
-{
-  "schema_version": "4",
-  "receipt_id": "rcp_01HXZAUTHORIZATIONCREATE0000000",
-  "workspace_id": "ws_01HXA1B2C3D4E5F6G7H8J9K0L1",
-  "issued_at": "2026-04-21T14:30:00.000Z",
-  "decision": "authorization_granted",
-  "reason": "authorization_creation_reported_by_client",
-  "user_id": "emp_8821",
-  "agent_id": "referral_outreach",
-  "event": "authorization.create",
-  "resource": null,
-  "context": {
-    "actions": [
-      "contact.enrich",
-      {
-        "name": "hiring.publish_feedback",
-        "constraints": {
-          "confirm_when": [
-            { "field": "transcript_completeness", "lt": 100 },
-            { "field": "candidate_ai_opt_out", "eq": true }
-          ],
-          "escalate_when": [
-            { "field": "reviewer_id", "exists": false }
-          ]
-        }
-      }
-    ],
-    "requires_confirm_for": ["outreach.send"],
-    "expires_at": "2026-12-31T00:00:00Z",
-    "source": "csv_upload_v2",
-    "csv_hash": "sha256:abc123..."
-  },
-  "authorization_id": "auth_01HXZ2A0K1L2M3N4P5Q6R7S8T9",
-  "engine_version": "2026-04-17.1",
-  "alg": "Ed25519",
-  "key_id": "projects/allowly-prod/locations/global/keyRings/allowly-signing/cryptoKeys/ws_01HXA1/cryptoKeyVersions/3",
-  "signature": "base64url(...)"
-}
-```
+An `authorization.create` receipt names the created grant's `policy_ref`.
+Its opaque context records the narrower granted scope, expiry and existing
+identity/owner provenance. The immutable policy edition is the rule authority;
+a copied legacy inline rule set is not a second editable policy source.
+A confirmation child inherits its parent's edition. Revocation records the
+revoked grant's edition, including when a successor uses a newer version.
+Confirmation and escalation resolution retain the original review's source
+authorization and existing signed source receipt link. Budget settlement
+retains the original checked authorization and source decision link.
 
 ### 3.5 The authorization chain
 
 When a complete receipt set is available, an auditor can reconstruct the recorded story of an authorization from receipts with a given `authorization_id`. The chain consists of:
 
 1. Exactly one `authorization.create` receipt (the authorization grant itself).
-2. Zero or more action receipts (each check that matched this authorization). The rules in force for every one of them are exactly those recorded in the creation receipt — authorizations are immutable (§3.3), so `authorization_id` alone pins the rule set.
+2. Zero or more action receipts (each check that matched this authorization). The rules in force are the stored immutable edition named by `policy_ref`; the creation and action receipts preserve the same reference.
 3. Zero or more `budget.settle` receipts recording client-reported actual costs against estimates.
 4. Zero or more `confirmation.resolve` receipts recording client-reported approvals and rejections under this authorization.
 5. Zero or more `escalation.resolve` receipts recording client-reported escalation resolutions under this authorization.
@@ -228,65 +193,89 @@ Every receipt in the chain is independently signed and cryptographically tied to
 
 Rule changes never mutate a chain. Changing actions, constraints, or verb routing is expressed as revoking the old authorization and creating a new one (§3.3); the creation receipt SHOULD carry `replaces` and the revocation receipt SHOULD carry `revoked_by: "superseded"` with `superseded_by`, so successive chains form a walkable, bidirectionally linked lineage. Note that no-match denies (an action receipt with `authorization_id: null`, §3.1) pin no chain at all; if such a deny is issued during the gap between a revoke and its successor create, it belongs to no authorization and is reconstructable only from `issued_at` ordering. §8 recommends an ordering that minimizes this gap.
 
-### 3.6 Conditional policy evaluation (`policy_eval`)
+### 3.6 Immutable policy and provisional OPA evidence
 
-Issuers that route action decisions through per-action conditions MAY record the evaluation outcome in an optional top-level `policy_eval` object on action receipts. The block records which condition routed the decision. The rules that were evaluated are pinned by the receipt's top-level `authorization_id` — authorizations are immutable (§3.3), so the creation receipt for that id is the signed snapshot of the rules in force. The condition language itself remains issuer-defined and outside this format, consistent with the non-goals in §1.
+Every receipt MUST carry signed `policy_ref`: null, or exactly:
 
-**Issuer convention (non-normative).** An issuer MAY model conditional routing as per-action constraint attributes such as `deny_when`, `confirm_when`, and `escalate_when`. A deliberately small shape is recommended: each condition names one context `field` and one operator (`eq`, `neq`, `lt`, `lte`, `gt`, `gte`, `in`, or `exists`), condition lists are ORed, and there is no nesting or expression language. For example, an issuer might store `{ "field": "transcript_completeness", "lt": 100 }` on an authorization, then normalize the matched condition in the action receipt as `{ "field": "transcript_completeness", "op": "lt", "value": 100 }`. The receipt format only standardizes the normalized evidence in `policy_eval`; it does not standardize the authorization API's policy authoring syntax.
+```json
+{"policy_id":"pol_example","policy_version":1,"definition_sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}
+```
+
+The ID is a nonempty opaque string scoped by the signed `workspace_id`.
+The version MUST be a strict positive integer from 1 through 9007199254740991;
+booleans, null, floats and strings are invalid. The digest MUST be exactly
+64 lowercase hexadecimal characters and commits to the complete stored
+`allowly.policy.v1` definition's §4 canonical bytes, including array order.
+Partial objects and unknown members MUST be rejected.
+
+A resolved governed authorization MUST retain its exact edition, even when
+expired, revoked or superseded. It MUST NOT use null for unknown or missing
+policy evidence. All authorization lifecycle, review-resolution and settlement
+events require a non-null reference. Missing-authorization actions and workspace
+checkpoints require null. A record-only `record.seal` action without governed
+evaluation may carry null; a governed SEAL action carries its actual edition.
+
+For a successful OPA evaluation, issuers MAY include `policy_eval` with exactly:
 
 ```json
 {
-  "schema_version": "4",
-  "receipt_id": "rcp_01J0Z7Q4BORDERLINE0CONFIRM",
-  "workspace_id": "ws_01HXA1B2C3D4E5F6G7H8J9K0L1",
-  "issued_at": "2026-06-09T17:04:09.114Z",
-  "decision": "confirm",
-  "reason": "confirm_condition_matched",
-  "user_id": "cand_55ab2",
-  "agent_id": "scout_referrals",
-  "action": "hiring.publish_feedback",
-  "resource": "application:req_2207:cand_55ab2",
-  "context": {
-    "initiated_by": "agent",
-    "reviewer_id": "emp_3301",
-    "transcript_completeness": 82,
-    "candidate_ai_opt_out": false
-  },
-  "authorization_id": "auth_01HXZ2A0K1L2M3N4P5Q6R7S8T9",
-  "engine_version": "2026-06-01.2",
-  "policy_eval": {
-    "matched_condition": { "field": "transcript_completeness", "op": "lt", "value": 100 },
-    "field_value": 82
-  },
-  "alg": "Ed25519",
-  "key_id": "projects/allowly-prod/locations/global/keyRings/allowly-signing/cryptoKeys/ws_01HXA1/cryptoKeyVersions/3",
-  "signature": "base64url(...)"
+  "input_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "result": {
+    "profile": "allowly.basic.v1",
+    "status": "ok",
+    "decision": "allow",
+    "target": null,
+    "matched_rule_id": null,
+    "evaluated_fields": {}
+  }
 }
 ```
 
-#### 3.6.1 Members
+`input_sha256` is exactly 64 lowercase hexadecimal characters. It commits to
+the frozen, exact inner OPA input `{policy, action, context}` before the HTTP
+`input` wrapper, using §4 canonical bytes. Absence and null remain distinct.
+It does not commit to identity or transaction facts not sent to OPA. Original
+inputs are needed for replay; a hash or partial explanation cannot rebuild them.
+No automatic private-input logging or retention is implied.
 
-When `policy_eval` is present, both members MUST be present:
+The result has exactly the six shown members, with profile
+`allowly.basic.v1`, status `ok`, and a decision from
+`allow`, `deny`, `confirm`, `escalate`. Allow/deny require target null;
+confirm requires exactly `agent_owner`; escalate requires
+`member:<nonempty opaque member ID>` with at most 256 Unicode scalar values. `matched_rule_id` is null or a
+nonempty string at most 128 Unicode scalar values. `evaluated_fields` is an object whose
+field names are nonempty and at most 128 Unicode scalar values; values follow the complete
+§4 JSON/integer/Unicode bounds. A default result has null rule ID and empty
+evaluated fields. Missing `exists` inputs are omitted from evaluated fields;
+explicit null values remain null.
 
-| Member | Type | Notes |
-|---|---|---|
-| `matched_condition` | object \| null | The single condition that routed the decision, expressed as the triple `{"field": string, "op": string, "value": string \| integer \| boolean \| null \| array}` — exactly those three members, no others. Arrays are for membership-style operators such as `in` and MUST contain only strings, integers, booleans, or nulls. `null` attests that conditions were evaluated and none matched. The set of operator names is issuer-defined; this spec constrains only the shape. |
-| `field_value` | string \| integer \| boolean \| null | Snapshot of the evaluated context field at decision time. `null` when `matched_condition` is `null` or when the referenced field was absent from the request context. See §10.7 for snapshot-minimization guidance. |
+`policy_eval` requires a non-null reference and MUST be absent on events and
+when OPA did not successfully return a validated result. Malformed, undefined,
+invalid-input and unavailable results are service failures; they MUST NOT
+fabricate successful evidence or authorize an allow.
 
-#### 3.6.2 Rules
+Top-level `decision` and `reason` record the final committed Allowly result.
+The complete OPA result stays unchanged when grant/identity fences, approval
+consumption and atomic budget or daily reservations change that final result.
+An OPA allow can coexist with a final deny, and an approved matching review can
+turn a provisional review result into a final allow. Policy replay alone never
+authorizes provider dispatch.
 
-- `policy_eval` **MUST NOT** appear on event receipts. Verifiers MUST reject event receipts that carry it.
-- Per §4.2 rule 6, non-integer numbers MUST NOT appear anywhere inside `policy_eval`, including inside `matched_condition.value` arrays. Fractional thresholds or values MUST be expressed as scaled integers (e.g. basis points, micros) or strings.
-- Issuers **SHOULD** emit `policy_eval` on every action receipt for actions that carry conditions — including `allow` decisions, where `matched_condition: null` attests *evaluated, nothing fired*. An absence of flags is itself evidence.
-- Canonicalization note: the lexicographic key sort places `engine_version` before `policy_eval` in the canonical form.
+`engine_version` is the single `sha256:<hex>` identity of the complete canonical
+`allowly.engine.v1` manifest. It binds the evaluator/profile/entrypoint, Rego
+path/API ID/bytes, exact official OPA version/commit/platform/artifact, native
+full-root bundle and retained runtime artifact covering authority/transaction
+code. A date label, dirty Git HEAD or evaluator-only manifest is insufficient.
+Different artifacts require different immutable identities.
 
-#### 3.6.3 Fail-closed convention (non-normative)
-
-If a condition references a context field that is absent from the request, issuers are encouraged to fail closed: return `confirm` with `reason: "context_field_missing"`, set `matched_condition` to the unevaluable condition, and set `field_value: null`. The rationale: if the caller cannot demonstrate a fact the policy depends on (e.g. an opt-out flag), the safe decision is human review, and the receipt should record that this was the issuer's decision. The format permits but does not mandate this behavior.
-
-#### 3.6.4 What `policy_eval` does not prove
-
-Like `context` (§7.1), the evaluated values originate from the customer's system. `policy_eval` attests that the issuer evaluated the stated condition against the stated value and routed accordingly — not that the value was true in the world.
+The [OPA replay profile](profiles/allowly-opa-evaluation-v1.md) defines the full
+definition and manifest schemas and separate official-OPA replay command.
+Ordinary Python, TypeScript and browser verifiers validate schema, workspace/key
+binding and signature; they do not interpret rules. Report signature verification,
+provisional replay, final transactional enforcement and witnessed execution
+separately. Successful replay proves neither input truth, human intent, atomic
+reservations, provider execution nor receipt-history completeness. Existing
+native identity, KMS/Ed25519 signing and full TLSNotary witness semantics remain.
 
 ### 3.7 Daily receipt checkpoints
 
@@ -350,10 +339,10 @@ The payload for the example in §3 canonicalizes to (linebreaks for display only
 ```
 {"action":"outreach.send","agent_id":"referral_outreach","alg":"Ed25519","authorization_id":"auth_01HXZ2A0K1L2M3N4P5Q6R7S8T9",
 "context":{"initiated_by":"user","origin":"chat","session_id":"sess_7f2"},
-"decision":"allow","engine_version":"2026-04-17.1","issued_at":
-"2026-04-21T14:32:17.482Z","key_id":"projects/allowly-prod/locations/global/keyRings/allowly-signing/cryptoKeys/ws_01HXA1/cryptoKeyVersions/3","reason":"authorization_granted_action_active",
+"decision":"allow","engine_version":"sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","issued_at":
+"2026-04-21T14:32:17.482Z","key_id":"projects/allowly-prod/locations/global/keyRings/allowly-signing/cryptoKeys/ws_01HXA1/cryptoKeyVersions/3","policy_ref":{"definition_sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","policy_id":"pol_example","policy_version":1},"reason":"authorization_granted_action_active",
 "receipt_id":"rcp_01HXZ2B3QW4N5M6P7R8S9T0V1W","resource":
-"edge:emp_8821:conn_9f2a","schema_version":"4","user_id":"emp_8821",
+"edge:emp_8821:conn_9f2a","schema_version":"5","user_id":"emp_8821",
 "workspace_id":"ws_01HXA1B2C3D4E5F6G7H8J9K0L1"}
 ```
 
@@ -374,7 +363,7 @@ Verifiers **MUST** use standard RFC 8032 Ed25519 verification over the raw canon
 
 ### 5.2 Protected algorithm and key identifier
 
-Format 4 places `alg` and `key_id` at the top level. Removing only the
+Format 5 places `alg` and `key_id` at the top level. Removing only the
 `signature` field for canonicalization leaves both fields in the signed bytes,
 so neither the algorithm nor trust-anchor selector can be changed after issue.
 The `signature` field contains only the canonical unpadded base64url signature
@@ -390,7 +379,7 @@ This separation is deliberate. Pending is a transport-layer concern, not a recei
 - Customers cannot accidentally serialize a pending response as audit evidence. The pending response and the signed receipt have different shapes; passing the wrong one to a verifier or a long-term store fails immediately, not silently.
 - The receipt format spec stays focused on a single artifact: the signed receipt.
 
-Issuers **MUST NOT** emit any object claiming to be a format-4 receipt with `signature` set to a non-signature value (e.g. a placeholder string). Verifiers **MUST** reject any such object on the schema check.
+Issuers **MUST NOT** emit any object claiming to be a format-5 receipt with `signature` set to a non-signature value (e.g. a placeholder string). Verifiers **MUST** reject any such object on the schema check.
 
 ### 5.4 Implementation notes on signing (non-normative)
 
@@ -458,8 +447,8 @@ acceptable; otherwise they may send `no-store`.
 
 A verifier given a receipt `R` and the issuer's public keys **MUST** perform all of the following steps in order, and **MUST** reject the receipt if any step fails.
 
-1. **Version check.** Assert `R.schema_version` is exactly `"4"`.
-2. **Schema check.** Assert all required fields are present with the correct types and no unknown top-level fields are present. Assert top-level `alg` and `key_id` are strings and `signature` is a non-empty string. The signature text MUST be canonical unpadded base64url and decode to exactly 64 bytes; verifiers MUST reject non-zero unused pad bits by decoding and re-encoding before comparison. If `R.policy_eval` is present, assert it conforms to §3.6.1: an object with exactly `matched_condition` (an object with exactly the members `field`, `op`, `value` — or null; `value` may be a scalar or an array of scalars) and `field_value` (string, integer, boolean, or null), and no other members.
+1. **Version check.** Assert `R.schema_version` is exactly `"5"`.
+2. **Schema check.** Assert all required fields are present with correct types and no unknown top-level fields. The signature MUST be canonical unpadded base64url decoding to exactly 64 bytes; decode and re-encode to reject non-zero unused pad bits. Validate required `policy_ref` and `engine_version`, and optional `policy_eval`, against §3.6.
 3. **Receipt kind and pairing check.** Determine the receipt kind from which discriminator field is present, and enforce the corresponding constraints:
    - Exactly one of `action` and `event` MUST be present. Reject if both are present, or if neither is present.
    - **If `event` is present** (event receipt):
@@ -528,11 +517,9 @@ Vectors include:
 - A receipt with non-ASCII characters in multiple fields (tests UTF-8 handling).
 - A receipt with a rich nested context object (tests canonicalization correctness).
 - An `escalate` receipt with escalation context.
-- A `deny` receipt with a `policy_eval` block whose `matched_condition` fired.
-- A `confirm` receipt with a `policy_eval` block whose `matched_condition` fired (tests §3.6 schema and the `engine_version` < `policy_eval` canonical sort).
-- A `confirm` receipt with a `policy_eval.matched_condition.value` array for an `in` condition.
-- An `allow` receipt with `policy_eval.matched_condition: null` and `field_value: null` (conditions evaluated, none matched).
-- A `confirm` receipt with `reason: "context_field_missing"`, `matched_condition` set, `field_value: null` (fail-closed convention).
+- Complete successful OPA results for deny, confirm, escalate and default allow.
+- Provisional OPA allow with final Allowly deny due to budget enforcement.
+- Record-only SEAL with null policy reference.
 - A receipt whose `context` contains control characters in a string value (tests the `\uXXXX` escaping of canonicalization rule 5).
 - A receipt whose `context` contains a key outside the Basic Multilingual Plane alongside a BMP key (tests the UTF-16 code-unit key sort of rule 3).
 
@@ -555,7 +542,7 @@ Vectors include:
 - A receipt with a forged signature (zero bytes).
 - A receipt with an unknown `key_id`.
 - A receipt whose signed `key_id` was changed to another published key.
-- A receipt with `schema_version: "5"`.
+- A receipt with previous wire `schema_version: "4"` or future wire `"6"`.
 - A `receipt.checkpoint` with a negative `receipt_count`.
 - A receipt with an unknown top-level field.
 - A receipt with a required field missing.
@@ -568,9 +555,11 @@ Vectors include:
 - A receipt with `event: "authorization.revoke"` but `authorization_id: null` (pairing violation).
 - A receipt with `event: "authorization.create"` but a non-null `resource` (pairing violation).
 - An event receipt carrying a `policy_eval` block (pairing violation).
-- An action receipt whose `policy_eval` carries an unknown extra member (schema violation, §3.6.1).
-- An action receipt whose `policy_eval.matched_condition` is missing `op` (schema violation, §3.6.1).
-- An action receipt with a non-integer number in `policy_eval.field_value` (canonicalization rule 6).
+- An action receipt whose `policy_eval` carries an unknown extra member (schema violation, §3.6).
+- Missing or extra result members, invalid targets/default evidence, and malformed input commitments.
+- Missing/partial/extra policy references, unsafe or boolean versions, and malformed digests.
+- Tampered policy references, input/result evidence and engine identities.
+- Non-integer values in evaluated fields (canonicalization rule 6).
 - An action receipt with an integer outside the I-JSON safe range, ±(2⁵³−1) (canonicalization rule 6).
 - A receipt whose `issued_at` lacks a timezone offset (timestamp not a full RFC 3339 instant, §7 step 5).
 - A receipt whose `issued_at` uses invalid hour `24`.
@@ -584,7 +573,7 @@ Vectors include:
 
 If an issuer's Ed25519 private key is compromised, all receipts signed under that key are untrustworthy from the moment of compromise until rotation. Issuers **SHOULD** rotate keys at least annually. Verifiers **SHOULD** consult the key document's `active_until` field when verifying old receipts; a key retired for compromise should have `active_until` set to the compromise time. Note the limit of this mitigation: the window check compares `active_until` against the receipt's *claimed* `issued_at`, and an attacker holding the key controls that claim — a receipt backdated to before the compromise time still verifies (§7 item 6). Retiring a key bounds honest use; it does not detect backdated forgeries. Detecting those requires evidence outside this format, such as an external timestamp or the issuer's own receipt log.
 
-Format 4 signs `alg` and `key_id`, so changing either one invalidates the
+Format 5 signs `alg` and `key_id`, so changing either one invalidates the
 signature.
 
 ### 10.2 Canonicalization fragility
@@ -618,13 +607,13 @@ Because signing is often asynchronous, an issuer that goes offline between decis
 
 Recommended: customers use their internal opaque identifier (a ULID, UUID, or equivalent) as `user_id`, and maintain the mapping to human identities in their own systems, outside the receipt ledger. If a customer needs to key identity on email, they **SHOULD** hash the email with a per-workspace salt before using it as `user_id`, producing an opaque-but-stable identifier.
 
-### 10.7 Snapshot minimization in `policy_eval.field_value`
+### 10.7 Snapshot minimization in `policy_eval.result.evaluated_fields`
 
-`field_value` copies a piece of evaluated customer context into a signed, immutable, long-lived record. Anything snapshotted here inherits every retention problem described in §10.6: it cannot be deleted, redacted, or regionally restricted after signing.
+`evaluated_fields` copies evaluated customer context into a signed, immutable, long-lived record. Anything snapshotted here inherits every retention problem described in §10.6: it cannot be deleted, redacted, or regionally restricted after signing.
 
 Issuers and customers **SHOULD**:
 
-- Snapshot the minimum value the condition actually compared — the number or flag, not the record it came from. `"field_value": 82` (a transcript-completeness percentage) is appropriate; copying a free-text note or a full profile attribute is not.
+- Snapshot the minimum value the rule actually compared — the number or flag, not the record it came from. `"evaluated_fields": {"transcript_completeness": 82}` (a transcript-completeness percentage) is appropriate; copying a free-text note or a full profile attribute is not.
 - Never route conditions on raw sensitive personal attributes (health status, protected-class data, salary, precise location). Where a sensitive signal is genuinely needed for routing, evaluate and snapshot a derived form — a boolean, a bucket, a scaled score — so the signed record carries the decision-relevant abstraction rather than the underlying attribute.
 - Treat exports containing `policy_eval` with the same care as receipt exports generally (§10.4).
 
@@ -635,7 +624,7 @@ The format cannot police the semantics of what customers evaluate; this guidance
 This appendix defines an optional application convention for pseudonymous
 strings carried inside an existing receipt `context`. It adds no receipt field,
 does not change canonicalization or signing, and does not change wire version
-`4`. Verifiers that do not use this convention continue to verify the same
+`5`. Verifiers that do not use this convention continue to verify the same
 receipt bytes.
 
 ### A.1 Key and field separation
@@ -707,7 +696,7 @@ oracle; customers can use the key and the reference verifier locally.
 ## Appendix B. SEAL JSON record profile
 
 SEAL is an application profile for recording a SHA-256 commitment to a JSON
-value inside an ordinary wire-4 action receipt. It adds no receipt fields and
+value inside an ordinary wire-5 action receipt. It adds no receipt fields and
 does not change the receipt canonicalization or signature algorithm. The
 profile identifier is `allowly.seal.jcs-sha256.v1`.
 
@@ -773,7 +762,7 @@ claim copied only from the receipt is not a trust anchor.
 
 ### B.3 Verification result
 
-A conforming SEAL verifier performs base wire-4 receipt verification first,
+A conforming SEAL verifier performs base wire-5 receipt verification first,
 then checks the action, decision, fixed identities, profile, digest syntax, and
 locally computed record digest. Its structured result **MUST** keep receipt
 signature verification separate from record matching:

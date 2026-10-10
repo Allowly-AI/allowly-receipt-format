@@ -33,7 +33,7 @@ jobs:
       - name: Check SEAL profile and verification vectors
         working-directory: verifiers/python
         run: python test_seal.py ../../vectors/seal/profile-v1.json ../../vectors/seal/verification-v1.json
-      - name: Check conditional policy replay and CLI
+      - name: Check OPA evidence and replay prerequisites
         working-directory: verifiers/python
         run: python -m pytest -q test_policy_evaluation.py
       - name: Build package
@@ -68,7 +68,7 @@ jobs:
       - name: Check SEAL profile and verification vectors
         working-directory: verifiers/typescript
         run: node dist/test_seal.js ../../vectors/seal/profile-v1.json ../../vectors/seal/verification-v1.json
-      - name: Check conditional policy replay in Node and the browser build
+      - name: Check OPA evidence signatures in Node and the browser build
         working-directory: verifiers/typescript
         run: |
           node dist/test_policy_evaluation.js ../../vectors/policy/profile-v1.json

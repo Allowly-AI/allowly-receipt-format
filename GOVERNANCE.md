@@ -4,7 +4,7 @@ This document describes how decisions about the Allowly Receipt Format specifica
 
 ## Current state
 
-The specification is maintained by Allowly. The current stable receipt wire format is `"4"`, implemented by verifier packages 4.x. Final decisions on the spec text and verifier behavior rest with Allowly's maintainers while Allowly is the only serious implementer.
+The specification is maintained by Allowly. The current local receipt wire format is `"5"`, implemented by verifier packages 5.x. Final decisions on the spec text and verifier behavior rest with Allowly's maintainers while Allowly is the only serious implementer.
 
 ## Change process
 

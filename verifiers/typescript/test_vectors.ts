@@ -23,7 +23,7 @@ import {
 // Deliberately NOT produced by the reference canonicalizer: if canonicalization
 // regresses, generated vectors would regress with it and tests would still pass.
 const GOLDEN_PAYLOAD = {
-  schema_version: "4",
+  schema_version: "5",
   receipt_id: "rcp_01HXZ2B3QW4N5M6P7R8S9T0V1W",
   workspace_id: "ws_01HXA1B2C3D4E5F6G7H8J9K0L1",
   issued_at: "2026-04-21T14:32:17.482Z",
@@ -43,7 +43,8 @@ const GOLDEN_PAYLOAD = {
     "｡_key": "bmp",
   },
   authorization_id: "auth_01HXZ2A0K1L2M3N4P5Q6R7S8T9",
-  engine_version: "2026-04-17.1",
+  policy_ref: { policy_id: "pol_test", policy_version: 1, definition_sha256: "a".repeat(64) },
+  engine_version: "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
   alg: "Ed25519",
   key_id: "projects/allowly-prod/locations/global/keyRings/allowly-signing/cryptoKeys/ws_01HXA1/cryptoKeyVersions/3",
 };
@@ -54,12 +55,13 @@ const GOLDEN_CANONICAL =
   '"context":{"control":"line\\u000a\\u0009\\u0000","initiated_by":"user",' +
   '"origin":"chat","session_id":"sess_7f2","types":[7,true,null],' +
   '"😀_key":"emoji","｡_key":"bmp"},' +
-  '"decision":"allow","engine_version":"2026-04-17.1",' +
+  '"decision":"allow","engine_version":"sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",' +
   '"issued_at":"2026-04-21T14:32:17.482Z",' +
   '"key_id":"projects/allowly-prod/locations/global/keyRings/allowly-signing/cryptoKeys/ws_01HXA1/cryptoKeyVersions/3",' +
+  '"policy_ref":{"definition_sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","policy_id":"pol_test","policy_version":1},' +
   '"reason":"authorization_granted_action_active",' +
   '"receipt_id":"rcp_01HXZ2B3QW4N5M6P7R8S9T0V1W",' +
-  '"resource":"edge:emp_8821:conn_9f2a","schema_version":"4","user_id":"emp_8821",' +
+  '"resource":"edge:emp_8821:conn_9f2a","schema_version":"5","user_id":"emp_8821",' +
   '"workspace_id":"ws_01HXA1B2C3D4E5F6G7H8J9K0L1"}';
 
 async function main(vectorsPath: string): Promise<number> {
@@ -123,13 +125,13 @@ async function main(vectorsPath: string): Promise<number> {
     for (const value of [false, 1, [], {}]) {
       await rejectSigned({ ...baseline, [field]: value }, `${field} must be string or null`);
     }
-    await verifyReceipt(signBoundaryReceipt({ ...baseline, [field]: null }), [boundaryKey], { now });
+    await verifyReceipt(signBoundaryReceipt({ ...baseline, [field]: null, ...(field === "authorization_id" ? { policy_ref: null } : {}) }), [boundaryKey], { now });
   }
   for (const context of [null, false, 1, "context", []]) {
     await rejectSigned({ ...baseline, context }, "context must be an object");
   }
   for (const fields of [
-    { schema_version: "5" }, { alg: "RSA" }, { action: null }, { action: 1 },
+    { schema_version: "4" }, { alg: "RSA" }, { action: null }, { action: 1 },
     { action: [] }, { decision: "unknown" }, { unknown_field: null },
     { event: "authorization.create" },
   ]) await rejectSigned({ ...baseline, ...fields }, "signed invalid receipt shape");
@@ -138,39 +140,25 @@ async function main(vectorsPath: string): Promise<number> {
     delete missing[field];
     await rejectSigned(missing, `signed receipt missing ${field}`);
   }
-  for (const policy_eval of [
-    null, [], "evaluation", { matched_condition: null }, { field_value: null },
-    { matched_condition: null, field_value: null, extra: true },
-    { matched_condition: [], field_value: null },
-    { matched_condition: { field: 1, op: "eq", value: null }, field_value: null },
-    { matched_condition: { field: "v", op: 1, value: null }, field_value: null },
-    { matched_condition: { field: "v", op: "eq", value: {} }, field_value: null },
-    { matched_condition: { field: "v", op: "eq", value: [{}] }, field_value: null },
-    { matched_condition: { field: "v", op: "eq", value: null, extra: true }, field_value: null },
-    { matched_condition: null, field_value: [] }, { matched_condition: null, field_value: {} },
-  ]) await rejectSigned({ ...baseline, policy_eval }, "signed malformed policy evaluation");
-  for (const field of ["field", "op", "value"]) {
-    const condition: Record<string, unknown> = { field: "v", op: "eq", value: null };
-    delete condition[field];
-    await rejectSigned({ ...baseline, policy_eval: { matched_condition: condition, field_value: null } },
-      `signed policy condition missing ${field}`);
+  const evaluation = {
+    input_sha256: "b".repeat(64),
+    result: { profile: "allowly.basic.v1", status: "ok", decision: "allow",
+      target: null, matched_rule_id: "rule", evaluated_fields: {} as Record<string, unknown> },
+  };
+  for (const policy_eval of [null, [], "evaluation", { input_sha256: "b".repeat(64) },
+    { ...evaluation, extra: true }, { ...evaluation, input_sha256: "B".repeat(64) }]) {
+    await rejectSigned({ ...baseline, policy_eval }, "signed malformed policy evaluation");
   }
-  for (const field_value of [null, true, false, 0, -1, "scalar"]) {
+  for (const field of Object.keys(evaluation.result)) {
+    const result: Record<string, unknown> = { ...evaluation.result };
+    delete result[field];
+    await rejectSigned({ ...baseline, policy_eval: { ...evaluation, result } },
+      `signed OPA result missing ${field}`);
+  }
+  for (const value of [null, true, false, 0, -1, "scalar", [], [null, true], { nested: "value" }]) {
     await verifyReceipt(signBoundaryReceipt({ ...baseline,
-      policy_eval: { matched_condition: null, field_value } }), [boundaryKey], { now });
-  }
-
-  // A membership value may be empty or contain any mix of JSON scalars. Every
-  // item must be a scalar; one valid item cannot hide an object or nested array.
-  for (const value of [[], [null, false, true, 0, -1, ""]]) {
-    await verifyReceipt(signBoundaryReceipt({ ...baseline,
-      policy_eval: { matched_condition: { field: "v", op: "in", value }, field_value: null },
-    }), [boundaryKey], { now });
-  }
-  for (const value of [[null, {}], [false, []], [1, {}], ["valid", []], [{}, true]]) {
-    await rejectSigned({ ...baseline,
-      policy_eval: { matched_condition: { field: "v", op: "in", value }, field_value: null },
-    }, "every policy condition array item must be a scalar");
+      policy_eval: { ...evaluation, result: { ...evaluation.result, evaluated_fields: { field: value } } } }),
+      [boundaryKey], { now });
   }
 
   const { action: omittedAction, ...eventBaseline } = baseline;
@@ -356,7 +344,7 @@ async function main(vectorsPath: string): Promise<number> {
   const members = vectors.should_verify.slice(0, 3).map((vector: { receipt: Record<string, unknown> }) => vector.receipt);
   const root = await checkpointMerkleRoot(members);
   // Independent SHA-256 calculation with the spec's 00/01 domains and odd leaf.
-  assert.equal(root, "sha256:e529bb04362039e95713a85de5341c1bb1e544c35024a13248785b1880f6f71c");
+  assert.equal(root, "sha256:370e58dda92e9d84d51405e21f7cb906623a3d15694fde33633682aed9b9a3ba");
   assert.equal(await checkpointMerkleRoot([...members].reverse()), root);
   assert.equal(await checkpointMerkleRoot([]), "sha256:dbc1b4c900ffe48d575b5da5c638040125f65db0fe3e24494b76ea986457d986");
   await assert.rejects(
@@ -389,7 +377,7 @@ async function main(vectorsPath: string): Promise<number> {
   }
   assert.deepEqual(canonicalize(String.fromCharCode(...Array.from({ length: 32 }, (_, i) => i))),
     new TextEncoder().encode(String.raw`"\u0000\u0001\u0002\u0003\u0004\u0005\u0006\u0007\u0008\u0009\u000a\u000b\u000c\u000d\u000e\u000f\u0010\u0011\u0012\u0013\u0014\u0015\u0016\u0017\u0018\u0019\u001a\u001b\u001c\u001d\u001e\u001f"`),
-    "wire 4 uses a lowercase four-digit escape for every control character");
+    "wire 5 preserves a lowercase four-digit escape for every control character");
   assert.throws(() => canonicalize(balancedSparseArray), VerificationError,
     "key count alone cannot prove that an array is dense");
 

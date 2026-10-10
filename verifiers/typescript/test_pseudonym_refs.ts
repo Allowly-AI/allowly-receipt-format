@@ -144,9 +144,9 @@ assert.equal(diagnostic.name, "VerificationError");
 assert.equal(diagnostic.message, "test diagnostic");
 assert.equal(diagnostic instanceof Error, true);
 const canonicalReceipt = '{"action":"test","agent_id":"agent","alg":"Ed25519",' +
-  '"authorization_id":"auth","context":{},"decision":"allow","engine_version":"test",' +
+  '"authorization_id":"auth","context":{},"decision":"allow","engine_version":"sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",' +
   '"issued_at":"2026-09-30T00:00:00.000Z","key_id":"ephemeral",' +
-  '"reason":"test","receipt_id":"receipt","resource":null,"schema_version":"4",' +
+  '"policy_ref":{"definition_sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","policy_id":"pol_test","policy_version":1},"reason":"test","receipt_id":"receipt","resource":null,"schema_version":"5",' +
   '"user_id":"user","workspace_id":"workspace"}';
 const { privateKey, publicKey } = generateKeyPairSync("ed25519");
 const signature = sign(null, Buffer.from(canonicalReceipt, "utf8"), privateKey);

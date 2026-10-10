@@ -22,7 +22,7 @@ from allowly_receipt_format import (
 # Deliberately NOT produced by the reference canonicalizer: if canonicalization
 # regresses, generated vectors would regress with it and tests would still pass.
 GOLDEN_PAYLOAD = {
-    "schema_version": "4",
+    "schema_version": "5",
     "receipt_id": "rcp_01HXZ2B3QW4N5M6P7R8S9T0V1W",
     "workspace_id": "ws_01HXA1B2C3D4E5F6G7H8J9K0L1",
     "issued_at": "2026-04-21T14:32:17.482Z",
@@ -42,7 +42,8 @@ GOLDEN_PAYLOAD = {
         "｡_key": "bmp",
     },
     "authorization_id": "auth_01HXZ2A0K1L2M3N4P5Q6R7S8T9",
-    "engine_version": "2026-04-17.1",
+    "policy_ref": {"policy_id": "pol_test", "policy_version": 1, "definition_sha256": "a" * 64},
+    "engine_version": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
     "alg": "Ed25519",
     "key_id": "projects/allowly-prod/locations/global/keyRings/allowly-signing/cryptoKeys/ws_01HXA1/cryptoKeyVersions/3",
 }
@@ -53,12 +54,13 @@ GOLDEN_CANONICAL = (
     '"context":{"control":"line\\u000a\\u0009\\u0000","initiated_by":"user",'
     '"origin":"chat","session_id":"sess_7f2","types":[7,true,null],'
     '"😀_key":"emoji","｡_key":"bmp"},'
-    '"decision":"allow","engine_version":"2026-04-17.1",'
+    '"decision":"allow","engine_version":"sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",'
     '"issued_at":"2026-04-21T14:32:17.482Z",'
     '"key_id":"projects/allowly-prod/locations/global/keyRings/allowly-signing/cryptoKeys/ws_01HXA1/cryptoKeyVersions/3",'
+    '"policy_ref":{"definition_sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","policy_id":"pol_test","policy_version":1},'
     '"reason":"authorization_granted_action_active",'
     '"receipt_id":"rcp_01HXZ2B3QW4N5M6P7R8S9T0V1W",'
-    '"resource":"edge:emp_8821:conn_9f2a","schema_version":"4","user_id":"emp_8821",'
+    '"resource":"edge:emp_8821:conn_9f2a","schema_version":"5","user_id":"emp_8821",'
     '"workspace_id":"ws_01HXA1B2C3D4E5F6G7H8J9K0L1"}'
 )
 

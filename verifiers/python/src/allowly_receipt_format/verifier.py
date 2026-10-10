@@ -1,7 +1,7 @@
 """
 Allowly Receipt Verifier (Python reference implementation).
 
-Verifies Allowly receipts per receipt-format.md wire version 4.
+Verifies Allowly receipts per receipt-format.md wire version 5.
 
 Usage (library):
     from allowly_receipt_format import verify_receipt, VerificationError, load_keys_from_json
@@ -35,7 +35,7 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 from cryptography.exceptions import InvalidSignature
 
 
-SPEC_VERSION = "4"
+SPEC_VERSION = "5"
 ACTION_DECISIONS = {"allow", "deny", "confirm", "escalate"}
 EVENT_DECISIONS = {
     "authorization.create": {"authorization_granted"},
@@ -50,7 +50,7 @@ EVENT_ONLY_DECISIONS = {decision for decisions in EVENT_DECISIONS.values() for d
 REQUIRED_FIELDS = {
     "schema_version", "receipt_id", "workspace_id", "issued_at", "decision", "reason",
     "user_id", "agent_id", "resource", "context",
-    "authorization_id", "engine_version", "alg", "key_id", "signature",
+    "authorization_id", "policy_ref", "engine_version", "alg", "key_id", "signature",
 }
 OPTIONAL_FIELDS = {"policy_eval"}
 # Exactly one of these must be present:
@@ -86,7 +86,6 @@ __all__ = [
     "main",
     "matches_ref",
     "public_key_fingerprint",
-    "verify_policy_evaluation",
     "verify_receipt",
     "verify_checkpoint",
 ]
@@ -444,6 +443,18 @@ def verify_receipt(
                 f"got {decision!r}"
             )
 
+    if has_event:
+        if event == "receipt.checkpoint":
+            if receipt["policy_ref"] is not None:
+                raise SchemaError("receipt.checkpoint must have null policy_ref")
+        elif receipt["policy_ref"] is None:
+            raise SchemaError("authorization event must have non-null policy_ref")
+    elif authorization_id is None:
+        if receipt["policy_ref"] is not None:
+            raise SchemaError("unresolved authorization must have null policy_ref")
+    elif receipt["policy_ref"] is None and action != "record.seal":
+        raise SchemaError("governed action must have non-null policy_ref")
+
     # Step 4: algorithm check
     if receipt["alg"] != "Ed25519":
         raise SchemaError(f"unsupported signature alg: {receipt['alg']!r}")
@@ -477,32 +488,6 @@ def verify_receipt(
         raise SignatureMismatchError("signature verification failed") from None
 
     # Step 8: accept (implicit — no exception raised)
-
-
-def verify_policy_evaluation(
-    receipt: dict[str, Any],
-    authorization_receipts: list[dict[str, Any]],
-    public_keys: list[PublicKey],
-    *,
-    expected_workspace_id: str,
-    trusted_key_fingerprints: set[str] | frozenset[str],
-    now: datetime | None = None,
-) -> dict[str, Any]:
-    """Authenticate and replay Allowly conditional policy evidence.
-
-    The implementation lives in a separate module so the base wire verifier
-    keeps its existing meaning and dependency surface.
-    """
-    from .policy import verify_policy_evaluation as replay
-
-    return replay(
-        receipt,
-        authorization_receipts,
-        public_keys,
-        expected_workspace_id=expected_workspace_id,
-        trusted_key_fingerprints=trusted_key_fingerprints,
-        now=now,
-    )
 
 
 def _check_schema(receipt: dict[str, Any]) -> None:
@@ -547,20 +532,13 @@ def _check_schema(receipt: dict[str, Any]) -> None:
             f"signature must decode to 64 bytes (Ed25519), got {len(sig_bytes)}"
         )
 
+    _check_policy_ref(receipt["policy_ref"])
+    if not _PUBLIC_KEY_FINGERPRINT_RE.fullmatch(receipt["engine_version"]):
+        raise SchemaError("engine_version must be sha256: followed by 64 lowercase hex characters")
     if "policy_eval" in receipt:
         _check_policy_eval(receipt["policy_eval"])
-
-
-def _is_policy_scalar(value: Any) -> bool:
-    return value is None or isinstance(value, (str, bool)) or (
-        isinstance(value, int) and not isinstance(value, bool)
-    )
-
-
-def _is_policy_condition_value(value: Any) -> bool:
-    if _is_policy_scalar(value):
-        return True
-    return isinstance(value, list) and all(_is_policy_scalar(item) for item in value)
+        if receipt["policy_ref"] is None:
+            raise SchemaError("policy_eval requires non-null policy_ref")
 
 
 def _check_exact_keys(obj: dict[str, Any], expected: set[str], prefix: str) -> None:
@@ -572,31 +550,56 @@ def _check_exact_keys(obj: dict[str, Any], expected: set[str], prefix: str) -> N
         raise SchemaError(f"{prefix} missing fields: {sorted(missing)}")
 
 
+def _check_policy_ref(value: Any) -> None:
+    if value is None:
+        return
+    if not isinstance(value, dict):
+        raise SchemaError("policy_ref must be an object or null")
+    _check_exact_keys(value, {"policy_id", "policy_version", "definition_sha256"}, "policy_ref")
+    if not isinstance(value["policy_id"], str) or not value["policy_id"]:
+        raise SchemaError("policy_ref.policy_id must be a nonempty string")
+    version = value["policy_version"]
+    if type(version) is not int or not 1 <= version <= MAX_SAFE_INTEGER:
+        raise SchemaError("policy_ref.policy_version must be a positive safe integer")
+    if not isinstance(value["definition_sha256"], str) or not re.fullmatch(r"[0-9a-f]{64}", value["definition_sha256"]):
+        raise SchemaError("policy_ref.definition_sha256 must be 64 lowercase hex characters")
+
+
 def _check_policy_eval(value: Any) -> None:
     if not isinstance(value, dict):
         raise SchemaError("policy_eval must be an object")
-    _check_exact_keys(value, {"matched_condition", "field_value"}, "policy_eval")
+    _check_exact_keys(value, {"input_sha256", "result"}, "policy_eval")
+    if not isinstance(value["input_sha256"], str) or not re.fullmatch(r"[0-9a-f]{64}", value["input_sha256"]):
+        raise SchemaError("policy_eval.input_sha256 must be 64 lowercase hex characters")
+    _check_policy_result(value["result"])
 
-    matched = value["matched_condition"]
-    if matched is not None:
-        if not isinstance(matched, dict):
-            raise SchemaError("policy_eval.matched_condition must be an object or null")
-        _check_exact_keys(
-            matched,
-            {"field", "op", "value"},
-            "policy_eval.matched_condition",
-        )
-        if not isinstance(matched["field"], str):
-            raise SchemaError("policy_eval.matched_condition.field must be a string")
-        if not isinstance(matched["op"], str):
-            raise SchemaError("policy_eval.matched_condition.op must be a string")
-        if not _is_policy_condition_value(matched["value"]):
-            raise SchemaError(
-                "policy_eval.matched_condition.value must be string, integer, boolean, null, or an array of those"
-            )
 
-    if not _is_policy_scalar(value["field_value"]):
-        raise SchemaError("policy_eval.field_value must be string, integer, boolean, or null")
+def _check_policy_result(value: Any) -> None:
+    if not isinstance(value, dict):
+        raise SchemaError("policy_eval.result must be an object")
+    _check_exact_keys(value, {"profile", "status", "decision", "target", "matched_rule_id", "evaluated_fields"}, "policy_eval.result")
+    if value["profile"] != "allowly.basic.v1" or value["status"] != "ok":
+        raise SchemaError("policy_eval.result requires allowly.basic.v1 successful status")
+    decision = value["decision"]
+    if not isinstance(decision, str) or decision not in ACTION_DECISIONS:
+        raise SchemaError("policy_eval.result.decision must be allow, deny, confirm, or escalate")
+    target = value["target"]
+    if decision in {"allow", "deny"}:
+        valid_target = target is None
+    elif decision == "confirm":
+        valid_target = target == "agent_owner"
+    else:
+        valid_target = isinstance(target, str) and target.startswith("member:") and 7 < len(target) <= 256
+    if not valid_target:
+        raise SchemaError("policy_eval.result.target does not match decision")
+    rule = value["matched_rule_id"]
+    if rule is not None and (not isinstance(rule, str) or not 1 <= len(rule) <= 128):
+        raise SchemaError("policy_eval.result.matched_rule_id must be a bounded nonempty string or null")
+    fields = value["evaluated_fields"]
+    if not isinstance(fields, dict) or any(not isinstance(key, str) or not key or len(key) > 128 for key in fields):
+        raise SchemaError("policy_eval.result.evaluated_fields must be an object with bounded nonempty field names")
+    if rule is None and fields:
+        raise SchemaError("policy_eval.result default requires empty evaluated_fields")
 
 
 def _check_checkpoint_context(value: Any, *, issued_at: str) -> None:
@@ -854,7 +857,6 @@ def _verify_export(
     trusted_key_fingerprints: set[str],
     authorization_id: str | None,
     checkpoint_evidence_path: str | None,
-    check_policy_evaluation: bool,
 ) -> int:
     import sys
 
@@ -926,86 +928,11 @@ def _verify_export(
             trusted_key_fingerprints,
         )
 
-    policy_matched = policy_mismatch = policy_not_checked = 0
-    policy_prerequisites_valid = failed == 0 and chain_rc == 0 and checkpoint_rc == 0
-    if check_policy_evaluation and policy_prerequisites_valid:
-        authorization_receipts_by_id: dict[str, list[dict[str, Any]]] = {}
-        for candidate in chain:
-            candidate_authorization_id = candidate.get("authorization_id")
-            if (
-                candidate.get("event") == "authorization.create"
-                and isinstance(candidate_authorization_id, str)
-            ):
-                authorization_receipts_by_id.setdefault(
-                    candidate_authorization_id, []
-                ).append(candidate)
-        policy_results: list[dict[str, Any]] = []
-        policy_errors: list[tuple[str, VerificationError]] = []
-        for receipt in chain:
-            if "action" not in receipt:
-                continue
-            try:
-                policy_result = verify_policy_evaluation(
-                    receipt,
-                    authorization_receipts_by_id.get(receipt.get("authorization_id"), []),
-                    keys,
-                    expected_workspace_id=expected_workspace_id,
-                    trusted_key_fingerprints=trusted_key_fingerprints,
-                )
-            except VerificationError as exc:
-                policy_errors.append((receipt["receipt_id"], exc))
-                continue
-            policy_results.append(policy_result)
-        if policy_errors:
-            for receipt_id, exc in policy_errors:
-                print(f"INVALID POLICY  {receipt_id}  {exc}", file=sys.stderr)
-            print(
-                "Policy evaluation: skipped because supplied receipt evidence is invalid",
-                file=sys.stderr,
-            )
-            return 1
-        else:
-            for policy_result in policy_results:
-                status = policy_result["status"]
-                diagnostic = policy_result["diagnostic"]
-                print(
-                    f"POLICY {status.upper()}  {policy_result['receipt_id']}  {diagnostic}"
-                )
-                if status == "matched":
-                    policy_matched += 1
-                elif status == "mismatch":
-                    policy_mismatch += 1
-                else:
-                    policy_not_checked += 1
-            policy_total = policy_matched + policy_mismatch + policy_not_checked
-            print(
-                "Policy evaluation: "
-                f"{policy_matched} matched, {policy_mismatch} mismatch, "
-                f"{policy_not_checked} not checked ({policy_total} action receipt(s))"
-            )
-    elif check_policy_evaluation:
-        print(
-            "Policy evaluation: skipped because supplied receipt evidence is invalid",
-            file=sys.stderr,
-        )
-
     if total == 0 and checkpoint_count == 0:
         print("No matching receipts or checkpoints found.", file=sys.stderr)
-        if (
-            check_policy_evaluation
-            and failed == 0
-            and chain_rc == 0
-            and checkpoint_rc == 0
-        ):
-            return 4
         return 1
     if failed != 0 or chain_rc != 0 or checkpoint_rc != 0:
         return 1
-    if check_policy_evaluation:
-        if policy_mismatch:
-            return 3
-        if policy_not_checked or policy_matched == 0:
-            return 4
     return 0
 
 
@@ -1156,14 +1083,6 @@ def main(argv: list[str] | None = None) -> int:
         metavar="FILE",
         help="with --export: recompute checkpoint entries in checkpoint_evidence.json",
     )
-    p.add_argument(
-        "--check-policy-evaluation",
-        action="store_true",
-        help=(
-            "with --export: authenticate creation snapshots and replay every selected "
-            "action receipt's conditional policy evidence"
-        ),
-    )
     args = p.parse_args(argv)
 
     trusted_fingerprints = set(args.trusted_key_fingerprint)
@@ -1180,8 +1099,6 @@ def main(argv: list[str] | None = None) -> int:
             p.error("--authorization-id requires --export")
         if args.checkpoint_evidence:
             p.error("--checkpoint-evidence requires --export")
-        if args.check_policy_evaluation:
-            p.error("--check-policy-evaluation requires --export")
         if len(args.paths) != 2:
             p.error("provide <receipt.json> <keys.json>, or use --export <file> <keys.json>")
 
@@ -1205,7 +1122,6 @@ def main(argv: list[str] | None = None) -> int:
             trusted_fingerprints,
             args.authorization_id,
             args.checkpoint_evidence,
-            args.check_policy_evaluation,
         )
 
     receipt_path, _keys_path = args.paths

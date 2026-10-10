@@ -1,6 +1,6 @@
 # Python Reference Verifier
 
-Packaged Python verifier for Allowly Receipt Format wire version 4.
+Packaged Python verifier for Allowly Receipt Format wire version 5.
 
 ## Install
 
@@ -59,26 +59,6 @@ allowly-receipt-verify \
   keys.json
 ```
 
-Replay conditional policy evidence for every selected action receipt while
-verifying an export. Signed `authorization.create` receipts in the export are
-used as the historical rule snapshots:
-
-```bash
-allowly-receipt-verify \
-  --export chain.jsonl \
-  --check-policy-evaluation \
-  --workspace-id "$ALLOWLY_WORKSPACE_ID" \
-  --trusted-key-fingerprint "$ALLOWLY_TRUSTED_KEY_FINGERPRINT" \
-  keys.json
-```
-
-The policy mode prints one bounded line containing the receipt ID, status, and
-diagnostic for each action receipt, followed by matched, mismatch, and
-not-checked counts. It does not print receipt context or evaluation payloads.
-Lifecycle receipts provide creation evidence and are not counted as action
-results. Missing creation receipts, unsupported historical versions, and action
-receipts without `policy_eval` remain visible as `not_checked`.
-
 `--workspace-id` and at least one `--trusted-key-fingerprint` are required.
 Fingerprints use `sha256:<64 lowercase hex>` over the decoded raw 32-byte
 Ed25519 public key. Repeat the fingerprint flag for every trusted rotation key
@@ -94,13 +74,8 @@ python verifier.py \
   path/to/receipt.json path/to/keys.json
 ```
 
-Exit codes:
-
-- `0` — all presented receipts are valid; in policy mode, at least one action receipt was selected and every selected action receipt is `matched`
-- `1` — invalid receipt evidence, a checkpoint failure, or a chain anomaly (reason on stderr)
-- `2` — command-line usage error
-- `3` — policy mode found one or more `mismatch` results; this takes precedence over incomplete coverage
-- `4` — policy mode found `not_checked`, selected no action receipts, or received an empty unscoped export
+Signature-command exit codes: `0` valid, `1` invalid evidence/checkpoint/chain,
+`2` command-line usage error.
 
 ## Library
 
@@ -131,45 +106,49 @@ except VerificationError as e:
     print(f"invalid: {e}")
 ```
 
-### Replay conditional policy evidence
+### Separate official OPA replay
 
-`verify_policy_evaluation` authenticates the action receipt and every supplied
-authorization receipt before replay. The expected workspace and trusted key
-fingerprints are required. Its result uses the same snake-case fields as the
-TypeScript verifier:
+`allowly-policy-replay` first verifies the receipt with a caller-trusted
+workspace and key fingerprint, then authenticates the full engine manifest,
+complete policy definition, original inner OPA input, Rego bytes, official OPA
+binary and retained runtime archive. It runs only the pinned official OPA
+query and compares the complete provisional result.
 
-```python
-from allowly_receipt_format import verify_policy_evaluation
-
-result = verify_policy_evaluation(
-    action_receipt,
-    authorization_creation_receipts,
-    keys,
-    expected_workspace_id=configured_workspace_id,
-    trusted_key_fingerprints=trusted_fingerprints,
-)
-
-if result["status"] == "matched":
-    print("recorded conditional evidence matches the replay")
-elif result["status"] == "mismatch":
-    print("recorded conditional evidence differs from the replay")
-else:
-    print("policy evidence could not be checked:", result["diagnostic"])
+```bash
+allowly-policy-replay receipt.json keys.json \
+  --workspace-id "$ALLOWLY_WORKSPACE_ID" \
+  --trusted-key-fingerprint "$ALLOWLY_TRUSTED_KEY_FINGERPRINT" \
+  --manifest engine-manifest.json --definition policy-definition.json \
+  --input original-opa-input.json --opa-binary /path/to/opa \
+  --rego-file allowly_basic.rego --runtime-artifact runtime.tar
 ```
 
-The supported profile is `allowly-conditional-evaluation-v1`. A match compares
-only the complete `policy_eval` object. It does not claim that the final
-`allow`, `deny`, `confirm`, or `escalate` decision was reproduced; budgets,
-revocation, rate limits, approvals, and other state can affect that decision.
-See `spec/profiles/allowly-conditional-evaluation-v1.md` for the exact engine,
-operator, typed-comparison, missing-field, and context-reconstruction rules.
+Library users import `replay_policy` from `allowly_receipt_format.policy`.
+Replay exit codes are `0` matched, `3` mismatched, `4` not checked, and
+`1` invalid signature evidence or input file. Missing artifacts or unsupported
+engines never count as a replay success. The command prints only the receipt ID,
+status and diagnostic, with separate signature/enforcement/witness fields;
+private input and result values stay local.
 
-The maintained source supports action and authorization engines `2026-09-16.1`,
-`2026-09-24.1`, `2026-09-27.1`, and `2026-10-09.1`. The last engine is a
-prepared 4.3.1 extension, not included in the already published 4.3.0 package.
-Build from this source for local tests; publish 4.3.1 and update consumer
-registry locks before runtime rollout. Its nested `context.execution.review`
-metadata is authenticated but excluded from the conditional calculation.
+Native replay supports only fixed official OPA 1.21.1 artifacts for
+darwin/arm64, linux/arm64 and linux/amd64. Linux uses the release's static
+artifacts. The complete reported Linux commit includes `-dirty`; this is pinned
+exactly, not normalized. Each artifact SHA-256 was verified against the
+[immutable release](https://github.com/open-policy-agent/opa/releases/tag/v1.21.1)
+metadata digest and its individual checksum asset. The recorded manifest's
+platform, commit and digest must match one fixed pin, and its platform must
+match the replay host. A binary from another supported platform is not a
+fallback. Existing signed Darwin vectors remain unchanged.
+
+Other OS/architecture combinations return `not_checked`. A valid signature
+alone accepts any well-shaped engine identity; replay support is checked
+separately. Retained source-generation evidence is not running-process
+attestation.
+
+OPA's provisional result can differ from top-level `decision` and `reason`.
+Successful replay checks no final budget/day reservation, identity fence,
+approval consumption or TLSNotary proof. Read
+[the complete replay profile](../../spec/profiles/allowly-opa-evaluation-v1.md).
 
 Always pass `expected_workspace_id` to bind the receipt to a workspace — a
 `key_id` alone does not (spec §7, "Workspace binding"). Take that ID from

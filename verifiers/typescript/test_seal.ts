@@ -133,15 +133,15 @@ async function checkSealVerification(): Promise<void> {
   const digest = digestBytes("null");
   const signed = (changes: JsonRecord = {}) => {
     const payload = {
-      schema_version: "4", receipt_id: "rcp_seal_ephemeral", workspace_id: opts.expectedWorkspaceId,
+      schema_version: "5", receipt_id: "rcp_seal_ephemeral", workspace_id: opts.expectedWorkspaceId,
       issued_at: "2026-09-30T00:00:00.000Z", decision: "allow", reason: "authorization_granted_action_active",
       user_id: "allowly:seal", agent_id: "allowly.seal", action: "record.seal", resource: null,
       context: { seal_profile: "allowly.seal.jcs-sha256.v1", record_sha256: digest },
-      authorization_id: "auth_seal_current", engine_version: "2026-09-30.1", alg: "Ed25519", key_id: keys[0].keyId,
+      authorization_id: "auth_seal_current", policy_ref: { policy_id: "pol_test", policy_version: 1, definition_sha256: "a".repeat(64) }, engine_version: "sha256:" + "a".repeat(64), alg: "Ed25519", key_id: keys[0].keyId,
       ...changes,
     };
     // These signing fixtures contain no control characters or non-integer
-    // numbers. Independent JCS therefore agrees with wire-4 §4.2 for them.
+    // numbers. Independent JCS therefore agrees with wire-5 §4.2 for them.
     return { ...payload, signature: sign(null, Buffer.from(jcsCanonicalize(payload)!, "utf8"), privateKey).toString("base64url") };
   };
   const success = { signatureVerified: true, recordMatches: true, failureReason: null };
