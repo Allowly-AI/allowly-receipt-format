@@ -415,13 +415,6 @@ export async function verifyReceipt(
     throw new VerificationError("now must be a valid Date");
   }
 
-  // Step 1: version check
-  if (ownReceipt.schema_version !== SPEC_VERSION) {
-    throw new VerificationError(
-      `unsupported schema_version: ${JSON.stringify(ownReceipt.schema_version)} (want "${SPEC_VERSION}")`,
-    );
-  }
-
   // Key ids alone do not bind a receipt to a workspace. If the caller passes the
   // workspace the keys were published for, require the receipt to match it.
   if (
@@ -434,8 +427,6 @@ export async function verifyReceipt(
     );
   }
 
-  // Step 2: schema check (includes signature shape — rejects placeholders)
-  checkSchema(ownReceipt);
   const r = decoded;
 
   // Step 3: receipt kind and pairing

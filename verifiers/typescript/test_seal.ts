@@ -1,7 +1,6 @@
 import { readFileSync } from "node:fs";
 import assert from "node:assert/strict";
 import { createHash, generateKeyPairSync, sign } from "node:crypto";
-import jcsCanonicalize from "canonicalize";
 import { fingerprintJson, SealJsonError } from "./browser/sealJson.js";
 import {
   SEAL_MAX_DEPTH,
@@ -142,8 +141,6 @@ async function checkSealVerification(): Promise<void> {
       authorization_id: "auth_seal_current", policy_ref: { policy_id: "pol_test", policy_version: 1, definition_sha256: "a".repeat(64) }, engine_version: "sha256:" + "a".repeat(64),
       ...changes,
     };
-    // These signing fixtures contain no control characters or non-integer
-    // numbers. Independent JCS therefore agrees with wire-5 §4.2 for them.
     return jwsReceipt(payload, keys[0].keyId, sign(null, jwsSigningInput(payload, keys[0].keyId), privateKey)) as unknown as JsonRecord;
   };
   const success = { signatureVerified: true, recordMatches: true, failureReason: null };
