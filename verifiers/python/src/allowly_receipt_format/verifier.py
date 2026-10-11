@@ -644,7 +644,7 @@ def _check_policy_result(value: Any) -> None:
     if not isinstance(fields, dict) or any(not isinstance(key, str) or not key or len(key) > 128 for key in fields):
         raise SchemaError("policy_eval.result.evaluated_fields must be an object with bounded nonempty field names")
     if rule is None and fields:
-        raise SchemaError("policy_eval.result default requires empty evaluated_fields")
+        raise SchemaError("policy_eval.result action decision requires empty evaluated_fields")
 
 
 def _check_checkpoint_context(value: Any, *, issued_at: str) -> None:

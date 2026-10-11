@@ -1023,7 +1023,7 @@ function checkPolicyEval(value: unknown): void {
   if (rule !== null && (typeof rule !== "string" || !rule || [...rule].length > 128)) throw new VerificationError("policy_eval.result.matched_rule_id must be a bounded nonempty string or null");
   const fields = result.evaluated_fields;
   if (typeof fields !== "object" || fields === null || Array.isArray(fields) || Object.keys(fields).some(key => !key || [...key].length > 128)) throw new VerificationError("policy_eval.result.evaluated_fields must be an object with bounded nonempty field names");
-  if (rule === null && Object.keys(fields).length) throw new VerificationError("policy_eval.result default requires empty evaluated_fields");
+  if (rule === null && Object.keys(fields).length) throw new VerificationError("policy_eval.result action decision requires empty evaluated_fields");
 }
 
 const CHECKPOINT_ROOT_RE = /^sha256:[0-9a-f]{64}$/;

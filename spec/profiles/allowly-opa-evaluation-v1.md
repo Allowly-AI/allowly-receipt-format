@@ -33,23 +33,41 @@ checks and full-witness/no-downgrade rules.
 ## BasicPolicy and provisional output
 
 Each normalized `allowly.basic.v1` BasicPolicy has exactly `profile`, `action`,
-`default_decision`, `default_target`, `fields`, and ordered `rules`.
+`decision`, `target`, `fields`, and ordered `rules`.
 Action names are nonempty, at most 256 Unicode scalar values, and differ from
 decision labels. `fields` maps at most 64 nonempty field names (at most 128
-Unicode scalar values) to `string`, `integer`, `boolean`, or `null`.
+Unicode scalar values) to `string`, `integer`, `boolean`, `null`, or `list`.
 At most 32 ordered rules are allowed. Each has exactly `id`, `decision`,
 `target`, and a nonempty `conditions` list of at most 10 entries.
 Rule IDs are unique, nonempty and at most 128 Unicode scalar values.
 
 Conditions have exactly `field`, `op`, `value`. Fields must be declared.
-Operators are `eq`, `ne`, `gt`, `gte`, `lt`, `lte`, `in`, `not_in`, and `exists`.
+Operators are `eq`, `ne`, `gt`, `gte`, `lt`, `lte`, `in`, `not_in`, `exists`,
+`contains_any`, `contains_none`, and `empty`.
 Comparisons require values matching the declared scalar type. Ordered
 comparisons require integers. Membership uses arrays of at most 64 typed
 scalars. `exists` requires a boolean and preserves presence versus explicit
-null. The first matching rule wins; otherwise the default applies. Missing
-or wrongly typed comparison inputs are invalid rather than default allows.
+null. List fields contain only JSON scalars, with mixed types allowed, never
+nested arrays/objects. `contains_any` requires a nonempty typed intersection;
+`contains_none` requires an empty typed intersection. Their operands contain
+1–64 scalars. `empty` requires a strict boolean: true means an empty list,
+false means a nonempty list. Exact JSON types keep true, 1, "1" and null distinct;
+duplicates and ordering do not change truth. All integers use the canonical
+safe range; the complete canonical OPA request is limited to 65,536 bytes.
+Existing HTTP context byte/depth/key limits also apply; they are not raised.
+No aliases, scalar type unions, or separate context-list item cap are added.
+The action's `decision` is its Allow/Deny/Confirm/Escalate choice, not a fallback.
+At least one condition within a rule must match (OR). The action decision and
+all matching rules use fixed priority `deny > escalate > confirm > allow`,
+independent of rule order. Rules can strengthen the action choice, never weaken
+it. Action Deny always wins, including a matching conditional Deny. For the
+other action choices, a matching rule of equal priority wins; the first matching
+rule within the winning decision supplies its exact target, rule ID and evaluated
+fields. A stronger action choice or no matching rule selects the action's exact
+target with a null rule ID and empty evaluated fields. All non-`exists` comparison inputs are validated before rule
+selection; missing or wrongly typed inputs are invalid even if another rule matches.
 
-Authoring validates every rule/default target: allow and deny require null,
+Authoring requires the action target key and validates every action/rule target: allow and deny require null,
 confirm requires exactly `agent_owner`, and escalate requires
 `member:<nonempty opaque member ID>` (at most 256 Unicode scalar values).
 Owner means the existing immutable grant-owner snapshot. Membership is checked
@@ -61,9 +79,12 @@ only when replay is wanted; evidence hashes cannot reconstruct it.
 
 Successful output has exactly `profile: allowly.basic.v1`, `status: ok`,
 `decision`, `target`, `matched_rule_id`, and `evaluated_fields`. The latter
-records compared fields present in the original context; missing exists inputs
-are omitted and present null stays null. A default has null rule ID and empty
-evaluated fields. All values obey receipt canonicalization bounds.
+records all consulted fields present in the winning rule's original context,
+including conditions that did not match. It does not identify matching conditions.
+Full lists preserve original order and duplicates. Missing exists inputs
+are omitted and present null stays null. An action-level result has null rule ID
+and empty evaluated fields. The full original input is still committed and signed,
+including lower-priority rules and their inputs. All values obey receipt canonicalization bounds.
 Undefined/malformed/unavailable or invalid-input outputs do not count as
 successful evidence and never authorize execution.
 
@@ -106,7 +127,7 @@ require a new immutable identity. Retain exact artifacts, never repoint an ID.
 The current local replay pin is official OPA 1.21.1, commit
 `2a109e54103370d2ef288782ef3cb4c8a37902b2`, platform `darwin/arm64`, binary SHA-256
 `a00a6469a0968c47c01137ed0dacaa88148be5d0eaa8524310cd371f3a98a169`, and Rego SHA-256
-`76d8e826f88e0e1fc34d274687044609b2c298e562289f502b712e907928b40c`.
+`10c38e8f384ac18c5e4a20c687a9260565666ad982bd4975d488422c480b9909`.
 These are actual local artifacts, not production or Linux pins.
 The retained runtime archive contains this signed bundle and its separate
 release trust anchor at `ops/opa/bundle-public.pem`. These hashes bind both to
@@ -149,8 +170,10 @@ retain their existing semantics.
 ## Local regression evidence
 
 `vectors/policy/profile-v1.json` carries deterministic fixture-key signatures
-for complete OPA results, missing/null exists evidence, OPA-allow/final-deny and
-tampered commitments. Its retained fixture manifest identifies a real local
+for complete OPA results, all six decision-priority collisions, scalar-list
+operators and OR truth/order counterexamples, all action/rule priority and target
+ties, all four action choices without matching rules, missing/null
+exists evidence, OPA-allow/final-deny and tampered commitments. Its retained fixture manifest identifies a real local
 runtime archive held by the workspace builder. It is test evidence, not a
 published production engine. Regeneration does not need a second interpreter.
 

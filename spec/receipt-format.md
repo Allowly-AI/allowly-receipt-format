@@ -533,7 +533,7 @@ Vectors include:
 - A receipt with non-ASCII characters in multiple fields (tests UTF-8 handling).
 - A receipt with a rich nested context object (tests canonicalization correctness).
 - An `escalate` receipt with escalation context.
-- Complete successful OPA results for deny, confirm, escalate and default allow.
+- Complete successful OPA results for deny, confirm, escalate and action-level allow.
 - Provisional OPA allow with final Allowly deny due to budget enforcement.
 - Record-only SEAL with null policy reference.
 - A receipt whose `context` contains control characters in a string value (tests the `\uXXXX` escaping of canonicalization rule 5).
