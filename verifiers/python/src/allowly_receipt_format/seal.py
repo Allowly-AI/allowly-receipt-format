@@ -162,7 +162,7 @@ def _verify_seal(
     if not isinstance(expected_workspace_id, str) or not expected_workspace_id:
         return SealVerificationResult(False, False, "receipt_verification_failed")
     try:
-        verify_receipt(
+        receipt = verify_receipt(
             receipt,
             public_keys,
             expected_workspace_id=expected_workspace_id,

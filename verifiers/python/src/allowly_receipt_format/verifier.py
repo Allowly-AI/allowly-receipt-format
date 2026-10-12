@@ -1,7 +1,7 @@
 """
 Allowly Receipt Verifier (Python reference implementation).
 
-Verifies Allowly receipts per receipt-format.md wire version 4.
+Verifies Allowly receipts per receipt-format.md wire version 5.
 
 Usage (library):
     from allowly_receipt_format import verify_receipt, VerificationError, load_keys_from_json
@@ -31,11 +31,11 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
+import jwt
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
-from cryptography.exceptions import InvalidSignature
 
 
-SPEC_VERSION = "4"
+SPEC_VERSION = "5"
 ACTION_DECISIONS = {"allow", "deny", "confirm", "escalate"}
 EVENT_DECISIONS = {
     "authorization.create": {"authorization_granted"},
@@ -50,7 +50,7 @@ EVENT_ONLY_DECISIONS = {decision for decisions in EVENT_DECISIONS.values() for d
 REQUIRED_FIELDS = {
     "schema_version", "receipt_id", "workspace_id", "issued_at", "decision", "reason",
     "user_id", "agent_id", "resource", "context",
-    "authorization_id", "engine_version", "alg", "key_id", "signature",
+    "authorization_id", "policy_ref", "engine_version",
 }
 OPTIONAL_FIELDS = {"policy_eval"}
 # Exactly one of these must be present:
@@ -81,12 +81,14 @@ __all__ = [
     "UnknownKeyError",
     "VerificationError",
     "canonicalize",
+    "decode_receipt",
+    "jws_signing_input",
+    "jws_receipt",
     "checkpoint_merkle_root",
     "load_keys_from_json",
     "main",
     "matches_ref",
     "public_key_fingerprint",
-    "verify_policy_evaluation",
     "verify_receipt",
     "verify_checkpoint",
 ]
@@ -209,7 +211,7 @@ def canonicalize(payload: dict[str, Any]) -> bytes:
 
     NOTE: this is a hand-rolled serializer, not ``json.dumps(sort_keys=True,
     ...)``. The stdlib helper diverges from the spec in two ways that silently
-    break cross-language signature verification:
+    break cross-language evidence hash agreement:
       1. It sorts keys by Unicode code point, but §4.2 rule 3 mandates UTF-16
          code-unit order — these differ for non-BMP keys (e.g. an emoji key
          sorts *before* U+FF61 under UTF-16, *after* under code point).
@@ -220,16 +222,86 @@ def canonicalize(payload: dict[str, Any]) -> bytes:
     return _encode_value(payload).encode("utf-8")
 
 
+def jws_signing_input(payload: dict[str, Any], key_id: str) -> bytes:
+    """Return standard JWS bytes for an external Ed25519 signer such as KMS."""
+    if not isinstance(key_id, str) or not key_id:
+        raise SchemaError("JWS kid must be a nonempty string")
+    header = {"alg": "EdDSA", "kid": key_id, "typ": "allowly-receipt+jws"}
+    return b".".join(base64.urlsafe_b64encode(canonicalize(value)).rstrip(b"=")
+                     for value in (header, payload))
+
+
+def jws_receipt(payload: dict[str, Any], key_id: str, signature: bytes | str) -> dict[str, str]:
+    """Package an external signature; this helper does not sign or verify it."""
+    protected, encoded = jws_signing_input(payload, key_id).decode("ascii").split(".")
+    signature = base64.urlsafe_b64encode(signature).decode().rstrip("=") if isinstance(signature, bytes) else signature
+    try:
+        valid_signature = isinstance(signature, str) and len(_b64url_decode(signature)) == 64
+    except ValueError:
+        valid_signature = False
+    if not valid_signature:
+        raise SchemaError("signature must decode to 64 bytes (Ed25519)")
+    return {"protected": protected, "payload": encoded, "signature": signature}
+
+
+def _reject_fractional_json_number(token: str) -> None:
+    raise SchemaError("receipts must not contain non-integer numbers")
+
+
+def _jws_parts(receipt: dict[str, Any]) -> tuple[dict[str, Any], dict[str, Any]]:
+    if not isinstance(receipt, dict):
+        raise SchemaError("receipt must be an object")
+    if set(receipt) != {"protected", "payload", "signature"}:
+        raise SchemaError("receipt must be a flattened JWS with exactly protected, payload, signature")
+    if any(not isinstance(value, str) for value in receipt.values()):
+        raise SchemaError("JWS segments must be strings")
+    if sum(len(value) for value in receipt.values()) > 8 * 1024 * 1024:
+        raise SchemaError("JWS exceeds size limit")
+    try:
+        header, payload = (json.loads(_b64url_decode(receipt[field]).decode("utf-8"),
+            object_pairs_hook=_reject_duplicate_json_names,
+            parse_float=_reject_fractional_json_number)
+            for field in ("protected", "payload"))
+        signature = _b64url_decode(receipt["signature"])
+    except (ValueError, UnicodeError, RecursionError) as exc:
+        raise SchemaError("invalid JWS base64url or strict UTF-8 JSON") from exc
+    if not isinstance(header, dict) or set(header) != {"alg", "kid", "typ"}:
+        raise SchemaError("JWS protected header requires exactly alg, kid, typ")
+    if header["alg"] != "EdDSA" or header["typ"] != "allowly-receipt+jws":
+        raise SchemaError("unsupported JWS algorithm or type")
+    if not isinstance(header["kid"], str) or not header["kid"]:
+        raise SchemaError("JWS kid must be a nonempty string")
+    if len(signature) != 64:
+        raise SchemaError("signature must decode to 64 bytes (Ed25519)")
+    if not isinstance(payload, dict):
+        raise SchemaError("JWS payload must be an evidence object")
+    _validate_tree(header)
+    _validate_tree(payload)
+    return header, payload
+
+
+def decode_receipt(receipt: dict[str, Any]) -> dict[str, Any]:
+    """Strict unverified decoding for display. Never use this as authorization."""
+    _, payload = _jws_parts(receipt)
+    if payload.get("schema_version") != SPEC_VERSION:
+        raise SchemaError(f"unsupported schema_version: {payload.get('schema_version')!r}")
+    _check_schema(payload)
+    return payload
+
+
 def checkpoint_merkle_root(receipts: list[dict[str, Any]]) -> str:
     """Commit to an unordered signed-receipt set using spec §3.7."""
     leaves: list[bytes] = []
     seen_ids: set[str] = set()
     for receipt in receipts:
-        if not isinstance(receipt, dict) or not isinstance(receipt.get("receipt_id"), str):
+        if not isinstance(receipt, dict) or "protected" not in receipt:
             raise SchemaError("checkpoint member must be a receipt object with receipt_id")
-        if receipt["receipt_id"] in seen_ids:
-            raise SchemaError(f"duplicate checkpoint member receipt_id: {receipt['receipt_id']!r}")
-        seen_ids.add(receipt["receipt_id"])
+        payload = decode_receipt(receipt)
+        if not isinstance(payload.get("receipt_id"), str):
+            raise SchemaError("checkpoint member must be a receipt object with receipt_id")
+        if payload["receipt_id"] in seen_ids:
+            raise SchemaError(f"duplicate checkpoint member receipt_id: {payload['receipt_id']!r}")
+        seen_ids.add(payload["receipt_id"])
         leaves.append(hashlib.sha256(b"\x00" + canonicalize(receipt)).digest())
     leaves.sort()
     if not leaves:
@@ -340,7 +412,7 @@ def verify_receipt(
     now: datetime | None = None,
     expected_workspace_id: str | None = None,
     trusted_key_fingerprints: set[str] | frozenset[str] | None = None,
-) -> None:
+) -> dict[str, Any]:
     """
     Verify a receipt. Raises VerificationError on any failure.
 
@@ -355,8 +427,8 @@ def verify_receipt(
         trusted_key_fingerprints: if given, the selected public key's canonical
             ``sha256:<hex>`` fingerprint MUST be present in this caller-trusted set.
     """
-    if not isinstance(receipt, dict):
-        raise SchemaError("receipt must be an object")
+    envelope = dict(receipt) if isinstance(receipt, dict) else receipt
+    header, receipt = _jws_parts(envelope)
     if now is None:
         now = datetime.now(timezone.utc)
     elif type(now) is not datetime or now.utcoffset() is None:
@@ -444,9 +516,17 @@ def verify_receipt(
                 f"got {decision!r}"
             )
 
-    # Step 4: algorithm check
-    if receipt["alg"] != "Ed25519":
-        raise SchemaError(f"unsupported signature alg: {receipt['alg']!r}")
+    if has_event:
+        if event == "receipt.checkpoint":
+            if receipt["policy_ref"] is not None:
+                raise SchemaError("receipt.checkpoint must have null policy_ref")
+        elif receipt["policy_ref"] is None:
+            raise SchemaError("authorization event must have non-null policy_ref")
+    elif authorization_id is None:
+        if receipt["policy_ref"] is not None:
+            raise SchemaError("unresolved authorization must have null policy_ref")
+    elif receipt["policy_ref"] is None and action != "record.seal":
+        raise SchemaError("governed action must have non-null policy_ref")
 
     # Step 5: timestamp sanity
     issued_at = _parse_rfc3339(receipt["issued_at"])
@@ -455,54 +535,22 @@ def verify_receipt(
             f"receipt issued in the future: {issued_at.isoformat()} > {now.isoformat()}"
         )
 
-    # Step 6: canonicalize
-    payload = {k: v for k, v in receipt.items() if k != "signature"}
-    canonical = canonicalize(payload)
-
     # Step 7: signature verification
-    key = _find_key(public_keys, receipt["key_id"], issued_at)
+    key = _find_key(public_keys, header["kid"], issued_at)
     fingerprint = public_key_fingerprint(key)
     if (
         trusted_key_fingerprints is not None
         and fingerprint not in trusted_key_fingerprints
     ):
         raise VerificationError(f"public key fingerprint is not trusted: {fingerprint}")
-    sig_bytes = _b64url_decode(receipt["signature"])  # length already validated in schema check
-
     try:
-        Ed25519PublicKey.from_public_bytes(key.public_key_bytes).verify(
-            sig_bytes, canonical
+        jwt.api_jws.PyJWS().decode_complete(
+            ".".join(envelope[field] for field in ("protected", "payload", "signature")),
+            Ed25519PublicKey.from_public_bytes(key.public_key_bytes), algorithms=["EdDSA"],
         )
-    except InvalidSignature:
+    except jwt.PyJWTError:
         raise SignatureMismatchError("signature verification failed") from None
-
-    # Step 8: accept (implicit — no exception raised)
-
-
-def verify_policy_evaluation(
-    receipt: dict[str, Any],
-    authorization_receipts: list[dict[str, Any]],
-    public_keys: list[PublicKey],
-    *,
-    expected_workspace_id: str,
-    trusted_key_fingerprints: set[str] | frozenset[str],
-    now: datetime | None = None,
-) -> dict[str, Any]:
-    """Authenticate and replay Allowly conditional policy evidence.
-
-    The implementation lives in a separate module so the base wire verifier
-    keeps its existing meaning and dependency surface.
-    """
-    from .policy import verify_policy_evaluation as replay
-
-    return replay(
-        receipt,
-        authorization_receipts,
-        public_keys,
-        expected_workspace_id=expected_workspace_id,
-        trusted_key_fingerprints=trusted_key_fingerprints,
-        now=now,
-    )
+    return receipt
 
 
 def _check_schema(receipt: dict[str, Any]) -> None:
@@ -529,38 +577,13 @@ def _check_schema(receipt: dict[str, Any]) -> None:
     if not isinstance(receipt["context"], dict):
         raise SchemaError("context must be an object")
 
-    for field in ("alg", "key_id", "signature"):
-        if not isinstance(receipt[field], str):
-            raise SchemaError(f"{field} must be a string")
-
-    # Signature text must be canonical base64url and decode to exactly 64 bytes.
-    # This rejects placeholder strings ("pending", empty, anything malformed)
-    # before the verification path even starts.
-    try:
-        sig_bytes = _b64url_decode(receipt["signature"])
-    except Exception:
-        raise SchemaError(
-            f"signature is not valid canonical base64url: {receipt['signature']!r}"
-        )
-    if len(sig_bytes) != 64:
-        raise SchemaError(
-            f"signature must decode to 64 bytes (Ed25519), got {len(sig_bytes)}"
-        )
-
+    _check_policy_ref(receipt["policy_ref"])
+    if not _PUBLIC_KEY_FINGERPRINT_RE.fullmatch(receipt["engine_version"]):
+        raise SchemaError("engine_version must be sha256: followed by 64 lowercase hex characters")
     if "policy_eval" in receipt:
         _check_policy_eval(receipt["policy_eval"])
-
-
-def _is_policy_scalar(value: Any) -> bool:
-    return value is None or isinstance(value, (str, bool)) or (
-        isinstance(value, int) and not isinstance(value, bool)
-    )
-
-
-def _is_policy_condition_value(value: Any) -> bool:
-    if _is_policy_scalar(value):
-        return True
-    return isinstance(value, list) and all(_is_policy_scalar(item) for item in value)
+        if receipt["policy_ref"] is None:
+            raise SchemaError("policy_eval requires non-null policy_ref")
 
 
 def _check_exact_keys(obj: dict[str, Any], expected: set[str], prefix: str) -> None:
@@ -572,31 +595,56 @@ def _check_exact_keys(obj: dict[str, Any], expected: set[str], prefix: str) -> N
         raise SchemaError(f"{prefix} missing fields: {sorted(missing)}")
 
 
+def _check_policy_ref(value: Any) -> None:
+    if value is None:
+        return
+    if not isinstance(value, dict):
+        raise SchemaError("policy_ref must be an object or null")
+    _check_exact_keys(value, {"policy_id", "policy_version", "definition_sha256"}, "policy_ref")
+    if not isinstance(value["policy_id"], str) or not value["policy_id"]:
+        raise SchemaError("policy_ref.policy_id must be a nonempty string")
+    version = value["policy_version"]
+    if type(version) is not int or not 1 <= version <= MAX_SAFE_INTEGER:
+        raise SchemaError("policy_ref.policy_version must be a positive safe integer")
+    if not isinstance(value["definition_sha256"], str) or not re.fullmatch(r"[0-9a-f]{64}", value["definition_sha256"]):
+        raise SchemaError("policy_ref.definition_sha256 must be 64 lowercase hex characters")
+
+
 def _check_policy_eval(value: Any) -> None:
     if not isinstance(value, dict):
         raise SchemaError("policy_eval must be an object")
-    _check_exact_keys(value, {"matched_condition", "field_value"}, "policy_eval")
+    _check_exact_keys(value, {"input_sha256", "result"}, "policy_eval")
+    if not isinstance(value["input_sha256"], str) or not re.fullmatch(r"[0-9a-f]{64}", value["input_sha256"]):
+        raise SchemaError("policy_eval.input_sha256 must be 64 lowercase hex characters")
+    _check_policy_result(value["result"])
 
-    matched = value["matched_condition"]
-    if matched is not None:
-        if not isinstance(matched, dict):
-            raise SchemaError("policy_eval.matched_condition must be an object or null")
-        _check_exact_keys(
-            matched,
-            {"field", "op", "value"},
-            "policy_eval.matched_condition",
-        )
-        if not isinstance(matched["field"], str):
-            raise SchemaError("policy_eval.matched_condition.field must be a string")
-        if not isinstance(matched["op"], str):
-            raise SchemaError("policy_eval.matched_condition.op must be a string")
-        if not _is_policy_condition_value(matched["value"]):
-            raise SchemaError(
-                "policy_eval.matched_condition.value must be string, integer, boolean, null, or an array of those"
-            )
 
-    if not _is_policy_scalar(value["field_value"]):
-        raise SchemaError("policy_eval.field_value must be string, integer, boolean, or null")
+def _check_policy_result(value: Any) -> None:
+    if not isinstance(value, dict):
+        raise SchemaError("policy_eval.result must be an object")
+    _check_exact_keys(value, {"profile", "status", "decision", "target", "matched_rule_id", "evaluated_fields"}, "policy_eval.result")
+    if value["profile"] != "allowly.basic.v1" or value["status"] != "ok":
+        raise SchemaError("policy_eval.result requires allowly.basic.v1 successful status")
+    decision = value["decision"]
+    if not isinstance(decision, str) or decision not in ACTION_DECISIONS:
+        raise SchemaError("policy_eval.result.decision must be allow, deny, confirm, or escalate")
+    target = value["target"]
+    if decision in {"allow", "deny"}:
+        valid_target = target is None
+    elif decision == "confirm":
+        valid_target = target == "agent_owner"
+    else:
+        valid_target = isinstance(target, str) and target.startswith("member:") and 7 < len(target) <= 256
+    if not valid_target:
+        raise SchemaError("policy_eval.result.target does not match decision")
+    rule = value["matched_rule_id"]
+    if rule is not None and (not isinstance(rule, str) or not 1 <= len(rule) <= 128):
+        raise SchemaError("policy_eval.result.matched_rule_id must be a bounded nonempty string or null")
+    fields = value["evaluated_fields"]
+    if not isinstance(fields, dict) or any(not isinstance(key, str) or not key or len(key) > 128 for key in fields):
+        raise SchemaError("policy_eval.result.evaluated_fields must be an object with bounded nonempty field names")
+    if rule is None and fields:
+        raise SchemaError("policy_eval.result action decision requires empty evaluated_fields")
 
 
 def _check_checkpoint_context(value: Any, *, issued_at: str) -> None:
@@ -648,32 +696,32 @@ def verify_checkpoint(
     trusted_key_fingerprints: set[str] | frozenset[str] | None = None,
 ) -> None:
     """Verify a signed checkpoint and recompute its exact presented member set."""
-    verify_receipt(
+    checkpoint_payload = verify_receipt(
         checkpoint,
         public_keys,
         now=now,
         expected_workspace_id=expected_workspace_id,
         trusted_key_fingerprints=trusted_key_fingerprints,
     )
-    if checkpoint.get("event") != "receipt.checkpoint":
+    if checkpoint_payload.get("event") != "receipt.checkpoint":
         raise SchemaError("checkpoint receipt must have event='receipt.checkpoint'")
-    context = checkpoint["context"]
+    context = checkpoint_payload["context"]
     period_start = _parse_rfc3339(context["period_start"])
     period_end = _parse_rfc3339(context["period_end"])
     for receipt in receipts:
-        verify_receipt(
+        payload = verify_receipt(
             receipt,
             public_keys,
             now=now,
             expected_workspace_id=expected_workspace_id,
             trusted_key_fingerprints=trusted_key_fingerprints,
         )
-        if receipt.get("event") == "receipt.checkpoint":
+        if payload.get("event") == "receipt.checkpoint":
             raise SchemaError("receipt.checkpoint cannot be a checkpoint member")
-        issued_at = _parse_rfc3339(receipt["issued_at"])
+        issued_at = _parse_rfc3339(payload["issued_at"])
         if not period_start <= issued_at < period_end:
             raise SchemaError(
-                f"checkpoint member {receipt['receipt_id']!r} falls outside checkpoint period"
+                f"checkpoint member {payload['receipt_id']!r} falls outside checkpoint period"
             )
     if context["receipt_count"] != len(receipts):
         raise VerificationError(
@@ -685,17 +733,17 @@ def verify_checkpoint(
             f"checkpoint merkle_root mismatch: committed {context['merkle_root']}, got {root}"
         )
     if previous_checkpoint is not None:
-        verify_receipt(
+        previous_payload = verify_receipt(
             previous_checkpoint,
             public_keys,
             now=now,
             expected_workspace_id=expected_workspace_id,
             trusted_key_fingerprints=trusted_key_fingerprints,
         )
-        if previous_checkpoint.get("event") != "receipt.checkpoint":
+        if previous_payload.get("event") != "receipt.checkpoint":
             raise SchemaError("previous checkpoint must have event='receipt.checkpoint'")
-        previous_context = previous_checkpoint["context"]
-        if context["previous_checkpoint_id"] != previous_checkpoint["receipt_id"]:
+        previous_context = previous_payload["context"]
+        if context["previous_checkpoint_id"] != previous_payload["receipt_id"]:
             raise VerificationError("checkpoint previous_checkpoint_id mismatch")
         if context["previous_merkle_root"] != previous_context["merkle_root"]:
             raise VerificationError("checkpoint previous_merkle_root mismatch")
@@ -854,7 +902,6 @@ def _verify_export(
     trusted_key_fingerprints: set[str],
     authorization_id: str | None,
     checkpoint_evidence_path: str | None,
-    check_policy_evaluation: bool,
 ) -> int:
     import sys
 
@@ -882,25 +929,32 @@ def _verify_export(
                 failed += 1
                 print(f"INVALID  line {lineno}: not a JSON object", file=sys.stderr)
                 continue
-            if authorization_id is not None and receipt.get("authorization_id") != authorization_id:
+            try:
+                payload = decode_receipt(receipt)
+            except VerificationError as exc:
+                total += 1
+                failed += 1
+                print(f"INVALID line {lineno}: {exc}", file=sys.stderr)
+                continue
+            if authorization_id is not None and payload.get("authorization_id") != authorization_id:
                 skipped += 1
                 continue
             total += 1
-            rid = receipt.get("receipt_id", f"line {lineno}")
+            rid = payload.get("receipt_id", f"line {lineno}")
             try:
-                verify_receipt(
+                payload = verify_receipt(
                     receipt,
                     keys,
                     expected_workspace_id=expected_workspace_id,
                     trusted_key_fingerprints=trusted_key_fingerprints,
                 )
-                if receipt["receipt_id"] in verified_by_id:
-                    raise SchemaError(f"duplicate receipt_id in export: {receipt['receipt_id']!r}")
-                label = receipt.get("action") or receipt.get("event") or "?"
-                print(f"OK  {rid}  {label}  {receipt.get('decision')}")
+                if payload["receipt_id"] in verified_by_id:
+                    raise SchemaError(f"duplicate receipt_id in export: {payload['receipt_id']!r}")
+                label = payload.get("action") or payload.get("event") or "?"
+                print(f"OK  {rid}  {label}  {payload.get('decision')}")
                 ok += 1
-                chain.append(receipt)
-                verified_by_id[receipt["receipt_id"]] = receipt
+                chain.append(payload)
+                verified_by_id[payload["receipt_id"]] = receipt
             except VerificationError as e:
                 print(f"INVALID  {rid}  {e}", file=sys.stderr)
                 failed += 1
@@ -926,86 +980,11 @@ def _verify_export(
             trusted_key_fingerprints,
         )
 
-    policy_matched = policy_mismatch = policy_not_checked = 0
-    policy_prerequisites_valid = failed == 0 and chain_rc == 0 and checkpoint_rc == 0
-    if check_policy_evaluation and policy_prerequisites_valid:
-        authorization_receipts_by_id: dict[str, list[dict[str, Any]]] = {}
-        for candidate in chain:
-            candidate_authorization_id = candidate.get("authorization_id")
-            if (
-                candidate.get("event") == "authorization.create"
-                and isinstance(candidate_authorization_id, str)
-            ):
-                authorization_receipts_by_id.setdefault(
-                    candidate_authorization_id, []
-                ).append(candidate)
-        policy_results: list[dict[str, Any]] = []
-        policy_errors: list[tuple[str, VerificationError]] = []
-        for receipt in chain:
-            if "action" not in receipt:
-                continue
-            try:
-                policy_result = verify_policy_evaluation(
-                    receipt,
-                    authorization_receipts_by_id.get(receipt.get("authorization_id"), []),
-                    keys,
-                    expected_workspace_id=expected_workspace_id,
-                    trusted_key_fingerprints=trusted_key_fingerprints,
-                )
-            except VerificationError as exc:
-                policy_errors.append((receipt["receipt_id"], exc))
-                continue
-            policy_results.append(policy_result)
-        if policy_errors:
-            for receipt_id, exc in policy_errors:
-                print(f"INVALID POLICY  {receipt_id}  {exc}", file=sys.stderr)
-            print(
-                "Policy evaluation: skipped because supplied receipt evidence is invalid",
-                file=sys.stderr,
-            )
-            return 1
-        else:
-            for policy_result in policy_results:
-                status = policy_result["status"]
-                diagnostic = policy_result["diagnostic"]
-                print(
-                    f"POLICY {status.upper()}  {policy_result['receipt_id']}  {diagnostic}"
-                )
-                if status == "matched":
-                    policy_matched += 1
-                elif status == "mismatch":
-                    policy_mismatch += 1
-                else:
-                    policy_not_checked += 1
-            policy_total = policy_matched + policy_mismatch + policy_not_checked
-            print(
-                "Policy evaluation: "
-                f"{policy_matched} matched, {policy_mismatch} mismatch, "
-                f"{policy_not_checked} not checked ({policy_total} action receipt(s))"
-            )
-    elif check_policy_evaluation:
-        print(
-            "Policy evaluation: skipped because supplied receipt evidence is invalid",
-            file=sys.stderr,
-        )
-
     if total == 0 and checkpoint_count == 0:
         print("No matching receipts or checkpoints found.", file=sys.stderr)
-        if (
-            check_policy_evaluation
-            and failed == 0
-            and chain_rc == 0
-            and checkpoint_rc == 0
-        ):
-            return 4
         return 1
     if failed != 0 or chain_rc != 0 or checkpoint_rc != 0:
         return 1
-    if check_policy_evaluation:
-        if policy_mismatch:
-            return 3
-        if policy_not_checked or policy_matched == 0:
-            return 4
     return 0
 
 
@@ -1034,11 +1013,12 @@ def _verify_checkpoint_evidence(
             if not isinstance(entry, dict) or set(entry) != {"checkpoint", "member_receipt_ids"}:
                 raise SchemaError("checkpoint evidence entry has wrong fields")
             checkpoint = entry["checkpoint"]
-            if not isinstance(checkpoint, dict) or not isinstance(checkpoint.get("receipt_id"), str):
+            payload = decode_receipt(checkpoint)
+            if not isinstance(payload.get("receipt_id"), str):
                 raise SchemaError("checkpoint evidence checkpoint must be a receipt object")
-            if checkpoint["receipt_id"] in checkpoints:
+            if payload["receipt_id"] in checkpoints:
                 raise SchemaError("duplicate checkpoint receipt_id in evidence")
-            checkpoints[checkpoint["receipt_id"]] = checkpoint
+            checkpoints[payload["receipt_id"]] = checkpoint
 
         for entry in entries:
             checkpoint = entry["checkpoint"]
@@ -1054,7 +1034,8 @@ def _verify_checkpoint_evidence(
                 raise VerificationError(
                     f"checkpoint evidence omits member receipt(s): {', '.join(missing[:5])}"
                 )
-            checkpoint_context = checkpoint.get("context")
+            payload = decode_receipt(checkpoint)
+            checkpoint_context = payload.get("context")
             previous_id = (
                 checkpoint_context.get("previous_checkpoint_id")
                 if isinstance(checkpoint_context, dict)
@@ -1069,8 +1050,8 @@ def _verify_checkpoint_evidence(
                 trusted_key_fingerprints=trusted_key_fingerprints,
             )
             print(
-                f"CHECKPOINT OK  {checkpoint['receipt_id']}  "
-                f"{checkpoint['context']['period_start']}  {len(member_ids)} receipt(s)"
+                f"CHECKPOINT OK  {payload['receipt_id']}  "
+                f"{payload['context']['period_start']}  {len(member_ids)} receipt(s)"
             )
     except (OSError, json.JSONDecodeError, VerificationError, RecursionError) as exc:
         print(f"INVALID checkpoint evidence: {exc}", file=sys.stderr)
@@ -1156,14 +1137,6 @@ def main(argv: list[str] | None = None) -> int:
         metavar="FILE",
         help="with --export: recompute checkpoint entries in checkpoint_evidence.json",
     )
-    p.add_argument(
-        "--check-policy-evaluation",
-        action="store_true",
-        help=(
-            "with --export: authenticate creation snapshots and replay every selected "
-            "action receipt's conditional policy evidence"
-        ),
-    )
     args = p.parse_args(argv)
 
     trusted_fingerprints = set(args.trusted_key_fingerprint)
@@ -1180,8 +1153,6 @@ def main(argv: list[str] | None = None) -> int:
             p.error("--authorization-id requires --export")
         if args.checkpoint_evidence:
             p.error("--checkpoint-evidence requires --export")
-        if args.check_policy_evaluation:
-            p.error("--check-policy-evaluation requires --export")
         if len(args.paths) != 2:
             p.error("provide <receipt.json> <keys.json>, or use --export <file> <keys.json>")
 
@@ -1205,19 +1176,18 @@ def main(argv: list[str] | None = None) -> int:
             trusted_fingerprints,
             args.authorization_id,
             args.checkpoint_evidence,
-            args.check_policy_evaluation,
         )
 
     receipt_path, _keys_path = args.paths
     try:
         receipt = _load_json_file(receipt_path)
-        verify_receipt(
+        payload = verify_receipt(
             receipt,
             keys,
             expected_workspace_id=args.workspace_id,
             trusted_key_fingerprints=trusted_fingerprints,
         )
-        print(f"OK  receipt_id={receipt['receipt_id']} decision={receipt['decision']}")
+        print(f"OK  receipt_id={payload['receipt_id']} decision={payload['decision']}")
         return 0
     except (OSError, json.JSONDecodeError, RecursionError, VerificationError) as e:
         print(f"INVALID  {e}", file=sys.stderr)

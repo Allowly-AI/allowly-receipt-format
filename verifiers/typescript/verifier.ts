@@ -1,7 +1,7 @@
 /**
  * Allowly Receipt Verifier (TypeScript reference implementation).
  *
- * Verifies Allowly receipts per receipt-format.md wire version 4.
+ * Verifies Allowly receipts per receipt-format.md wire version 5.
  *
  * Dependencies: Node.js 20+, RFC 8785 canonicalization, and strict JSON parsing.
  *
@@ -23,8 +23,9 @@
 import { createHash, createHmac, timingSafeEqual, webcrypto } from "node:crypto";
 import jcsCanonicalize from "canonicalize";
 import { isSafeNumber, parse as parseLosslessJson } from "lossless-json";
+import { base64url, compactVerify, importJWK } from "jose";
 
-const SPEC_VERSION = "4";
+const SPEC_VERSION = "5";
 const ACTION_DECISIONS = new Set(["allow", "deny", "confirm", "escalate"]);
 const EVENT_DECISIONS: Record<string, Set<string>> = {
   "authorization.create": new Set(["authorization_granted"]),
@@ -39,7 +40,7 @@ const EVENT_ONLY_DECISIONS = new Set(Object.values(EVENT_DECISIONS).flatMap((dec
 const REQUIRED_FIELDS = new Set([
   "schema_version", "receipt_id", "workspace_id", "issued_at", "decision", "reason",
   "user_id", "agent_id", "resource", "context",
-  "authorization_id", "engine_version", "alg", "key_id", "signature",
+  "authorization_id", "policy_ref", "engine_version",
 ]);
 const OPTIONAL_FIELDS = new Set(["policy_eval"]);
 const DISCRIMINATOR_FIELDS = new Set(["action", "event"]);
@@ -83,21 +84,85 @@ interface ReceiptBase {
   context: Record<string, unknown>;
   authorization_id: string | null;
   engine_version: string;
+  policy_ref: { policy_id: string; policy_version: number; definition_sha256: string } | null;
   policy_eval?: {
-    matched_condition: {
-      field: string;
-      op: string;
-      value: string | number | boolean | null | Array<string | number | boolean | null>;
-    } | null;
-    field_value: string | number | boolean | null;
+    input_sha256: string;
+    result: {
+      profile: "allowly.basic.v1";
+      status: "ok";
+      decision: "allow" | "deny" | "confirm" | "escalate";
+      target: string | null;
+      matched_rule_id: string | null;
+      evaluated_fields: Record<string, unknown>;
+    };
   };
 }
 
-export interface Receipt extends ReceiptBase {
-  schema_version: "4";
-  alg: string;
-  key_id: string;
+export interface ReceiptPayload extends ReceiptBase, Record<string, unknown> {
+  schema_version: "5";
+}
+
+export interface JwsReceipt extends Record<string, unknown> {
+  protected: string;
+  payload: string;
   signature: string;
+}
+export type Receipt = JwsReceipt;
+
+/** Standard JWS signing bytes for external Ed25519 signing (for example KMS). */
+export function jwsSigningInput(payload: unknown, keyId: string): Uint8Array {
+  if (typeof keyId !== "string" || !keyId) throw new VerificationError("JWS kid must be a nonempty string");
+  const header = { alg: "EdDSA", kid: keyId, typ: "allowly-receipt+jws" };
+  return new TextEncoder().encode([header, payload].map(value => base64url.encode(canonicalize(value))).join("."));
+}
+
+/** Package an external signature. This does not sign or verify the evidence. */
+export function jwsReceipt(payload: unknown, keyId: string, signature: Uint8Array | string): JwsReceipt {
+  const [protectedHeader, encoded] = new TextDecoder().decode(jwsSigningInput(payload, keyId)).split(".");
+  const encodedSignature = typeof signature === "string" ? signature : base64url.encode(signature);
+  if (b64urlDecode(encodedSignature).length !== 64) throw new VerificationError("signature must decode to 64 bytes (Ed25519)");
+  return { protected: protectedHeader, payload: encoded, signature: encodedSignature };
+}
+
+function jwsParts(receipt: unknown): { envelope: JwsReceipt; header: { kid: string }; payload: ReceiptPayload } {
+  const envelope = snapshotJson(receipt, "receipt") as Record<string, unknown>;
+  if (typeof envelope !== "object" || envelope === null || Array.isArray(envelope)) throw new VerificationError("receipt must be an object");
+  checkExactKeys(envelope, ["protected", "payload", "signature"], "JWS envelope");
+  if (Object.values(envelope).some(value => typeof value !== "string")) throw new VerificationError("JWS segments must be strings");
+  const wire = envelope as unknown as JwsReceipt;
+  if (wire.protected.length + wire.payload.length + wire.signature.length > 8 * 1024 * 1024) throw new VerificationError("JWS exceeds size limit");
+  const parse = (encoded: string): Record<string, unknown> => {
+    try {
+      const text = new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(b64urlDecode(encoded));
+      parseLosslessJson(namespaceObjectKeysForValidation(text), undefined, { parseNumber: token => {
+        if (!/^-?(?:0|[1-9][0-9]*)$/.test(token)) throw new VerificationError("receipts must not contain non-integer numbers");
+        const number = Number(token);
+        if (!Number.isSafeInteger(number)) throw new VerificationError("integer exceeds the safe range ±(2^53-1)");
+        return number;
+      }});
+      const value = JSON.parse(text);
+      validateTree(value);
+      if (typeof value !== "object" || value === null || Array.isArray(value)) throw new VerificationError("JWS JSON must be an object");
+      return value;
+    } catch (error) {
+      if (error instanceof VerificationError) throw error;
+      throw new VerificationError(`invalid JWS strict UTF-8 JSON: ${error instanceof Error ? error.message : "invalid JSON"}`);
+    }
+  };
+  const header = parse(wire.protected);
+  checkExactKeys(header, ["alg", "kid", "typ"], "JWS protected header");
+  if (header.alg !== "EdDSA" || header.typ !== "allowly-receipt+jws") throw new VerificationError("unsupported JWS algorithm or type");
+  if (typeof header.kid !== "string" || !header.kid) throw new VerificationError("JWS kid must be a nonempty string");
+  if (b64urlDecode(wire.signature).length !== 64) throw new VerificationError("signature must decode to 64 bytes (Ed25519)");
+  const payload = parse(wire.payload);
+  if (payload.schema_version !== SPEC_VERSION) throw new VerificationError(`unsupported schema_version: ${JSON.stringify(payload.schema_version)}`);
+  checkSchema(payload);
+  return { envelope: wire, header: header as { kid: string }, payload: payload as unknown as ReceiptPayload };
+}
+
+/** Strict UNVERIFIED decoding for display, never for authorization. */
+export function decodeReceipt(receipt: unknown): ReceiptPayload {
+  return jwsParts(receipt).payload;
 }
 
 // ---------------------------------------------------------------------------
@@ -176,13 +241,17 @@ function hex(bytes: Uint8Array): string {
 export async function checkpointMerkleRoot(receipts: Array<Record<string, unknown>>): Promise<string> {
   const seenIds = new Set<string>();
   let level = await Promise.all(receipts.map(async (receipt) => {
-    if (typeof receipt !== "object" || receipt === null || typeof receipt.receipt_id !== "string") {
+    if (typeof receipt !== "object" || receipt === null || !Object.hasOwn(receipt, "protected")) {
       throw new VerificationError("checkpoint member must be a receipt object with receipt_id");
     }
-    if (seenIds.has(receipt.receipt_id)) {
-      throw new VerificationError(`duplicate checkpoint member receipt_id: ${JSON.stringify(receipt.receipt_id)}`);
+    const payload = decodeReceipt(receipt);
+    if (typeof payload.receipt_id !== "string") {
+      throw new VerificationError("checkpoint member must be a receipt object with receipt_id");
     }
-    seenIds.add(receipt.receipt_id);
+    if (seenIds.has(payload.receipt_id)) {
+      throw new VerificationError(`duplicate checkpoint member receipt_id: ${JSON.stringify(payload.receipt_id)}`);
+    }
+    seenIds.add(payload.receipt_id);
     return sha256(new Uint8Array([0x00]), canonicalize(receipt));
   }));
   level.sort(compareBytes);
@@ -320,11 +389,12 @@ export async function verifyReceipt(
     expectedWorkspaceId?: string;
     trustedKeyFingerprints?: ReadonlySet<string>;
   } = {},
-): Promise<void> {
+): Promise<ReceiptPayload> {
   if (typeof receipt !== "object" || receipt === null || Array.isArray(receipt)) {
     throw new VerificationError("receipt must be an object");
   }
-  const ownReceipt = snapshotJson(receipt, "receipt", false) as Record<string, unknown>;
+  const { envelope, header, payload: decoded } = jwsParts(receipt);
+  const ownReceipt = decoded as unknown as Record<string, unknown>;
   if (!Array.isArray(publicKeys)) {
     throw new VerificationError("publicKeys must be an array");
   }
@@ -345,13 +415,6 @@ export async function verifyReceipt(
     throw new VerificationError("now must be a valid Date");
   }
 
-  // Step 1: version check
-  if (ownReceipt.schema_version !== SPEC_VERSION) {
-    throw new VerificationError(
-      `unsupported schema_version: ${JSON.stringify(ownReceipt.schema_version)} (want "${SPEC_VERSION}")`,
-    );
-  }
-
   // Key ids alone do not bind a receipt to a workspace. If the caller passes the
   // workspace the keys were published for, require the receipt to match it.
   if (
@@ -364,9 +427,7 @@ export async function verifyReceipt(
     );
   }
 
-  // Step 2: schema check (includes signature shape — rejects placeholders)
-  checkSchema(ownReceipt);
-  const r = ownReceipt as unknown as Receipt;
+  const r = decoded;
 
   // Step 3: receipt kind and pairing
   const hasAction = Object.hasOwn(ownReceipt, "action");
@@ -440,9 +501,16 @@ export async function verifyReceipt(
     }
   }
 
-  // Step 4: algorithm check
-  if (r.alg !== "Ed25519") {
-    throw new VerificationError(`unsupported signature alg: ${JSON.stringify(r.alg)}`);
+  if (hasEvent) {
+    if (ownReceipt.event === "receipt.checkpoint") {
+      if (ownReceipt.policy_ref !== null) throw new VerificationError("receipt.checkpoint must have null policy_ref");
+    } else if (ownReceipt.policy_ref === null) {
+      throw new VerificationError("authorization event must have non-null policy_ref");
+    }
+  } else if (r.authorization_id === null) {
+    if (ownReceipt.policy_ref !== null) throw new VerificationError("unresolved authorization must have null policy_ref");
+  } else if (ownReceipt.policy_ref === null && ownReceipt.action !== "record.seal") {
+    throw new VerificationError("governed action must have non-null policy_ref");
   }
 
   // Step 5: timestamp sanity
@@ -453,12 +521,8 @@ export async function verifyReceipt(
     );
   }
 
-  // Step 6: canonicalize
-  const { signature, ...payload } = r;
-  const canonical = canonicalize(payload);
-
   // Step 7: signature verification
-  const key = findKey(keySnapshots, r.key_id, issuedAt);
+  const key = findKey(keySnapshots, header.kid, issuedAt);
   const fingerprint = publicKeyFingerprint(key);
   if (
     opts.trustedKeyFingerprints !== undefined &&
@@ -468,603 +532,16 @@ export async function verifyReceipt(
       `public key fingerprint is not trusted: ${fingerprint}`,
     );
   }
-  const sigBytes = b64urlDecode(r.signature);  // length already validated in schema check
-
-  const cryptoKey = await webcrypto.subtle.importKey(
-    "raw",
-    key.publicKeyBytes,
-    { name: "Ed25519" },
-    false,
-    ["verify"],
-  );
-
-  const ok = await webcrypto.subtle.verify("Ed25519", cryptoKey, sigBytes, canonical);
-  if (!ok) {
+  try {
+    const cryptoKey = await importJWK({ kty: "OKP", crv: "Ed25519", x: base64url.encode(key.publicKeyBytes) }, "EdDSA");
+    await compactVerify([envelope.protected, envelope.payload, envelope.signature].join("."), cryptoKey, { algorithms: ["EdDSA"] });
+  } catch {
     throw new VerificationError("signature verification failed");
   }
-
-  // Step 8: accept (implicit — no throw)
+  return decoded;
 }
 
-// ---------------------------------------------------------------------------
-// Allowly conditional policy evaluation profile
-// ---------------------------------------------------------------------------
-
-export const POLICY_EVALUATION_PROFILE = "allowly-conditional-evaluation-v1";
-export const POLICY_EVALUATION_ENGINE_VERSION = "2026-10-09.1";
-export const POLICY_EVALUATION_ENGINE_VERSIONS = [
-  "2026-09-16.1",
-  "2026-09-24.1",
-  "2026-09-27.1",
-  POLICY_EVALUATION_ENGINE_VERSION,
-] as const;
-
-export type PolicyEvaluationStatus = "matched" | "mismatch" | "not_checked";
-
-export interface PolicyEvaluationResult {
-  profile: typeof POLICY_EVALUATION_PROFILE;
-  engine_version: string;
-  receipt_id: string;
-  authorization_receipt_id: string | null;
-  status: PolicyEvaluationStatus;
-  diagnostic: string;
-  recorded_evaluation: Record<string, unknown> | null;
-  calculated_evaluation: Record<string, unknown> | null;
-}
-
-interface NormalizedPolicyCondition {
-  field: string;
-  op: string;
-  value: unknown;
-}
-
-interface PolicyConditionResult {
-  kind: "deny" | "escalate" | "confirm" | "none";
-  reason:
-    | "deny_condition_matched"
-    | "escalate_condition_matched"
-    | "confirm_condition_matched"
-    | "context_field_missing"
-    | "policy_conditions_not_matched";
-  policyEval: Record<string, unknown>;
-}
-
-const POLICY_CONDITION_KEYS = ["deny_when", "escalate_when", "confirm_when"] as const;
-const POLICY_OPERATORS = new Set([
-  "eq", "neq", "lt", "lte", "gt", "gte", "in", "nin",
-  "contains_any", "contains_none", "empty", "exists",
-]);
-const MAX_POLICY_CONDITIONS = 10;
-const BASE_REPLAY_CONTEXT_EXCLUSIONS = ["budget", "escalation", "session_id"] as const;
-const CURRENT_REPLAY_CONTEXT_EXCLUSIONS = [
-  ...BASE_REPLAY_CONTEXT_EXCLUSIONS,
-  "client_timestamp",
-  "client_timestamp_source",
-  "execution",
-  "identity_verification",
-] as const;
 const PUBLIC_KEY_FINGERPRINT_RE = /^sha256:[0-9a-f]{64}$/;
-
-class UnsupportedPolicyError extends Error {}
-
-/**
- * Authenticate an action receipt and supplied authorization evidence, then
- * repeat only its conditional policy calculation. This does not reproduce the
- * final allow/deny/confirm/escalate decision, which can depend on runtime state.
- */
-export async function verifyPolicyEvaluation(
-  receipt: Record<string, unknown>,
-  authorizationReceipts: Record<string, unknown>[],
-  publicKeys: PublicKey[],
-  opts: {
-    expectedWorkspaceId: string;
-    trustedKeyFingerprints: ReadonlySet<string>;
-    now?: Date;
-  },
-): Promise<PolicyEvaluationResult> {
-  // Snapshot every caller-controlled input before the first await. In
-  // particular, do not authenticate one object and later evaluate a mutated
-  // version of it.
-  if (typeof receipt !== "object" || receipt === null || Array.isArray(receipt)) {
-    throw new VerificationError("receipt must be an object");
-  }
-  const ownReceipt = snapshotJson(receipt, "receipt", false) as Record<string, unknown>;
-  if (!Array.isArray(authorizationReceipts)) {
-    throw new VerificationError("authorizationReceipts must be an array");
-  }
-  const ownAuthorizationReceipts = snapshotJson(
-    authorizationReceipts,
-    "authorizationReceipts",
-    false,
-  ) as Record<string, unknown>[];
-  if (!Array.isArray(publicKeys)) {
-    throw new VerificationError("publicKeys must be an array");
-  }
-  let ownPublicKeys: PublicKey[];
-  try {
-    ownPublicKeys = structuredClone(publicKeys);
-  } catch {
-    throw new VerificationError("publicKeys must be structured-cloneable data");
-  }
-  if (
-    typeof SharedArrayBuffer !== "undefined"
-    && ownPublicKeys.some((key) => key?.publicKeyBytes?.buffer instanceof SharedArrayBuffer)
-  ) {
-    throw new VerificationError("publicKeyBytes must not use SharedArrayBuffer");
-  }
-  if (
-    typeof opts !== "object"
-    || opts === null
-    || typeof opts.expectedWorkspaceId !== "string"
-    || opts.expectedWorkspaceId.length === 0
-  ) {
-    throw new VerificationError("expectedWorkspaceId must be a non-empty string");
-  }
-  if (
-    opts.trustedKeyFingerprints === null
-    || typeof opts.trustedKeyFingerprints !== "object"
-    || typeof opts.trustedKeyFingerprints.has !== "function"
-    || typeof opts.trustedKeyFingerprints.size !== "number"
-  ) {
-    throw new VerificationError("trustedKeyFingerprints must be a non-empty set");
-  }
-  let trustedKeyFingerprints: Set<string>;
-  try {
-    trustedKeyFingerprints = new Set(opts.trustedKeyFingerprints);
-  } catch {
-    throw new VerificationError("trustedKeyFingerprints must be a non-empty set");
-  }
-  if (
-    trustedKeyFingerprints.size === 0
-    || [...trustedKeyFingerprints].some(
-      (fingerprint) => typeof fingerprint !== "string" || !PUBLIC_KEY_FINGERPRINT_RE.test(fingerprint),
-    )
-  ) {
-    throw new VerificationError(
-      "trustedKeyFingerprints must contain at least one sha256:<64 lowercase hex> fingerprint",
-    );
-  }
-  let ownNow = opts.now;
-  if (ownNow !== undefined) {
-    try {
-      ownNow = new Date(Date.prototype.getTime.call(ownNow));
-    } catch {
-      throw new VerificationError("now must be a valid Date");
-    }
-  }
-  const receiptOptions = {
-    now: ownNow,
-    expectedWorkspaceId: opts.expectedWorkspaceId,
-    trustedKeyFingerprints,
-  };
-
-  await verifyReceipt(ownReceipt, ownPublicKeys, receiptOptions);
-  for (const authorizationReceipt of ownAuthorizationReceipts) {
-    await verifyReceipt(authorizationReceipt, ownPublicKeys, receiptOptions);
-  }
-  if (!Object.hasOwn(ownReceipt, "action")) {
-    throw new VerificationError("policy evaluation requires an action receipt");
-  }
-
-  const engineVersion = ownReceipt.engine_version as string;
-  const receiptId = ownReceipt.receipt_id as string;
-  const recordedEvaluation = Object.hasOwn(ownReceipt, "policy_eval")
-    ? ownReceipt.policy_eval as Record<string, unknown>
-    : null;
-  const result = (
-    authorizationReceiptId: string | null,
-    status: PolicyEvaluationStatus,
-    diagnostic: string,
-    calculatedEvaluation: Record<string, unknown> | null = null,
-  ): PolicyEvaluationResult => ({
-    profile: POLICY_EVALUATION_PROFILE,
-    engine_version: engineVersion,
-    receipt_id: receiptId,
-    authorization_receipt_id: authorizationReceiptId,
-    status,
-    diagnostic,
-    recorded_evaluation: recordedEvaluation,
-    calculated_evaluation: calculatedEvaluation,
-  });
-
-  if (recordedEvaluation === null) {
-    return result(null, "not_checked", "policy_evaluation_not_recorded");
-  }
-  if (!(POLICY_EVALUATION_ENGINE_VERSIONS as readonly string[]).includes(engineVersion)) {
-    return result(null, "not_checked", "unsupported_engine_version");
-  }
-
-  const authorizationId = ownReceipt.authorization_id;
-  if (typeof authorizationId !== "string" || authorizationId.length === 0) {
-    return result(null, "not_checked", "authorization_receipt_not_found");
-  }
-  const matchingReceipts = ownAuthorizationReceipts.filter(
-    (candidate) => candidate.event === "authorization.create"
-      && candidate.authorization_id === authorizationId
-      && candidate.workspace_id === ownReceipt.workspace_id,
-  );
-  const distinctMatchingReceipts = new Map<string, Record<string, unknown>>();
-  for (const candidate of matchingReceipts) {
-    distinctMatchingReceipts.set(new TextDecoder().decode(canonicalize(candidate)), candidate);
-  }
-  if (distinctMatchingReceipts.size === 0) {
-    return result(null, "not_checked", "authorization_receipt_not_found");
-  }
-  if (distinctMatchingReceipts.size > 1) {
-    return result(null, "not_checked", "conflicting_authorization_receipts");
-  }
-
-  const authorizationReceipt = distinctMatchingReceipts.values().next().value!;
-  const authorizationReceiptId = authorizationReceipt.receipt_id as string;
-  if (
-    !(POLICY_EVALUATION_ENGINE_VERSIONS as readonly string[]).includes(
-      authorizationReceipt.engine_version as string,
-    )
-    || parseRFC3339(authorizationReceipt.issued_at as string) > parseRFC3339(ownReceipt.issued_at as string)
-  ) {
-    return result(
-      authorizationReceiptId,
-      "not_checked",
-      "unsupported_authorization_snapshot",
-    );
-  }
-  if (
-    authorizationReceipt.user_id !== ownReceipt.user_id
-    || authorizationReceipt.agent_id !== ownReceipt.agent_id
-  ) {
-    return result(authorizationReceiptId, "not_checked", "authorization_subject_mismatch");
-  }
-
-  const snapshot = policyConstraintsFromAuthorization(
-    authorizationReceipt,
-    ownReceipt.action as string,
-  );
-  if (snapshot.diagnostic !== null) {
-    return result(authorizationReceiptId, "not_checked", snapshot.diagnostic);
-  }
-
-  const replayContext = {
-    ...(ownReceipt.context as Record<string, unknown>),
-  };
-  const replayContextExclusions = engineVersion !== "2026-09-16.1"
-    ? CURRENT_REPLAY_CONTEXT_EXCLUSIONS
-    : BASE_REPLAY_CONTEXT_EXCLUSIONS;
-  for (const key of replayContextExclusions) delete replayContext[key];
-
-  let calculatedEvaluation: Record<string, unknown> | null;
-  try {
-    calculatedEvaluation = evaluatePolicyConditions(snapshot.constraints!, replayContext)?.policyEval ?? null;
-  } catch (error) {
-    if (error instanceof UnsupportedPolicyError) {
-      return result(authorizationReceiptId, "not_checked", "unsupported_policy");
-    }
-    throw error;
-  }
-  const status = policyEvaluationsEqual(recordedEvaluation, calculatedEvaluation)
-    ? "matched"
-    : "mismatch";
-  return result(
-    authorizationReceiptId,
-    status,
-    status === "matched" ? "matched" : "policy_evaluation_mismatch",
-    calculatedEvaluation,
-  );
-}
-
-function policyConstraintsFromAuthorization(
-  authorizationReceipt: Record<string, unknown>,
-  action: string,
-): {
-  constraints: Record<string, unknown> | null;
-  diagnostic:
-    | "unsupported_authorization_snapshot"
-    | "authorization_action_not_found"
-    | "authorization_action_ambiguous"
-    | null;
-} {
-  const context = authorizationReceipt.context;
-  if (!isPlainJsonObject(context)) {
-    return { constraints: null, diagnostic: "unsupported_authorization_snapshot" };
-  }
-  const actions = context.actions;
-  if (!Array.isArray(actions) || actions.length === 0) {
-    return { constraints: null, diagnostic: "unsupported_authorization_snapshot" };
-  }
-  const parsedActions: Array<{ name: string; constraints: Record<string, unknown> }> = [];
-  for (const entry of actions) {
-    if (!isPlainJsonObject(entry) || !supportedActionShape(entry, authorizationReceipt.engine_version)) {
-      return { constraints: null, diagnostic: "unsupported_authorization_snapshot" };
-    }
-    if (
-      typeof entry.name !== "string"
-      || entry.name.length === 0
-      || !isPlainJsonObject(entry.constraints)
-    ) {
-      return { constraints: null, diagnostic: "unsupported_authorization_snapshot" };
-    }
-    parsedActions.push({
-      name: entry.name,
-      constraints: entry.constraints as Record<string, unknown>,
-    });
-  }
-  const matchingActions = parsedActions.filter((entry) => entry.name === action);
-  if (matchingActions.length === 0) {
-    return { constraints: null, diagnostic: "authorization_action_not_found" };
-  }
-  if (matchingActions.length > 1) {
-    return { constraints: null, diagnostic: "authorization_action_ambiguous" };
-  }
-  const unrelatedNames = parsedActions
-    .filter((entry) => entry.name !== action)
-    .map((entry) => entry.name);
-  if (new Set(unrelatedNames).size !== unrelatedNames.length) {
-    return { constraints: null, diagnostic: "unsupported_authorization_snapshot" };
-  }
-  return { constraints: matchingActions[0].constraints, diagnostic: null };
-}
-
-function supportedActionShape(entry: Record<string, unknown>, engine: unknown): boolean {
-  if (hasExactKeys(entry, ["name", "constraints"])) return true;
-  if (!["2026-09-27.1", POLICY_EVALUATION_ENGINE_VERSION].includes(engine as string)
-      || !hasExactKeys(entry, ["name", "constraints", "executable_operations"])) return false;
-  const grants = entry.executable_operations;
-  const fields = ["enabled_executable_id", "provider_id", "operation_id", "catalog_revision", "definition_fingerprint", "minimum_evidence_mode"];
-  return Array.isArray(grants) && grants.length <= 100 && grants.every((grant) =>
-    isPlainJsonObject(grant) && hasExactKeys(grant, fields)
-    && Object.values(grant).every((value) => typeof value === "string" && value.length > 0)
-    && PUBLIC_KEY_FINGERPRINT_RE.test(grant.definition_fingerprint as string)
-    && ["receipt", "witnessed"].includes(grant.minimum_evidence_mode as string));
-}
-
-function evaluatePolicyConditions(
-  constraints: Record<string, unknown>,
-  context: Record<string, unknown>,
-): PolicyConditionResult | null {
-  validatePolicyConditions(constraints);
-  const denyResult = evaluateConditionList(
-    "deny",
-    "deny_condition_matched",
-    constraints.deny_when,
-    context,
-    "confirm",
-  );
-  if (denyResult !== null && denyResult.reason === "deny_condition_matched") {
-    return denyResult;
-  }
-  const denyMissingFallback = denyResult;
-
-  const escalateResult = evaluateConditionList(
-    "escalate",
-    "escalate_condition_matched",
-    constraints.escalate_when,
-    context,
-  );
-  if (escalateResult !== null) return escalateResult;
-
-  const confirmResult = evaluateConditionList(
-    "confirm",
-    "confirm_condition_matched",
-    constraints.confirm_when,
-    context,
-  );
-  if (confirmResult !== null) return confirmResult;
-  if (denyMissingFallback !== null) return denyMissingFallback;
-
-  if (hasPolicyConditions(constraints)) {
-    return {
-      kind: "none",
-      reason: "policy_conditions_not_matched",
-      policyEval: { matched_condition: null, field_value: null },
-    };
-  }
-  return null;
-}
-
-function evaluateConditionList(
-  kind: "deny" | "escalate" | "confirm",
-  reason:
-    | "deny_condition_matched"
-    | "escalate_condition_matched"
-    | "confirm_condition_matched",
-  value: unknown,
-  context: Record<string, unknown>,
-  missingKind?: "confirm",
-): PolicyConditionResult | null {
-  if (!Array.isArray(value)) return null;
-  let missingResult: PolicyConditionResult | null = null;
-  for (const rawCondition of value) {
-    const condition = normalizePolicyCondition(rawCondition);
-    const present = Object.hasOwn(context, condition.field);
-    const actual = context[condition.field];
-    const policyEval = {
-      matched_condition: {
-        field: condition.field,
-        op: condition.op,
-        value: condition.value,
-      },
-      field_value: policyEvaluationFieldValue(
-        condition.op,
-        actual,
-        condition.value,
-        present,
-      ),
-    };
-    if (condition.op === "exists") {
-      if (present === condition.value) return { kind, reason, policyEval };
-      continue;
-    }
-    const matched = present
-      ? policyConditionMatches(condition.op, actual, condition.value)
-      : null;
-    if (matched === null) {
-      const result: PolicyConditionResult = {
-        kind: missingKind ?? kind,
-        reason: "context_field_missing",
-        policyEval,
-      };
-      if (missingKind === undefined) return result;
-      missingResult ??= result;
-      continue;
-    }
-    if (matched) return { kind, reason, policyEval };
-  }
-  return missingResult;
-}
-
-function validatePolicyConditions(constraints: Record<string, unknown>): void {
-  let total = 0;
-  for (const key of POLICY_CONDITION_KEYS) {
-    const value = constraints[key];
-    if (value === undefined || value === null) continue;
-    if (!Array.isArray(value)) throw new UnsupportedPolicyError();
-    total += value.length;
-    if (total > MAX_POLICY_CONDITIONS) throw new UnsupportedPolicyError();
-    for (const condition of value) normalizePolicyCondition(condition);
-  }
-}
-
-function normalizePolicyCondition(value: unknown): NormalizedPolicyCondition {
-  if (!isPlainJsonObject(value)) throw new UnsupportedPolicyError();
-  const field = value.field;
-  if (typeof field !== "string" || field.length === 0) throw new UnsupportedPolicyError();
-  const keys = Object.keys(value);
-  const operatorKeys = keys.filter((key) => POLICY_OPERATORS.has(key));
-  if (
-    keys.length !== 2
-    || operatorKeys.length !== 1
-    || keys.some((key) => key !== "field" && !POLICY_OPERATORS.has(key))
-  ) {
-    throw new UnsupportedPolicyError();
-  }
-  const op = operatorKeys[0];
-  const expected = value[op];
-  if (op === "exists" || op === "empty") {
-    if (typeof expected !== "boolean") throw new UnsupportedPolicyError();
-  } else if (["in", "nin", "contains_any", "contains_none"].includes(op)) {
-    if (
-      !Array.isArray(expected)
-      || expected.length === 0
-      || expected.some((item) => !isStrictPolicyScalar(item))
-    ) {
-      throw new UnsupportedPolicyError();
-    }
-  } else if (["lt", "lte", "gt", "gte"].includes(op)) {
-    if (!isStrictPolicyInteger(expected)) throw new UnsupportedPolicyError();
-  } else if (!isStrictPolicyScalar(expected)) {
-    throw new UnsupportedPolicyError();
-  }
-  return { field, op, value: expected };
-}
-
-function policyConditionMatches(op: string, actual: unknown, expected: unknown): boolean | null {
-  if (op === "eq" || op === "neq") {
-    if (!samePolicyScalarType(actual, expected)) return null;
-    return op === "eq" ? actual === expected : actual !== expected;
-  }
-  if (["lt", "lte", "gt", "gte"].includes(op)) {
-    if (!isStrictPolicyInteger(actual) || !isStrictPolicyInteger(expected)) return null;
-    if (op === "lt") return actual < expected;
-    if (op === "lte") return actual <= expected;
-    if (op === "gt") return actual > expected;
-    return actual >= expected;
-  }
-  if (op === "in" || op === "nin") {
-    if (!Array.isArray(expected)) return null;
-    const comparable = expected.filter((item) => samePolicyScalarType(actual, item));
-    if (comparable.length === 0) return null;
-    const included = comparable.some((item) => item === actual);
-    return op === "in" ? included : !included;
-  }
-  if (op === "contains_any" || op === "contains_none") {
-    if (
-      !Array.isArray(actual)
-      || !Array.isArray(expected)
-      || actual.some((item) => !isStrictPolicyScalar(item))
-      || expected.some((item) => !isStrictPolicyScalar(item))
-    ) {
-      return null;
-    }
-    const expectedKeys = new Set(expected.map(typedPolicyScalarKey));
-    const intersects = actual.some((item) => expectedKeys.has(typedPolicyScalarKey(item)));
-    return op === "contains_any" ? intersects : !intersects;
-  }
-  if (op === "empty") {
-    if (!Array.isArray(actual) || typeof expected !== "boolean") return null;
-    return (actual.length === 0) === expected;
-  }
-  return false;
-}
-
-function policyEvaluationFieldValue(
-  op: string,
-  actual: unknown,
-  expected: unknown,
-  present: boolean,
-): unknown {
-  if (!present) return null;
-  if (op === "contains_any" && Array.isArray(actual) && Array.isArray(expected)) {
-    const expectedKeys = new Set(
-      expected.filter(isStrictPolicyScalar).map(typedPolicyScalarKey),
-    );
-    for (const item of actual) {
-      if (isStrictPolicyScalar(item) && expectedKeys.has(typedPolicyScalarKey(item))) {
-        return item;
-      }
-    }
-    return null;
-  }
-  if (op === "contains_none" || op === "empty") return null;
-  return isStrictPolicyScalar(actual) ? actual : null;
-}
-
-function hasPolicyConditions(constraints: Record<string, unknown>): boolean {
-  return POLICY_CONDITION_KEYS.some(
-    (key) => Array.isArray(constraints[key]) && (constraints[key] as unknown[]).length > 0,
-  );
-}
-
-function isStrictPolicyInteger(value: unknown): value is number {
-  return typeof value === "number" && Number.isSafeInteger(value);
-}
-
-function isStrictPolicyScalar(value: unknown): value is string | number | boolean | null {
-  return value === null
-    || typeof value === "string"
-    || typeof value === "boolean"
-    || isStrictPolicyInteger(value);
-}
-
-function samePolicyScalarType(left: unknown, right: unknown): boolean {
-  if (!isStrictPolicyScalar(left) || !isStrictPolicyScalar(right)) return false;
-  if (left === null || right === null) return left === null && right === null;
-  return typeof left === typeof right;
-}
-
-function typedPolicyScalarKey(value: string | number | boolean | null): string {
-  if (value === null) return "null:";
-  if (typeof value === "string") return `string:${JSON.stringify(value)}`;
-  if (typeof value === "boolean") return `boolean:${value ? "true" : "false"}`;
-  return `integer:${String(value)}`;
-}
-
-function isPlainJsonObject(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
-function hasExactKeys(value: Record<string, unknown>, expected: string[]): boolean {
-  const keys = Object.keys(value);
-  return keys.length === expected.length && expected.every((key) => Object.hasOwn(value, key));
-}
-
-function policyEvaluationsEqual(
-  recorded: Record<string, unknown>,
-  calculated: Record<string, unknown> | null,
-): boolean {
-  if (calculated === null) return false;
-  const left = canonicalize(recorded);
-  const right = canonicalize(calculated);
-  return left.length === right.length && left.every((byte, index) => byte === right[index]);
-}
 
 // ---------------------------------------------------------------------------
 // SEAL profile (RFC 8785 / JCS record hashing)
@@ -1260,8 +737,7 @@ async function verifySeal(
   }
   let ownReceipt: Record<string, unknown>;
   try {
-    ownReceipt = snapshotJson(receipt, "receipt", false) as Record<string, unknown>;
-    await verifyReceipt(ownReceipt, publicKeys, opts);
+    ownReceipt = await verifyReceipt(receipt, publicKeys, opts) as unknown as Record<string, unknown>;
   } catch (error) {
     if (error instanceof VerificationError) {
       return sealResult(false, false, "receipt_verification_failed");
@@ -1493,47 +969,12 @@ function checkSchema(receipt: Record<string, unknown>): void {
     throw new VerificationError("context must be an object");
   }
 
-  for (const f of ["alg", "key_id", "signature"]) {
-    if (typeof receipt[f] !== "string") {
-      throw new VerificationError(`${f} must be a string`);
-    }
-  }
-  const sigValue = receipt.signature as string;
-
-  // Signature text must be canonical base64url and decode to exactly 64 bytes.
-  // This rejects placeholder strings ("pending", empty, anything malformed)
-  // before the verification path even starts.
-  let sigBytes: Uint8Array;
-  try {
-    sigBytes = b64urlDecode(sigValue);
-  } catch {
-    throw new VerificationError(`signature is not valid canonical base64url: ${JSON.stringify(sigValue)}`);
-  }
-  if (sigBytes.length !== 64) {
-    throw new VerificationError(
-      `signature must decode to 64 bytes (Ed25519), got ${sigBytes.length}`,
-    );
-  }
-
+  checkPolicyRef(receipt.policy_ref);
+  if ((receipt.engine_version as string).length !== 71 || !PUBLIC_KEY_FINGERPRINT_RE.test(receipt.engine_version as string)) throw new VerificationError("engine_version must be sha256: followed by 64 lowercase hex characters");
   if (Object.hasOwn(receipt, "policy_eval")) {
     checkPolicyEval(receipt.policy_eval);
+    if (receipt.policy_ref === null) throw new VerificationError("policy_eval requires non-null policy_ref");
   }
-}
-
-function isPolicyScalar(value: unknown): boolean {
-  return (
-    value === null ||
-    typeof value === "string" ||
-    typeof value === "boolean" ||
-    (typeof value === "number" && Number.isInteger(value))
-  );
-}
-
-function isPolicyConditionValue(value: unknown): boolean {
-  if (isPolicyScalar(value)) {
-    return true;
-  }
-  return Array.isArray(value) && value.every((item) => isPolicyScalar(item));
 }
 
 function checkExactKeys(
@@ -1552,36 +993,37 @@ function checkExactKeys(
   }
 }
 
+function checkPolicyRef(value: unknown): void {
+  if (value === null) return;
+  if (typeof value !== "object" || Array.isArray(value)) throw new VerificationError("policy_ref must be an object or null");
+  const ref = value as Record<string, unknown>;
+  checkExactKeys(ref, ["policy_id", "policy_version", "definition_sha256"], "policy_ref");
+  if (typeof ref.policy_id !== "string" || !ref.policy_id) throw new VerificationError("policy_ref.policy_id must be a nonempty string");
+  if (typeof ref.policy_version !== "number" || !Number.isSafeInteger(ref.policy_version) || ref.policy_version < 1) throw new VerificationError("policy_ref.policy_version must be a positive safe integer");
+  if (typeof ref.definition_sha256 !== "string" || ref.definition_sha256.length !== 64 || !/^[0-9a-f]{64}$/.test(ref.definition_sha256)) throw new VerificationError("policy_ref.definition_sha256 must be 64 lowercase hex characters");
+}
+
 function checkPolicyEval(value: unknown): void {
-  if (typeof value !== "object" || value === null || Array.isArray(value)) {
-    throw new VerificationError("policy_eval must be an object");
-  }
-  const policyEval = value as Record<string, unknown>;
-  checkExactKeys(policyEval, ["matched_condition", "field_value"], "policy_eval");
-
-  const matched = policyEval.matched_condition;
-  if (matched !== null) {
-    if (typeof matched !== "object" || Array.isArray(matched)) {
-      throw new VerificationError("policy_eval.matched_condition must be an object or null");
-    }
-    const condition = matched as Record<string, unknown>;
-    checkExactKeys(condition, ["field", "op", "value"], "policy_eval.matched_condition");
-    if (typeof condition.field !== "string") {
-      throw new VerificationError("policy_eval.matched_condition.field must be a string");
-    }
-    if (typeof condition.op !== "string") {
-      throw new VerificationError("policy_eval.matched_condition.op must be a string");
-    }
-    if (!isPolicyConditionValue(condition.value)) {
-      throw new VerificationError(
-        "policy_eval.matched_condition.value must be string, integer, boolean, null, or an array of those",
-      );
-    }
-  }
-
-  if (!isPolicyScalar(policyEval.field_value)) {
-    throw new VerificationError("policy_eval.field_value must be string, integer, boolean, or null");
-  }
+  if (typeof value !== "object" || value === null || Array.isArray(value)) throw new VerificationError("policy_eval must be an object");
+  const evidence = value as Record<string, unknown>;
+  checkExactKeys(evidence, ["input_sha256", "result"], "policy_eval");
+  if (typeof evidence.input_sha256 !== "string" || evidence.input_sha256.length !== 64 || !/^[0-9a-f]{64}$/.test(evidence.input_sha256)) throw new VerificationError("policy_eval.input_sha256 must be 64 lowercase hex characters");
+  const valueResult = evidence.result;
+  if (typeof valueResult !== "object" || valueResult === null || Array.isArray(valueResult)) throw new VerificationError("policy_eval.result must be an object");
+  const result = valueResult as Record<string, unknown>;
+  checkExactKeys(result, ["profile", "status", "decision", "target", "matched_rule_id", "evaluated_fields"], "policy_eval.result");
+  if (result.profile !== "allowly.basic.v1" || result.status !== "ok") throw new VerificationError("policy_eval.result requires allowly.basic.v1 successful status");
+  if (typeof result.decision !== "string" || !ACTION_DECISIONS.has(result.decision)) throw new VerificationError("policy_eval.result.decision must be allow, deny, confirm, or escalate");
+  const target = result.target;
+  const validTarget = result.decision === "allow" || result.decision === "deny" ? target === null
+    : result.decision === "confirm" ? target === "agent_owner"
+    : typeof target === "string" && target.startsWith("member:") && target.length > 7 && [...target].length <= 256;
+  if (!validTarget) throw new VerificationError("policy_eval.result.target does not match decision");
+  const rule = result.matched_rule_id;
+  if (rule !== null && (typeof rule !== "string" || !rule || [...rule].length > 128)) throw new VerificationError("policy_eval.result.matched_rule_id must be a bounded nonempty string or null");
+  const fields = result.evaluated_fields;
+  if (typeof fields !== "object" || fields === null || Array.isArray(fields) || Object.keys(fields).some(key => !key || [...key].length > 128)) throw new VerificationError("policy_eval.result.evaluated_fields must be an object with bounded nonempty field names");
+  if (rule === null && Object.keys(fields).length) throw new VerificationError("policy_eval.result action decision requires empty evaluated_fields");
 }
 
 const CHECKPOINT_ROOT_RE = /^sha256:[0-9a-f]{64}$/;
@@ -1680,22 +1122,22 @@ export async function verifyCheckpoint(
       : new Set(opts.trustedKeyFingerprints),
   };
 
-  await verifyReceipt(ownCheckpoint, ownPublicKeys, receiptOptions);
-  if (ownCheckpoint.event !== "receipt.checkpoint") {
+  const checkpointPayload = await verifyReceipt(ownCheckpoint, ownPublicKeys, receiptOptions);
+  if (checkpointPayload.event !== "receipt.checkpoint") {
     throw new VerificationError("checkpoint receipt must have event='receipt.checkpoint'");
   }
-  const context = ownCheckpoint.context as Record<string, unknown>;
+  const context = checkpointPayload.context;
   const periodStart = parseRFC3339(context.period_start as string);
   const periodEnd = parseRFC3339(context.period_end as string);
   for (const receipt of ownReceipts) {
-    await verifyReceipt(receipt, ownPublicKeys, receiptOptions);
-    if (receipt.event === "receipt.checkpoint") {
+    const payload = await verifyReceipt(receipt, ownPublicKeys, receiptOptions);
+    if (payload.event === "receipt.checkpoint") {
       throw new VerificationError("receipt.checkpoint cannot be a checkpoint member");
     }
-    const issuedAt = parseRFC3339(receipt.issued_at as string);
+    const issuedAt = parseRFC3339(payload.issued_at);
     if (issuedAt < periodStart || issuedAt >= periodEnd) {
       throw new VerificationError(
-        `checkpoint member ${JSON.stringify(receipt.receipt_id)} falls outside checkpoint period`,
+        `checkpoint member ${JSON.stringify(payload.receipt_id)} falls outside checkpoint period`,
       );
     }
   }
@@ -1711,12 +1153,12 @@ export async function verifyCheckpoint(
     );
   }
   if (ownPreviousCheckpoint !== undefined) {
-    await verifyReceipt(ownPreviousCheckpoint, ownPublicKeys, receiptOptions);
-    if (ownPreviousCheckpoint.event !== "receipt.checkpoint") {
+    const previousPayload = await verifyReceipt(ownPreviousCheckpoint, ownPublicKeys, receiptOptions);
+    if (previousPayload.event !== "receipt.checkpoint") {
       throw new VerificationError("previous checkpoint must have event='receipt.checkpoint'");
     }
-    const previousContext = ownPreviousCheckpoint.context as Record<string, unknown>;
-    if (context.previous_checkpoint_id !== ownPreviousCheckpoint.receipt_id) {
+    const previousContext = previousPayload.context;
+    if (context.previous_checkpoint_id !== previousPayload.receipt_id) {
       throw new VerificationError("checkpoint previous_checkpoint_id mismatch");
     }
     if (context.previous_merkle_root !== previousContext.merkle_root) {

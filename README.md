@@ -4,7 +4,14 @@ An open format for **cryptographically signed, third-party-verifiable receipts**
 
 A receipt is a signed record of one decision: *at time T, issuer W decided that agent A may (or may not) perform action X on resource R for user U under authorization C.* Anyone holding the receipt and the issuer's Ed25519 public key, authenticated directly or against a retained fingerprint, can verify it offline without contacting the issuer.
 
-Action receipts can include `policy_eval`, a small record of which immutable authorization condition routed a decision to `deny`, `confirm`, or `escalate`. Daily `receipt.checkpoint` events commit to the issuer's registered signed receipt set for one UTC day. The current wire format is `"4"` (wire versions are plain integer strings).
+Every receipt carries `policy_ref`, naming its immutable policy edition or null when no policy applies. Action receipts can include `policy_eval`, the exact OPA input commitment and complete provisional result. Daily `receipt.checkpoint` events commit to the issuer's registered signed receipt set for one UTC day. The current wire format is `"5"` (wire versions are plain integer strings).
+
+Format 5 uses standard flattened JWS: `{protected, payload, signature}`. Its
+protected header is `{alg: "EdDSA", kid: "<key id>", typ: "allowly-receipt+jws"}`.
+PyJWT and jose verify the exact stored bytes with Ed25519 keys. Allowly adds
+strict evidence validation, workspace binding and key-window checks. This
+5.0.0 rebuild is local and unpublished; earlier flat receipt formats are not
+accepted.
 
 Specification Appendix A also defines an optional `hmac-v1` convention for
 customer-recomputable pseudonymous values inside `context`; it does not change
@@ -12,7 +19,7 @@ the receipt wire format or verification algorithm.
 
 Appendix B defines the optional `allowly.seal.jcs-sha256.v1` profile for
 strictly hashing JSON records with RFC 8785 and verifying the digest against a
-normal signed wire-4 receipt. The record stays local; only its digest needs to
+normal signed wire-5 receipt. The record stays local; only its digest needs to
 reach an issuer.
 
 ## Why this exists
@@ -29,9 +36,9 @@ The format is vendor-neutral on purpose. Any service making agent authorization 
 - `verifiers/typescript/` — reference TypeScript verifier (`@allowly/verifier` on npm).
 - `test-vectors.json` — shared test vectors every implementation must pass.
 - `vectors/seal/` — shared strict-hashing and signed SEAL verification vectors.
-- `spec/profiles/allowly-conditional-evaluation-v1.md` — Allowly's conditional
+- `spec/profiles/allowly-opa-evaluation-v1.md` — Allowly's official OPA
   policy replay profile.
-- `vectors/policy/` — shared conditional policy evaluation fixtures.
+- `vectors/policy/` — shared OPA evidence fixtures.
 - `GOVERNANCE.md` — how decisions about the spec get made.
 - `CONTRIBUTING.md` — how to report bugs, propose changes, and add verifiers.
 - `CHANGELOG.md` — version history.
@@ -65,12 +72,12 @@ from allowly_receipt_format import verify_receipt, load_keys_from_json
 configured_workspace_id = os.environ["ALLOWLY_WORKSPACE_ID"]
 if keys_doc.get("workspace_id") != configured_workspace_id:
     raise ValueError("key document workspace does not match configuration")
-verify_receipt(
+evidence = verify_receipt(
     receipt,
     load_keys_from_json(keys_doc),
     expected_workspace_id=configured_workspace_id,
     trusted_key_fingerprints={os.environ["ALLOWLY_TRUSTED_KEY_FINGERPRINT"]},
-)  # raises VerificationError if invalid
+)  # returns verified evidence, or raises VerificationError
 ```
 
 Verify a receipt in TypeScript:
@@ -82,7 +89,7 @@ npm install @allowly/verifier
 ```typescript
 import { verifyReceipt, loadKeysFromJson, VerificationError } from "@allowly/verifier";
 
-// verifyReceipt resolves on success and throws VerificationError on failure —
+// verifyReceipt returns verified evidence and throws VerificationError on failure —
 // it does not return a boolean. Load the workspace id from caller-trusted
 // configuration, never from the receipt or key document.
 const configuredWorkspaceId = process.env.ALLOWLY_WORKSPACE_ID;
@@ -95,7 +102,7 @@ if (keysDoc.workspace_id !== configuredWorkspaceId) {
   throw new Error("key document workspace does not match configuration");
 }
 try {
-  await verifyReceipt(receipt, loadKeysFromJson(keysDoc), {
+  const evidence = await verifyReceipt(receipt, loadKeysFromJson(keysDoc), {
     expectedWorkspaceId: configuredWorkspaceId,
     trustedKeyFingerprints: new Set([configuredKeyFingerprint]),
   });
@@ -109,48 +116,24 @@ try {
 
 ## Status
 
-### Confirmation resolution (4.3.0)
+### Receipt wire format and replay
 
-`confirmation.resolve` records a client-reported approval or rejection linked
-to its original check receipt. The approved
-[prelaunch exception](docs/decisions/2026-10-07-confirmation-resolution-wire-4.md)
-keeps wire `"4"` and advanced both verifier packages to `4.3.0`. Existing
-receipt bytes and signatures are unchanged; published `4.2.0` verifiers reject
-the new event. Publish both packages and regenerate consumer registry locks
-before runtime rollout. Branch-local source locks are for testing and do not
-make standalone production builds ready.
+Both local verifier packages are version `5.0.0` and accept only receipt wire
+`"5"`. There is no compatibility parser or client/data migration in this fresh
+local build. Published packages and historical artifacts remain unchanged.
 
-### Conditional policy replay
+The ordinary Python, TypeScript and generated browser verifier checks the
+recorded evidence schema, caller-trusted workspace/key binding and signature.
+The separate Python `allowly-policy-replay` command checks original input,
+policy definition and full engine/artifact commitments, then runs official
+checksum-pinned OPA. It reports `matched`, `mismatched` or `not_checked`.
+It does not prove final transaction enforcement, input truth, human approval,
+provider execution or full receipt-history completeness. Existing identity,
+Ed25519/KMS and TLSNotary verification remain separate.
 
-Verifier 4.2.0 added `verify_policy_evaluation` in Python and
-`verifyPolicyEvaluation` in TypeScript. They authenticate an action receipt and
-its signed authorization snapshot, repeat the supported conditional calculation,
-and report `matched`, `mismatch` or `not_checked` with a diagnostic. These results
-are separate from signature verification. They do not reproduce budget, rate,
-revocation or human-approval state, or establish that the inputs were true.
-
-Published 4.1.0 packages do not contain policy replay. Use 4.2.0 or later, or
-install `./verifiers/python` into an isolated environment and build
-`verifiers/typescript` locally. See the package READMEs for the function and
-CLI options. The confirmation extension above requires 4.3.0 or later.
-
-### Native Execute engine compatibility (prepared 4.3.1)
-
-The maintained source adds conditional replay for engine `2026-10-09.1`,
-including native Execute review metadata, while retaining `2026-09-16.1`,
-`2026-09-24.1`, and `2026-09-27.1`. This is not included in the already
-published 4.3.0 packages. Both verifier packages are prepared as `4.3.1`, not
-yet published. Publish that patch and update consumer registry locks before
-runtime rollout. Local builds can use the sibling verifier source. Receipt
-wire `"4"` and existing signed receipt bytes are unchanged.
-
-### Receipt wire format
-
-**Verifier packages 4.x implement receipt wire format 4.** Wire versions are plain integers and the package major always equals the wire version it verifies, so default caret ranges (`^4.0.0`) can never cross a wire boundary. Receipts carry `schema_version: "4"` and sign top-level `alg` and `key_id`; `signature` is the base64url signature string. Reference verifiers accept only receipt wire format 4 and recompute checkpoint Merkle roots in both languages. A checkpoint proves equality to its signed set commitment, not that the issuer registered every real-world event or externally anchored the checkpoint.
-
-There is intentionally no wire-3 compatibility path. Cut over only with an
-empty receipt registry and no active wire-3 writers; rollback across this wire
-boundary is unsupported.
+See [the replay profile](spec/profiles/allowly-opa-evaluation-v1.md) and
+[Python command instructions](verifiers/python/README.md).
+Package publication and deployment remain outside this local build.
 
 ## Licensing
 

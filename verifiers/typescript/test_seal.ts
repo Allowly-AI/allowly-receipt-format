@@ -1,7 +1,6 @@
 import { readFileSync } from "node:fs";
 import assert from "node:assert/strict";
 import { createHash, generateKeyPairSync, sign } from "node:crypto";
-import jcsCanonicalize from "canonicalize";
 import { fingerprintJson, SealJsonError } from "./browser/sealJson.js";
 import {
   SEAL_MAX_DEPTH,
@@ -10,6 +9,8 @@ import {
   SealInputError,
   hashSealJson,
   hashSealValue,
+  jwsReceipt,
+  jwsSigningInput,
   loadKeysFromJson,
   verifySealJson,
   verifySealValue,
@@ -133,16 +134,14 @@ async function checkSealVerification(): Promise<void> {
   const digest = digestBytes("null");
   const signed = (changes: JsonRecord = {}) => {
     const payload = {
-      schema_version: "4", receipt_id: "rcp_seal_ephemeral", workspace_id: opts.expectedWorkspaceId,
+      schema_version: "5", receipt_id: "rcp_seal_ephemeral", workspace_id: opts.expectedWorkspaceId,
       issued_at: "2026-09-30T00:00:00.000Z", decision: "allow", reason: "authorization_granted_action_active",
       user_id: "allowly:seal", agent_id: "allowly.seal", action: "record.seal", resource: null,
       context: { seal_profile: "allowly.seal.jcs-sha256.v1", record_sha256: digest },
-      authorization_id: "auth_seal_current", engine_version: "2026-09-30.1", alg: "Ed25519", key_id: keys[0].keyId,
+      authorization_id: "auth_seal_current", policy_ref: { policy_id: "pol_test", policy_version: 1, definition_sha256: "a".repeat(64) }, engine_version: "sha256:" + "a".repeat(64),
       ...changes,
     };
-    // These signing fixtures contain no control characters or non-integer
-    // numbers. Independent JCS therefore agrees with wire-4 §4.2 for them.
-    return { ...payload, signature: sign(null, Buffer.from(jcsCanonicalize(payload)!, "utf8"), privateKey).toString("base64url") };
+    return jwsReceipt(payload, keys[0].keyId, sign(null, jwsSigningInput(payload, keys[0].keyId), privateKey)) as unknown as JsonRecord;
   };
   const success = { signatureVerified: true, recordMatches: true, failureReason: null };
   const failure = (failureReason: string, signatureVerified = true) => ({ signatureVerified, recordMatches: false, failureReason });

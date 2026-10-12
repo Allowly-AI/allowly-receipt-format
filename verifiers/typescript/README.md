@@ -1,9 +1,9 @@
 # @allowly/verifier
 
-TypeScript reference verifier for [Allowly Receipt Format wire version 4](https://github.com/Allowly-AI/allowly-receipt-format).
+TypeScript reference verifier for [Allowly Receipt Format wire version 5](https://github.com/Allowly-AI/allowly-receipt-format).
 
-Uses Node.js's built-in WebCrypto for Ed25519 verification, plus focused RFC
-8785 canonicalization and strict JSON parsing dependencies for SEAL records.
+Uses jose for standard JWS Ed25519 verification, backed by WebCrypto, plus
+focused RFC 8785 canonicalization and strict JSON parsing dependencies.
 
 ## Install
 
@@ -30,7 +30,7 @@ if (keysDoc.workspace_id !== configuredWorkspaceId) {
 const keys = loadKeysFromJson(keysDoc);
 
 try {
-  await verifyReceipt(receipt, keys, {
+  const evidence = await verifyReceipt(receipt, keys, {
     expectedWorkspaceId: configuredWorkspaceId,
     trustedKeyFingerprints: new Set([configuredKeyFingerprint]),
   });
@@ -65,9 +65,10 @@ offline audits.
 
 ### `verifyReceipt(receipt, publicKeys, opts?)`
 
-Verifies a receipt. Resolves on success, throws `VerificationError` on any failure.
+Verifies a receipt. Returns the authenticated `ReceiptPayload`, or throws
+`VerificationError` on any failure.
 
-- `receipt` — the full receipt object (payload + signature).
+- `receipt` — the exact flattened JWS object: `{protected, payload, signature}`.
 - `publicKeys` — array of `PublicKey` objects. Get these via `loadKeysFromJson`.
 - `opts.now` — optional `Date` override for time checks. Defaults to `new Date()`.
 - `opts.expectedWorkspaceId` — optional. If set, the receipt's `workspace_id` must equal it. Pass a caller-trusted configured workspace ID, never one copied from the receipt or key document (spec §7, "Workspace binding"); a `key_id` alone does not bind a receipt to a workspace.
@@ -76,69 +77,31 @@ Verifies a receipt. Resolves on success, throws `VerificationError` on any failu
   fingerprint. Include every trusted rotation key that may have signed the
   selected receipts.
 
-### `verifyPolicyEvaluation(receipt, authorizationReceipts, publicKeys, opts)`
+### Policy evidence and replay
 
-Authenticates the action receipt and every supplied authorization receipt,
-then repeats the conditional policy calculation for supported engines
-`2026-09-16.1`, `2026-09-24.1`, `2026-09-27.1`, and `2026-10-09.1` in maintained source. Both `opts.expectedWorkspaceId` and a non-empty
-`opts.trustedKeyFingerprints` set are required and must come from caller-trusted
-configuration.
+This verifier checks required `policy_ref`, content-addressed `engine_version`,
+and optional strict `policy_eval` inside the signature. It does not evaluate
+rules. The browser build uses the same schema checks. Wire 4 and the former
+TypeScript policy interpreter are not supported by this fresh wire-5 package.
 
-Support for `2026-10-09.1` is prepared in 4.3.1, not included in the already
-published 4.3.0 package. Build this source for local tests; publish 4.3.1 and
-update consumer registry locks before runtime rollout.
-Its nested `context.execution.review` metadata is authenticated but excluded
-from the conditional calculation. The generated browser verifier shares this
-source and the same engine support.
-
-```typescript
-import { loadKeysFromJson, verifyPolicyEvaluation } from "@allowly/verifier";
-
-const result = await verifyPolicyEvaluation(
-  actionReceipt,
-  authorizationReceipts,
-  loadKeysFromJson(keysDoc),
-  {
-    expectedWorkspaceId: configuredWorkspaceId,
-    trustedKeyFingerprints: new Set(configuredKeyFingerprints),
-  },
-);
-
-if (result.status === "mismatch") {
-  console.error(result.diagnostic, result.recorded_evaluation, result.calculated_evaluation);
-}
-```
-
-The result uses the same snake-case contract as the Python verifier:
-
-```typescript
-interface PolicyEvaluationResult {
-  profile: "allowly-conditional-evaluation-v1";
-  engine_version: string;
-  receipt_id: string;
-  authorization_receipt_id: string | null;
-  status: "matched" | "mismatch" | "not_checked";
-  diagnostic: string;
-  recorded_evaluation: Record<string, unknown> | null;
-  calculated_evaluation: Record<string, unknown> | null;
-}
-```
-
-`matched` means the signed rules and reconstructed signed context produce the
-recorded complete `policy_eval` object. It does not reproduce the final
-`allow`, `deny`, `confirm`, or `escalate` decision. Runtime state such as
-revocation, expiry, rate limits, budgets, confirmations, and escalations can
-change that decision. `not_checked` keeps missing evidence and unsupported
-historical profiles visible instead of treating them as successful checks.
-
-See the
-[`allowly-conditional-evaluation-v1` profile](../../spec/profiles/allowly-conditional-evaluation-v1.md)
-for the exact pairing, context reconstruction, operator, precedence, and
-diagnostic rules.
+The separate Python `allowly-policy-replay` command runs pinned official OPA
+with original inputs and retained artifacts. Signature verification,
+provisional replay, final enforcement and witnessed execution are separate.
+See [the replay profile](../../spec/profiles/allowly-opa-evaluation-v1.md).
 
 ### `canonicalize(payload)`
 
-Produces the canonical JSON byte sequence per spec §4. Exposed for implementers building signers in TypeScript.
+Produces deterministic JSON bytes per spec §4 for issuance and evidence hashes.
+Verification authenticates the stored JWS segments, not reconstructed JSON.
+
+### JWS decoding and external signing
+
+`decodeReceipt(wire)` returns strictly decoded evidence **without** verifying
+its signature. Use it for display, never authorization. `jwsSigningInput`
+returns standard JWS bytes for an external Ed25519 signer such as KMS;
+`jwsReceipt(evidence, keyId, signature)` packages the returned signature.
+Neither signing helper signs or verifies. `JwsReceipt` is the wire type;
+`ReceiptPayload` is the decoded evidence type.
 
 ### `verifyCheckpoint(checkpoint, receipts, publicKeys, opts)`
 
@@ -172,7 +135,7 @@ boundaries because it can reject duplicate decoded object keys and
 precision-losing number tokens. `hashSealValue(record)` is the explicit
 already-parsed boundary; parsing has already erased those details.
 
-`verifySealJson` and `verifySealValue` first verify the full wire-4 receipt,
+`verifySealJson` and `verifySealValue` first verify the full wire-5 receipt,
 including a caller-supplied `expectedWorkspaceId` and optional trusted key
 fingerprints. They then require the fixed SEAL action and identities, the
 signed profile and digest, and a matching local record. The result keeps
@@ -201,7 +164,8 @@ to Allowly:
 import { matchesRef } from "@allowly/verifier";
 
 const key = Buffer.from(encodedKeyB64url, "base64url"); // per-integration pseudonym key
-const ok = matchesRef(key, "record", "MRN-48291", receipt.context.record_ref);
+const evidence = await verifyReceipt(receipt, keys, trustedOptions);
+const ok = matchesRef(key, "record", "MRN-48291", evidence.context.record_ref as string);
 ```
 
 `key` is a `Uint8Array` of at least 16 bytes; `fieldName` is one of `project`,
@@ -211,10 +175,10 @@ constant-time. Use `context.ref_key_version` to select the retained key
 version. This helper is unrelated to signature verification and does not touch
 the receipt schema, canonicalization, or wire version.
 
-`verifyReceipt` accepts an already-parsed object. `JSON.parse` cannot report
-duplicate member names or preserve whether an integer was written as `1`,
-`1.0`, or `1e0`; reject those forms at the raw-JSON boundary when the original
-receipt text is untrusted (spec §4.2).
+`verifyReceipt` strictly parses the encoded protected header and evidence,
+rejecting duplicate decoded names and non-integer number tokens. The outer JWS
+object is already parsed: callers must reject duplicate envelope member names
+at their raw-JSON boundary because `JSON.parse` has erased them.
 
 ## What verification proves
 
@@ -227,8 +191,9 @@ A valid receipt proves that the selected private key signed the exact recorded d
 After building this directory, run `python3 scripts/refresh-verifier.py` in
 each consumer repo. Those wrappers use `scripts/build-browser.py` here to
 generate the self-hosted receipt verifier and JSON helper. The generated
-receipt verifier includes `verifyPolicyEvaluation` and its conditional
-evaluator without a runtime package dependency. Edit these sources instead of
+receipt verifier bundles jose and strict parsing for offline use. It includes
+the wire-5 evidence schema without an embedded policy interpreter or runtime
+package fetch. Edit these sources instead of
 the generated consumer files.
 
 ## License

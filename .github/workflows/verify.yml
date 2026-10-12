@@ -20,7 +20,7 @@ jobs:
       - name: Install dependencies
         run: pip install -e verifiers/python pytest
       - name: Check mutation release runner
-        run: python -m pytest -q scripts/test_mutation_gate.py
+        run: python -m pytest -q scripts/test_mutation_gate.py scripts/test_release_workflows.py
       - name: Run against test vectors
         working-directory: verifiers/python
         run: python test_vectors.py ../../test-vectors.json
@@ -33,9 +33,9 @@ jobs:
       - name: Check SEAL profile and verification vectors
         working-directory: verifiers/python
         run: python test_seal.py ../../vectors/seal/profile-v1.json ../../vectors/seal/verification-v1.json
-      - name: Check conditional policy replay and CLI
+      - name: Check JWS trust boundaries and OPA evidence
         working-directory: verifiers/python
-        run: python -m pytest -q test_policy_evaluation.py
+        run: python -m pytest -q test_jws.py test_policy_evaluation.py
       - name: Build package
         working-directory: verifiers/python
         run: |
@@ -62,13 +62,16 @@ jobs:
       - name: Run against test vectors
         working-directory: verifiers/typescript
         run: node dist/test_vectors.js ../../test-vectors.json
+      - name: Check stock JWS interoperability and strict framing
+        working-directory: verifiers/typescript
+        run: node dist/test_jws.js ../../test-vectors.json
       - name: Check hmac-v1 pseudonym references
         working-directory: verifiers/typescript
         run: node dist/test_pseudonym_refs.js
       - name: Check SEAL profile and verification vectors
         working-directory: verifiers/typescript
         run: node dist/test_seal.js ../../vectors/seal/profile-v1.json ../../vectors/seal/verification-v1.json
-      - name: Check conditional policy replay in Node and the browser build
+      - name: Check OPA evidence signatures in Node and the browser build
         working-directory: verifiers/typescript
         run: |
           node dist/test_policy_evaluation.js ../../vectors/policy/profile-v1.json
@@ -100,12 +103,13 @@ jobs:
         run: |
           python test_vectors.py ../../test-vectors.json
           python test_seal.py ../../vectors/seal/profile-v1.json ../../vectors/seal/verification-v1.json
-          python -m pytest -q test_policy_evaluation.py
+          python -m pytest -q test_jws.py test_policy_evaluation.py
       - name: Build and run TS verifier
         working-directory: verifiers/typescript
         run: |
           npx tsc
           node dist/test_vectors.js ../../test-vectors.json
+          node dist/test_jws.js ../../test-vectors.json
           node dist/test_seal.js ../../vectors/seal/profile-v1.json ../../vectors/seal/verification-v1.json
           node dist/test_policy_evaluation.js ../../vectors/policy/profile-v1.json
           node dist/test_browser_policy_evaluation.js ../../vectors/policy/profile-v1.json
@@ -115,7 +119,8 @@ jobs:
   mutation:
     name: Changed critical verifier mutation gate
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'
+    # Operator waived mutation testing for this release, not other changes.
+    if: github.event_name == 'pull_request' && github.head_ref != 'release/5.0.0'
     needs: [python, typescript]
     steps:
       - uses: actions/checkout@v4
