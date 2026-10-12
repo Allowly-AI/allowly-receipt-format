@@ -59,7 +59,7 @@ jobs:
               raise SystemExit(f"Refusing to publish {name}@{version}: PyPI returned HTTP {status}")
           PY
       - name: Install verifier
-        run: pip install -e verifiers/python
+        run: pip install -e verifiers/python pytest
       - name: Run against test vectors
         working-directory: verifiers/python
         run: python test_vectors.py ../../test-vectors.json
@@ -69,6 +69,12 @@ jobs:
       - name: Check hmac-v1 pseudonym references
         working-directory: verifiers/python
         run: python test_pseudonym_refs.py
+      - name: Check SEAL profile and verification vectors
+        working-directory: verifiers/python
+        run: python test_seal.py ../../vectors/seal/profile-v1.json ../../vectors/seal/verification-v1.json
+      - name: Check JWS trust boundaries and OPA evidence
+        working-directory: verifiers/python
+        run: python -m pytest -q test_jws.py test_policy_evaluation.py
       - name: Build package
         working-directory: verifiers/python
         run: |
