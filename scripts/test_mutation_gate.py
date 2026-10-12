@@ -2,6 +2,7 @@
 
 import shlex
 import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -27,7 +28,7 @@ def test_python_gate_names_sources_and_runs_complete_suite_through_shell(monkeyp
 
     def run(args, **kwargs):
         calls.append(args)
-        return subprocess.CompletedProcess(args, 0, stdout="", stderr="")
+        return subprocess.CompletedProcess(args, 0, stdout="1" if args[1:] == ["result-ids", "killed"] else "", stderr="")
 
     monkeypatch.setattr(gate, "run", run)
     monkeypatch.setattr(gate, "find_mutmut", lambda: "mutmut")
@@ -38,8 +39,49 @@ def test_python_gate_names_sources_and_runs_complete_suite_through_shell(monkeyp
     assert command[command.index("--paths-to-mutate") + 1] == target
     runner = shlex.split(command[command.index("--runner") + 1])
     assert runner[:2] == ["sh", "-c"]
+    assert "test_jws.py" in runner[2]
     assert "test_policy_evaluation.py" in runner[2]
     assert "test_seal.py" in runner[2]
+
+
+@pytest.mark.parametrize("exit_code", [0, 1, 2, 5])
+def test_python_mutation_runner_normalizes_all_failures(monkeypatch, exit_code):
+    calls = []
+
+    def run(args, **kwargs):
+        calls.append(args)
+        return subprocess.CompletedProcess(args, 0, stdout="1" if args[1:] == ["result-ids", "killed"] else "", stderr="")
+
+    monkeypatch.setattr(gate, "run", run)
+    monkeypatch.setattr(gate, "find_mutmut", lambda: "mutmut")
+    monkeypatch.setenv("PYTHON_MUTATION_RUNNER",
+                       f"{shlex.quote(sys.executable)} -c {shlex.quote(f'raise SystemExit({exit_code})')}")
+    assert gate.python_gate("base", ["verifiers/python/src/allowly_receipt_format/verifier.py"]) == 0
+    command = next(args for args in calls if args[:2] == ["mutmut", "run"])
+    runner = shlex.split(command[command.index("--runner") + 1])
+    assert subprocess.run(runner).returncode == (0 if exit_code == 0 else 1)
+
+
+@pytest.mark.parametrize("counts,tool_status,expected", [
+    ({"killed": 80, "survived": 20}, 2, 0),
+    ({"killed": 79, "survived": 21}, 2, 1),
+    ({"killed": 80, "suspicious": 20}, 8, 0),
+    ({"killed": 100, "untested": 1}, 0, 2),
+    ({"killed": 100, "skipped": 1}, 0, 2),
+    ({"killed": 100, "timeout": 1}, 4, 4),
+    ({"killed": 100}, 1, 1),
+    ({}, 0, 2),
+])
+def test_python_mutation_gate_requires_complete_raw_80_percent(monkeypatch, counts, tool_status, expected):
+    def run(args, **kwargs):
+        if args[:2] == ["mutmut", "run"]:
+            return subprocess.CompletedProcess(args, tool_status)
+        status = args[-1]
+        return subprocess.CompletedProcess(args, 0, stdout=" ".join(str(i) for i in range(counts.get(status, 0))), stderr="")
+
+    monkeypatch.setattr(gate, "run", run)
+    monkeypatch.setattr(gate, "find_mutmut", lambda: "mutmut")
+    assert gate.python_gate("base", ["verifiers/python/src/allowly_receipt_format/verifier.py"]) == expected
 
 
 def test_browser_baseline_failure_blocks_typescript_mutation(monkeypatch):

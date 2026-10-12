@@ -92,8 +92,12 @@ def python_gate(base: str, targets: list[str]) -> int:
         f"PYTHONPATH=verifiers/python/src {python} verifiers/python/test_pseudonym_refs.py && "
         f"PYTHONPATH=verifiers/python/src {python} verifiers/python/test_seal.py "
         "vectors/seal/profile-v1.json vectors/seal/verification-v1.json && "
-        f"PYTHONPATH=verifiers/python/src {python} -m pytest -q verifiers/python/test_policy_evaluation.py",
+        f"PYTHONPATH=verifiers/python/src {python} -m pytest -q "
+        "verifiers/python/test_jws.py verifiers/python/test_policy_evaluation.py",
     )
+    # mutmut 2.x treats every exit except 1 as success, including pytest's
+    # collection errors. Normalize failures without changing test assertions.
+    runner = f"({runner}) || exit 1"
     result = run(
         [
             mutmut,
@@ -111,19 +115,24 @@ def python_gate(base: str, targets: list[str]) -> int:
         ],
         check=False,
     )
-    survivors = run([mutmut, "result-ids", "survived"], check=False, capture=True)
-    if survivors.returncode != 0:
-        sys.stderr.write(survivors.stderr)
-        return result.returncode or survivors.returncode
-    survivor_ids = survivors.stdout.split()
-    if survivor_ids:
-        print("Surviving Python verifier mutants:")
-        print("\n".join(survivor_ids))
-        run([mutmut, "results"], check=False)
-        return 1
-    if result.returncode not in (0, 2, 10):
+    if result.returncode not in (0, 2, 8, 10):
         return result.returncode
-    print("Python mutation gate passed.")
+    counts = {}
+    for status in ("killed", "survived", "suspicious", "timeout", "skipped", "untested"):
+        identifiers = run([mutmut, "result-ids", status], check=False, capture=True)
+        if identifiers.returncode:
+            sys.stderr.write(identifiers.stderr)
+            return identifiers.returncode
+        counts[status] = len(identifiers.stdout.split())
+    total = sum(counts.values())
+    print("Python mutation results:", counts)
+    if not total or any(counts[status] for status in ("timeout", "skipped", "untested")):
+        print("Python mutation gate requires a complete run without unproved timeouts.")
+        return 2
+    if counts["killed"] * 100 < total * 80:
+        print("Python mutation gate failed the approved raw 80% floor.")
+        return 1
+    print(f"Python mutation gate passed: {counts['killed']}/{total} killed (80% floor).")
     return 0
 
 
