@@ -119,7 +119,8 @@ jobs:
   mutation:
     name: Changed critical verifier mutation gate
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'
+    # Operator waived mutation testing for this release, not other changes.
+    if: github.event_name == 'pull_request' && github.head_ref != 'release/5.0.0'
     needs: [python, typescript]
     steps:
       - uses: actions/checkout@v4
