@@ -39,6 +39,9 @@ The format is vendor-neutral on purpose. Any service making agent authorization 
 - `spec/profiles/allowly-opa-evaluation-v1.md` — Allowly's official OPA
   policy replay profile.
 - `vectors/policy/` — shared OPA evidence fixtures.
+- `assessment/` — separate source-distributed Observe assessment verifiers and
+  signed vectors. See [assessment profile v1](spec/profiles/allowly-assessment-v1.md).
+  These tools are not part of the published wire-5 package API.
 - `GOVERNANCE.md` — how decisions about the spec get made.
 - `CONTRIBUTING.md` — how to report bugs, propose changes, and add verifiers.
 - `CHANGELOG.md` — version history.
