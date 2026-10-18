@@ -36,6 +36,8 @@ jobs:
       - name: Check JWS trust boundaries and OPA evidence
         working-directory: verifiers/python
         run: python -m pytest -q test_jws.py test_policy_evaluation.py
+      - name: Check separate Observe assessment source tools
+        run: PYTHONPATH=. python -m pytest -q assessment/test_assessment.py
       - name: Build package
         working-directory: verifiers/python
         run: |
@@ -59,6 +61,8 @@ jobs:
       - name: Build
         working-directory: verifiers/typescript
         run: npm run build
+      - name: Check separate Observe assessment source tools
+        run: node assessment/test_assessment.mjs
       - name: Run against test vectors
         working-directory: verifiers/typescript
         run: node dist/test_vectors.js ../../test-vectors.json
@@ -98,6 +102,7 @@ jobs:
         run: |
           python scripts/gen_vectors.py
           python scripts/gen_policy_vectors.py
+          python assessment/generate_vectors.py
       - name: Python verifier must still pass
         working-directory: verifiers/python
         run: |
@@ -114,7 +119,7 @@ jobs:
           node dist/test_policy_evaluation.js ../../vectors/policy/profile-v1.json
           node dist/test_browser_policy_evaluation.js ../../vectors/policy/profile-v1.json
       - name: Fail if vectors drift without being committed
-        run: git diff --exit-code test-vectors.json vectors/seal/ vectors/policy/
+        run: git diff --exit-code test-vectors.json vectors/seal/ vectors/policy/ assessment/vectors.json
 
   mutation:
     name: Changed critical verifier mutation gate

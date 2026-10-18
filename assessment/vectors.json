@@ -1,0 +1,1378 @@
+{
+  "profile": "allowly.assessment.v1",
+  "cases": [
+    {
+      "name": "violation_with_unicode_citation",
+      "valid": true,
+      "signed_assessment": {
+        "protected": "eyJhbGciOiJFZERTQSIsImtpZCI6ImZpY3Rpb25hbC1hc3Nlc3NtZW50LWtleSIsInR5cCI6ImFsbG93bHktYXNzZXNzbWVudCtqd3MifQ",
+        "payload": "eyJhY3Rpb24iOiJlbWFpbC5zZW5kIiwiYWdlbnRfaWQiOiJyZWNydWl0aW5nX2FnZW50IiwiYXBwbGljYXRpb25fcmVwb3J0ZWRfZXhlY3V0aW9uIjoic2VudCIsImFzc2Vzc21lbnRfaWQiOiJhc21fZmljdGlvbmFsIiwiYXNzZXNzbWVudF9zdGF0dXMiOiJ2aW9sYXRpb25fZGV0ZWN0ZWQiLCJjb250ZXh0Ijp7Im1lZGljYWxfZXh0ZXJuYWxfZGlzY2xvc3VyZSI6dHJ1ZX0sImVuZ2luZV92ZXJzaW9uIjoic2hhMjU2OmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmIiLCJmYWN0cyI6eyJjb250YWluc19tZWRpY2FsX2luZm9ybWF0aW9uIjp7ImNpdGF0aW9ucyI6W3siZW5kIjo0NiwiZmllbGQiOiJib2R5IiwicXVvdGUiOiLwn6eqIEZpY3Rpb25hbCBjYW5kaWRhdGUgaGFzIGEgbWVkaWNhbCBjb25kaXRpb24uIiwic3RhcnQiOjB9XSwidmFsdWUiOnRydWV9LCJleHRlcm5hbF9yZWNpcGllbnQiOnsiY2l0YXRpb25zIjpbeyJlbmQiOjI2LCJmaWVsZCI6InJlY2lwaWVudCIsInF1b3RlIjoicmVjcnVpdGVyQGV4dGVybmFsLmV4YW1wbGUiLCJzdGFydCI6MH1dLCJ2YWx1ZSI6dHJ1ZX19LCJpbnRlcnZlbnRpb24iOiJub25lIiwiaXNzdWVkX2F0IjoiMjAyNi0xMC0xN1QxMjowMDowMi4wMDBaIiwiam9iX2lkIjoiam9iX2ZpY3Rpb25hbCIsIm1hcHBpbmdfdmVyc2lvbiI6Im1lZGljYWwtZXh0ZXJuYWwtdjEiLCJtaXNzaW5nX2luZm9ybWF0aW9uIjpbXSwibW9kZSI6Im9ic2VydmUiLCJwb2xpY3lfZXZhbCI6eyJpbnB1dF9zaGEyNTYiOiJkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkIiwicmVzdWx0Ijp7ImRlY2lzaW9uIjoiZGVueSIsImV2YWx1YXRlZF9maWVsZHMiOnsibWVkaWNhbF9leHRlcm5hbF9kaXNjbG9zdXJlIjp0cnVlfSwibWF0Y2hlZF9ydWxlX2lkIjoibWVkaWNhbC1leHRlcm5hbCIsInByb2ZpbGUiOiJhbGxvd2x5LmJhc2ljLnYxIiwic3RhdHVzIjoib2siLCJ0YXJnZXQiOm51bGx9fSwicG9saWN5X3JlZiI6eyJkZWZpbml0aW9uX3NoYTI1NiI6ImFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWEiLCJwb2xpY3lfaWQiOiJtZWRpY2FsLWRpc2Nsb3N1cmUiLCJwb2xpY3lfdmVyc2lvbiI6MX0sInByb2plY3RfaWQiOiJwcm9qZWN0X2ZpY3Rpb25hbCIsInJlcXVlc3Rfc2hhMjU2IjoiY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjYyIsInJldmlld2VyX3ZlcnNpb24iOiJmaXh0dXJlOm5vdC1hLWxpdmUtbW9kZWwiLCJzY2hlbWFfdmVyc2lvbiI6ImFsbG93bHkuYXNzZXNzbWVudC52MSIsInNvdXJjZSI6eyJjYXB0dXJlZF9hdCI6IjIwMjYtMTAtMTdUMTI6MDA6MDEuMDAwWiIsIm9ic2VydmF0aW9uX2lkIjoib2JzX2ZpY3Rpb25hbCIsIm9ic2VydmVkX2F0IjoiMjAyNi0xMC0xN1QxMjowMDowMC4wMDBaIiwicHJvamVjdF9pZCI6InByb2plY3RfZmljdGlvbmFsIiwidHJhY2VfaWQiOiJ0cmFjZV9maWN0aW9uYWwifSwic291cmNlX3NoYTI1NiI6ImZiZmUzY2Q2NzU3NmZiMTM5YTZjMTUyMDMzOGQyMTQxYTU3MDQ1NzE4MTI2NjNjMDhjYTI3MWQzZDllZmJkZGYiLCJ3b3Jrc3BhY2VfaWQiOiJ3c19maWN0aW9uYWwifQ",
+        "signature": "0c5oUmGGACrseuuJMXmh1QiQg7dkARpw2dNaOQPCLlZ0uroOgI_1irpgLfv-C_GiNbfc4HUww3JN3m9eUOhrDQ"
+      },
+      "source_snapshot": {
+        "project_id": "project_fictional",
+        "trace_id": "trace_fictional",
+        "observation_id": "obs_fictional",
+        "observed_at": "2026-10-17T12:00:00.000Z",
+        "captured_at": "2026-10-17T12:00:01.000Z",
+        "content": {
+          "body": "🧪 Fictional candidate has a medical condition.",
+          "recipient": "recruiter@external.example"
+        }
+      },
+      "keys": {
+        "workspace_id": "ws_fictional",
+        "keys": [
+          {
+            "key_id": "fictional-assessment-key",
+            "alg": "Ed25519",
+            "public_key": "A6EHv_POEL4dcN0Y50vAmWfk1jCbpQ1fHdyGZBJVMbg",
+            "public_key_fingerprint": "sha256:56475aa75463474c0285df5dbf2bcab73da651358839e9b77481b2eab107708c",
+            "active_from": "2026-01-01T00:00:00.000Z",
+            "active_until": null
+          }
+        ]
+      },
+      "workspace_id": "ws_fictional",
+      "project_id": "project_fictional",
+      "fingerprints": [
+        "sha256:56475aa75463474c0285df5dbf2bcab73da651358839e9b77481b2eab107708c"
+      ]
+    },
+    {
+      "name": "and_False_False",
+      "valid": true,
+      "signed_assessment": {
+        "protected": "eyJhbGciOiJFZERTQSIsImtpZCI6ImZpY3Rpb25hbC1hc3Nlc3NtZW50LWtleSIsInR5cCI6ImFsbG93bHktYXNzZXNzbWVudCtqd3MifQ",
+        "payload": "eyJhY3Rpb24iOiJlbWFpbC5zZW5kIiwiYWdlbnRfaWQiOiJyZWNydWl0aW5nX2FnZW50IiwiYXBwbGljYXRpb25fcmVwb3J0ZWRfZXhlY3V0aW9uIjoic2VudCIsImFzc2Vzc21lbnRfaWQiOiJhc21fZmljdGlvbmFsIiwiYXNzZXNzbWVudF9zdGF0dXMiOiJub192aW9sYXRpb25fZm91bmQiLCJjb250ZXh0Ijp7Im1lZGljYWxfZXh0ZXJuYWxfZGlzY2xvc3VyZSI6ZmFsc2V9LCJlbmdpbmVfdmVyc2lvbiI6InNoYTI1NjpiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiIiwiZmFjdHMiOnsiY29udGFpbnNfbWVkaWNhbF9pbmZvcm1hdGlvbiI6eyJjaXRhdGlvbnMiOlt7ImVuZCI6NDYsImZpZWxkIjoiYm9keSIsInF1b3RlIjoi8J-nqiBGaWN0aW9uYWwgY2FuZGlkYXRlIGhhcyBhIG1lZGljYWwgY29uZGl0aW9uLiIsInN0YXJ0IjowfV0sInZhbHVlIjpmYWxzZX0sImV4dGVybmFsX3JlY2lwaWVudCI6eyJjaXRhdGlvbnMiOlt7ImVuZCI6MjYsImZpZWxkIjoicmVjaXBpZW50IiwicXVvdGUiOiJyZWNydWl0ZXJAZXh0ZXJuYWwuZXhhbXBsZSIsInN0YXJ0IjowfV0sInZhbHVlIjpmYWxzZX19LCJpbnRlcnZlbnRpb24iOiJub25lIiwiaXNzdWVkX2F0IjoiMjAyNi0xMC0xN1QxMjowMDowMi4wMDBaIiwiam9iX2lkIjoiam9iX2ZpY3Rpb25hbCIsIm1hcHBpbmdfdmVyc2lvbiI6Im1lZGljYWwtZXh0ZXJuYWwtdjEiLCJtaXNzaW5nX2luZm9ybWF0aW9uIjpbXSwibW9kZSI6Im9ic2VydmUiLCJwb2xpY3lfZXZhbCI6eyJpbnB1dF9zaGEyNTYiOiJkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkIiwicmVzdWx0Ijp7ImRlY2lzaW9uIjoiYWxsb3ciLCJldmFsdWF0ZWRfZmllbGRzIjp7fSwibWF0Y2hlZF9ydWxlX2lkIjpudWxsLCJwcm9maWxlIjoiYWxsb3dseS5iYXNpYy52MSIsInN0YXR1cyI6Im9rIiwidGFyZ2V0IjpudWxsfX0sInBvbGljeV9yZWYiOnsiZGVmaW5pdGlvbl9zaGEyNTYiOiJhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhIiwicG9saWN5X2lkIjoibWVkaWNhbC1kaXNjbG9zdXJlIiwicG9saWN5X3ZlcnNpb24iOjF9LCJwcm9qZWN0X2lkIjoicHJvamVjdF9maWN0aW9uYWwiLCJyZXF1ZXN0X3NoYTI1NiI6ImNjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2MiLCJyZXZpZXdlcl92ZXJzaW9uIjoiZml4dHVyZTpub3QtYS1saXZlLW1vZGVsIiwic2NoZW1hX3ZlcnNpb24iOiJhbGxvd2x5LmFzc2Vzc21lbnQudjEiLCJzb3VyY2UiOnsiY2FwdHVyZWRfYXQiOiIyMDI2LTEwLTE3VDEyOjAwOjAxLjAwMFoiLCJvYnNlcnZhdGlvbl9pZCI6Im9ic19maWN0aW9uYWwiLCJvYnNlcnZlZF9hdCI6IjIwMjYtMTAtMTdUMTI6MDA6MDAuMDAwWiIsInByb2plY3RfaWQiOiJwcm9qZWN0X2ZpY3Rpb25hbCIsInRyYWNlX2lkIjoidHJhY2VfZmljdGlvbmFsIn0sInNvdXJjZV9zaGEyNTYiOiJmYmZlM2NkNjc1NzZmYjEzOWE2YzE1MjAzMzhkMjE0MWE1NzA0NTcxODEyNjYzYzA4Y2EyNzFkM2Q5ZWZiZGRmIiwid29ya3NwYWNlX2lkIjoid3NfZmljdGlvbmFsIn0",
+        "signature": "3IdG0al4kxOgS15ubXuLEbkZ3oL8Pq6O-BZpGv8NnihscuV5ObP44d0IBcpikU519QDBs4reNge9fCUtYNBSDw"
+      },
+      "source_snapshot": {
+        "project_id": "project_fictional",
+        "trace_id": "trace_fictional",
+        "observation_id": "obs_fictional",
+        "observed_at": "2026-10-17T12:00:00.000Z",
+        "captured_at": "2026-10-17T12:00:01.000Z",
+        "content": {
+          "body": "🧪 Fictional candidate has a medical condition.",
+          "recipient": "recruiter@external.example"
+        }
+      },
+      "keys": {
+        "workspace_id": "ws_fictional",
+        "keys": [
+          {
+            "key_id": "fictional-assessment-key",
+            "alg": "Ed25519",
+            "public_key": "A6EHv_POEL4dcN0Y50vAmWfk1jCbpQ1fHdyGZBJVMbg",
+            "public_key_fingerprint": "sha256:56475aa75463474c0285df5dbf2bcab73da651358839e9b77481b2eab107708c",
+            "active_from": "2026-01-01T00:00:00.000Z",
+            "active_until": null
+          }
+        ]
+      },
+      "workspace_id": "ws_fictional",
+      "project_id": "project_fictional",
+      "fingerprints": [
+        "sha256:56475aa75463474c0285df5dbf2bcab73da651358839e9b77481b2eab107708c"
+      ]
+    },
+    {
+      "name": "and_False_True",
+      "valid": true,
+      "signed_assessment": {
+        "protected": "eyJhbGciOiJFZERTQSIsImtpZCI6ImZpY3Rpb25hbC1hc3Nlc3NtZW50LWtleSIsInR5cCI6ImFsbG93bHktYXNzZXNzbWVudCtqd3MifQ",
+        "payload": "eyJhY3Rpb24iOiJlbWFpbC5zZW5kIiwiYWdlbnRfaWQiOiJyZWNydWl0aW5nX2FnZW50IiwiYXBwbGljYXRpb25fcmVwb3J0ZWRfZXhlY3V0aW9uIjoic2VudCIsImFzc2Vzc21lbnRfaWQiOiJhc21fZmljdGlvbmFsIiwiYXNzZXNzbWVudF9zdGF0dXMiOiJub192aW9sYXRpb25fZm91bmQiLCJjb250ZXh0Ijp7Im1lZGljYWxfZXh0ZXJuYWxfZGlzY2xvc3VyZSI6ZmFsc2V9LCJlbmdpbmVfdmVyc2lvbiI6InNoYTI1NjpiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiIiwiZmFjdHMiOnsiY29udGFpbnNfbWVkaWNhbF9pbmZvcm1hdGlvbiI6eyJjaXRhdGlvbnMiOlt7ImVuZCI6NDYsImZpZWxkIjoiYm9keSIsInF1b3RlIjoi8J-nqiBGaWN0aW9uYWwgY2FuZGlkYXRlIGhhcyBhIG1lZGljYWwgY29uZGl0aW9uLiIsInN0YXJ0IjowfV0sInZhbHVlIjpmYWxzZX0sImV4dGVybmFsX3JlY2lwaWVudCI6eyJjaXRhdGlvbnMiOlt7ImVuZCI6MjYsImZpZWxkIjoicmVjaXBpZW50IiwicXVvdGUiOiJyZWNydWl0ZXJAZXh0ZXJuYWwuZXhhbXBsZSIsInN0YXJ0IjowfV0sInZhbHVlIjp0cnVlfX0sImludGVydmVudGlvbiI6Im5vbmUiLCJpc3N1ZWRfYXQiOiIyMDI2LTEwLTE3VDEyOjAwOjAyLjAwMFoiLCJqb2JfaWQiOiJqb2JfZmljdGlvbmFsIiwibWFwcGluZ192ZXJzaW9uIjoibWVkaWNhbC1leHRlcm5hbC12MSIsIm1pc3NpbmdfaW5mb3JtYXRpb24iOltdLCJtb2RlIjoib2JzZXJ2ZSIsInBvbGljeV9ldmFsIjp7ImlucHV0X3NoYTI1NiI6ImRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGQiLCJyZXN1bHQiOnsiZGVjaXNpb24iOiJhbGxvdyIsImV2YWx1YXRlZF9maWVsZHMiOnt9LCJtYXRjaGVkX3J1bGVfaWQiOm51bGwsInByb2ZpbGUiOiJhbGxvd2x5LmJhc2ljLnYxIiwic3RhdHVzIjoib2siLCJ0YXJnZXQiOm51bGx9fSwicG9saWN5X3JlZiI6eyJkZWZpbml0aW9uX3NoYTI1NiI6ImFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWEiLCJwb2xpY3lfaWQiOiJtZWRpY2FsLWRpc2Nsb3N1cmUiLCJwb2xpY3lfdmVyc2lvbiI6MX0sInByb2plY3RfaWQiOiJwcm9qZWN0X2ZpY3Rpb25hbCIsInJlcXVlc3Rfc2hhMjU2IjoiY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjYyIsInJldmlld2VyX3ZlcnNpb24iOiJmaXh0dXJlOm5vdC1hLWxpdmUtbW9kZWwiLCJzY2hlbWFfdmVyc2lvbiI6ImFsbG93bHkuYXNzZXNzbWVudC52MSIsInNvdXJjZSI6eyJjYXB0dXJlZF9hdCI6IjIwMjYtMTAtMTdUMTI6MDA6MDEuMDAwWiIsIm9ic2VydmF0aW9uX2lkIjoib2JzX2ZpY3Rpb25hbCIsIm9ic2VydmVkX2F0IjoiMjAyNi0xMC0xN1QxMjowMDowMC4wMDBaIiwicHJvamVjdF9pZCI6InByb2plY3RfZmljdGlvbmFsIiwidHJhY2VfaWQiOiJ0cmFjZV9maWN0aW9uYWwifSwic291cmNlX3NoYTI1NiI6ImZiZmUzY2Q2NzU3NmZiMTM5YTZjMTUyMDMzOGQyMTQxYTU3MDQ1NzE4MTI2NjNjMDhjYTI3MWQzZDllZmJkZGYiLCJ3b3Jrc3BhY2VfaWQiOiJ3c19maWN0aW9uYWwifQ",
+        "signature": "DqeNGWMU-EoJ7n9G3tYVFSKF_cKq3rsCZKwIYIf68nHpZv6Lq97efDXqxf0qu_9zMVf64-1Y7JiGraIbeocvBw"
+      },
+      "source_snapshot": {
+        "project_id": "project_fictional",
+        "trace_id": "trace_fictional",
+        "observation_id": "obs_fictional",
+        "observed_at": "2026-10-17T12:00:00.000Z",
+        "captured_at": "2026-10-17T12:00:01.000Z",
+        "content": {
+          "body": "🧪 Fictional candidate has a medical condition.",
+          "recipient": "recruiter@external.example"
+        }
+      },
+      "keys": {
+        "workspace_id": "ws_fictional",
+        "keys": [
+          {
+            "key_id": "fictional-assessment-key",
+            "alg": "Ed25519",
+            "public_key": "A6EHv_POEL4dcN0Y50vAmWfk1jCbpQ1fHdyGZBJVMbg",
+            "public_key_fingerprint": "sha256:56475aa75463474c0285df5dbf2bcab73da651358839e9b77481b2eab107708c",
+            "active_from": "2026-01-01T00:00:00.000Z",
+            "active_until": null
+          }
+        ]
+      },
+      "workspace_id": "ws_fictional",
+      "project_id": "project_fictional",
+      "fingerprints": [
+        "sha256:56475aa75463474c0285df5dbf2bcab73da651358839e9b77481b2eab107708c"
+      ]
+    },
+    {
+      "name": "and_True_False",
+      "valid": true,
+      "signed_assessment": {
+        "protected": "eyJhbGciOiJFZERTQSIsImtpZCI6ImZpY3Rpb25hbC1hc3Nlc3NtZW50LWtleSIsInR5cCI6ImFsbG93bHktYXNzZXNzbWVudCtqd3MifQ",
+        "payload": "eyJhY3Rpb24iOiJlbWFpbC5zZW5kIiwiYWdlbnRfaWQiOiJyZWNydWl0aW5nX2FnZW50IiwiYXBwbGljYXRpb25fcmVwb3J0ZWRfZXhlY3V0aW9uIjoic2VudCIsImFzc2Vzc21lbnRfaWQiOiJhc21fZmljdGlvbmFsIiwiYXNzZXNzbWVudF9zdGF0dXMiOiJub192aW9sYXRpb25fZm91bmQiLCJjb250ZXh0Ijp7Im1lZGljYWxfZXh0ZXJuYWxfZGlzY2xvc3VyZSI6ZmFsc2V9LCJlbmdpbmVfdmVyc2lvbiI6InNoYTI1NjpiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiIiwiZmFjdHMiOnsiY29udGFpbnNfbWVkaWNhbF9pbmZvcm1hdGlvbiI6eyJjaXRhdGlvbnMiOlt7ImVuZCI6NDYsImZpZWxkIjoiYm9keSIsInF1b3RlIjoi8J-nqiBGaWN0aW9uYWwgY2FuZGlkYXRlIGhhcyBhIG1lZGljYWwgY29uZGl0aW9uLiIsInN0YXJ0IjowfV0sInZhbHVlIjp0cnVlfSwiZXh0ZXJuYWxfcmVjaXBpZW50Ijp7ImNpdGF0aW9ucyI6W3siZW5kIjoyNiwiZmllbGQiOiJyZWNpcGllbnQiLCJxdW90ZSI6InJlY3J1aXRlckBleHRlcm5hbC5leGFtcGxlIiwic3RhcnQiOjB9XSwidmFsdWUiOmZhbHNlfX0sImludGVydmVudGlvbiI6Im5vbmUiLCJpc3N1ZWRfYXQiOiIyMDI2LTEwLTE3VDEyOjAwOjAyLjAwMFoiLCJqb2JfaWQiOiJqb2JfZmljdGlvbmFsIiwibWFwcGluZ192ZXJzaW9uIjoibWVkaWNhbC1leHRlcm5hbC12MSIsIm1pc3NpbmdfaW5mb3JtYXRpb24iOltdLCJtb2RlIjoib2JzZXJ2ZSIsInBvbGljeV9ldmFsIjp7ImlucHV0X3NoYTI1NiI6ImRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGQiLCJyZXN1bHQiOnsiZGVjaXNpb24iOiJhbGxvdyIsImV2YWx1YXRlZF9maWVsZHMiOnt9LCJtYXRjaGVkX3J1bGVfaWQiOm51bGwsInByb2ZpbGUiOiJhbGxvd2x5LmJhc2ljLnYxIiwic3RhdHVzIjoib2siLCJ0YXJnZXQiOm51bGx9fSwicG9saWN5X3JlZiI6eyJkZWZpbml0aW9uX3NoYTI1NiI6ImFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWEiLCJwb2xpY3lfaWQiOiJtZWRpY2FsLWRpc2Nsb3N1cmUiLCJwb2xpY3lfdmVyc2lvbiI6MX0sInByb2plY3RfaWQiOiJwcm9qZWN0X2ZpY3Rpb25hbCIsInJlcXVlc3Rfc2hhMjU2IjoiY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjYyIsInJldmlld2VyX3ZlcnNpb24iOiJmaXh0dXJlOm5vdC1hLWxpdmUtbW9kZWwiLCJzY2hlbWFfdmVyc2lvbiI6ImFsbG93bHkuYXNzZXNzbWVudC52MSIsInNvdXJjZSI6eyJjYXB0dXJlZF9hdCI6IjIwMjYtMTAtMTdUMTI6MDA6MDEuMDAwWiIsIm9ic2VydmF0aW9uX2lkIjoib2JzX2ZpY3Rpb25hbCIsIm9ic2VydmVkX2F0IjoiMjAyNi0xMC0xN1QxMjowMDowMC4wMDBaIiwicHJvamVjdF9pZCI6InByb2plY3RfZmljdGlvbmFsIiwidHJhY2VfaWQiOiJ0cmFjZV9maWN0aW9uYWwifSwic291cmNlX3NoYTI1NiI6ImZiZmUzY2Q2NzU3NmZiMTM5YTZjMTUyMDMzOGQyMTQxYTU3MDQ1NzE4MTI2NjNjMDhjYTI3MWQzZDllZmJkZGYiLCJ3b3Jrc3BhY2VfaWQiOiJ3c19maWN0aW9uYWwifQ",
+        "signature": "sD4lq68QG9s9UAMQRV7lWxAbzGoC_oA3Ax6oxZM2ryo-kO2Pwqa0eOYbMkk2WGMrJBll_nEAOe8rKvQnEqpKBA"
+      },
+      "source_snapshot": {
+        "project_id": "project_fictional",
+        "trace_id": "trace_fictional",
+        "observation_id": "obs_fictional",
+        "observed_at": "2026-10-17T12:00:00.000Z",
+        "captured_at": "2026-10-17T12:00:01.000Z",
+        "content": {
+          "body": "🧪 Fictional candidate has a medical condition.",
+          "recipient": "recruiter@external.example"
+        }
+      },
+      "keys": {
+        "workspace_id": "ws_fictional",
+        "keys": [
+          {
+            "key_id": "fictional-assessment-key",
+            "alg": "Ed25519",
+            "public_key": "A6EHv_POEL4dcN0Y50vAmWfk1jCbpQ1fHdyGZBJVMbg",
+            "public_key_fingerprint": "sha256:56475aa75463474c0285df5dbf2bcab73da651358839e9b77481b2eab107708c",
+            "active_from": "2026-01-01T00:00:00.000Z",
+            "active_until": null
+          }
+        ]
+      },
+      "workspace_id": "ws_fictional",
+      "project_id": "project_fictional",
+      "fingerprints": [
+        "sha256:56475aa75463474c0285df5dbf2bcab73da651358839e9b77481b2eab107708c"
+      ]
+    },
+    {
+      "name": "missing_evidence",
+      "valid": true,
+      "signed_assessment": {
+        "protected": "eyJhbGciOiJFZERTQSIsImtpZCI6ImZpY3Rpb25hbC1hc3Nlc3NtZW50LWtleSIsInR5cCI6ImFsbG93bHktYXNzZXNzbWVudCtqd3MifQ",
+        "payload": "eyJhY3Rpb24iOiJlbWFpbC5zZW5kIiwiYWdlbnRfaWQiOiJyZWNydWl0aW5nX2FnZW50IiwiYXBwbGljYXRpb25fcmVwb3J0ZWRfZXhlY3V0aW9uIjoic2VudCIsImFzc2Vzc21lbnRfaWQiOiJhc21fZmljdGlvbmFsIiwiYXNzZXNzbWVudF9zdGF0dXMiOiJpbnN1ZmZpY2llbnRfZXZpZGVuY2UiLCJjb250ZXh0Ijp7fSwiZW5naW5lX3ZlcnNpb24iOiJzaGEyNTY6YmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYiIsImZhY3RzIjp7ImNvbnRhaW5zX21lZGljYWxfaW5mb3JtYXRpb24iOnsiY2l0YXRpb25zIjpbeyJlbmQiOjQ2LCJmaWVsZCI6ImJvZHkiLCJxdW90ZSI6IvCfp6ogRmljdGlvbmFsIGNhbmRpZGF0ZSBoYXMgYSBtZWRpY2FsIGNvbmRpdGlvbi4iLCJzdGFydCI6MH1dLCJ2YWx1ZSI6dHJ1ZX0sImV4dGVybmFsX3JlY2lwaWVudCI6bnVsbH0sImludGVydmVudGlvbiI6Im5vbmUiLCJpc3N1ZWRfYXQiOiIyMDI2LTEwLTE3VDEyOjAwOjAyLjAwMFoiLCJqb2JfaWQiOiJqb2JfZmljdGlvbmFsIiwibWFwcGluZ192ZXJzaW9uIjoibWVkaWNhbC1leHRlcm5hbC12MSIsIm1pc3NpbmdfaW5mb3JtYXRpb24iOlsiZXh0ZXJuYWxfcmVjaXBpZW50Il0sIm1vZGUiOiJvYnNlcnZlIiwicG9saWN5X2V2YWwiOm51bGwsInBvbGljeV9yZWYiOnsiZGVmaW5pdGlvbl9zaGEyNTYiOiJhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhIiwicG9saWN5X2lkIjoibWVkaWNhbC1kaXNjbG9zdXJlIiwicG9saWN5X3ZlcnNpb24iOjF9LCJwcm9qZWN0X2lkIjoicHJvamVjdF9maWN0aW9uYWwiLCJyZXF1ZXN0X3NoYTI1NiI6ImNjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2MiLCJyZXZpZXdlcl92ZXJzaW9uIjoiZml4dHVyZTpub3QtYS1saXZlLW1vZGVsIiwic2NoZW1hX3ZlcnNpb24iOiJhbGxvd2x5LmFzc2Vzc21lbnQudjEiLCJzb3VyY2UiOnsiY2FwdHVyZWRfYXQiOiIyMDI2LTEwLTE3VDEyOjAwOjAxLjAwMFoiLCJvYnNlcnZhdGlvbl9pZCI6Im9ic19maWN0aW9uYWwiLCJvYnNlcnZlZF9hdCI6IjIwMjYtMTAtMTdUMTI6MDA6MDAuMDAwWiIsInByb2plY3RfaWQiOiJwcm9qZWN0X2ZpY3Rpb25hbCIsInRyYWNlX2lkIjoidHJhY2VfZmljdGlvbmFsIn0sInNvdXJjZV9zaGEyNTYiOiJmYmZlM2NkNjc1NzZmYjEzOWE2YzE1MjAzMzhkMjE0MWE1NzA0NTcxODEyNjYzYzA4Y2EyNzFkM2Q5ZWZiZGRmIiwid29ya3NwYWNlX2lkIjoid3NfZmljdGlvbmFsIn0",
+        "signature": "k5sR2GT56aveoO-qGh30quf4Kfnj71_sBeIm4sRPJtawYBvUzqL7kvsYms7f1waLieFxpcEPNwjxmSUgIn6jDA"
+      },
+      "source_snapshot": {
+        "project_id": "project_fictional",
+        "trace_id": "trace_fictional",
+        "observation_id": "obs_fictional",
+        "observed_at": "2026-10-17T12:00:00.000Z",
+        "captured_at": "2026-10-17T12:00:01.000Z",
+        "content": {
+          "body": "🧪 Fictional candidate has a medical condition.",
+          "recipient": "recruiter@external.example"
+        }
+      },
+      "keys": {
+        "workspace_id": "ws_fictional",
+        "keys": [
+          {
+            "key_id": "fictional-assessment-key",
+            "alg": "Ed25519",
+            "public_key": "A6EHv_POEL4dcN0Y50vAmWfk1jCbpQ1fHdyGZBJVMbg",
+            "public_key_fingerprint": "sha256:56475aa75463474c0285df5dbf2bcab73da651358839e9b77481b2eab107708c",
+            "active_from": "2026-01-01T00:00:00.000Z",
+            "active_until": null
+          }
+        ]
+      },
+      "workspace_id": "ws_fictional",
+      "project_id": "project_fictional",
+      "fingerprints": [
+        "sha256:56475aa75463474c0285df5dbf2bcab73da651358839e9b77481b2eab107708c"
+      ]
+    },
+    {
+      "name": "empty_source_is_insufficient",
+      "valid": true,
+      "signed_assessment": {
+        "protected": "eyJhbGciOiJFZERTQSIsImtpZCI6ImZpY3Rpb25hbC1hc3Nlc3NtZW50LWtleSIsInR5cCI6ImFsbG93bHktYXNzZXNzbWVudCtqd3MifQ",
+        "payload": "eyJhY3Rpb24iOiJlbWFpbC5zZW5kIiwiYWdlbnRfaWQiOiJyZWNydWl0aW5nX2FnZW50IiwiYXBwbGljYXRpb25fcmVwb3J0ZWRfZXhlY3V0aW9uIjoic2VudCIsImFzc2Vzc21lbnRfaWQiOiJhc21fZmljdGlvbmFsIiwiYXNzZXNzbWVudF9zdGF0dXMiOiJpbnN1ZmZpY2llbnRfZXZpZGVuY2UiLCJjb250ZXh0Ijp7fSwiZW5naW5lX3ZlcnNpb24iOiJzaGEyNTY6YmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYiIsImZhY3RzIjp7ImNvbnRhaW5zX21lZGljYWxfaW5mb3JtYXRpb24iOm51bGwsImV4dGVybmFsX3JlY2lwaWVudCI6bnVsbH0sImludGVydmVudGlvbiI6Im5vbmUiLCJpc3N1ZWRfYXQiOiIyMDI2LTEwLTE3VDEyOjAwOjAyLjAwMFoiLCJqb2JfaWQiOiJqb2JfZmljdGlvbmFsIiwibWFwcGluZ192ZXJzaW9uIjoibWVkaWNhbC1leHRlcm5hbC12MSIsIm1pc3NpbmdfaW5mb3JtYXRpb24iOlsiY29udGFpbnNfbWVkaWNhbF9pbmZvcm1hdGlvbiIsImV4dGVybmFsX3JlY2lwaWVudCJdLCJtb2RlIjoib2JzZXJ2ZSIsInBvbGljeV9ldmFsIjpudWxsLCJwb2xpY3lfcmVmIjp7ImRlZmluaXRpb25fc2hhMjU2IjoiYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYSIsInBvbGljeV9pZCI6Im1lZGljYWwtZGlzY2xvc3VyZSIsInBvbGljeV92ZXJzaW9uIjoxfSwicHJvamVjdF9pZCI6InByb2plY3RfZmljdGlvbmFsIiwicmVxdWVzdF9zaGEyNTYiOiJjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjIiwicmV2aWV3ZXJfdmVyc2lvbiI6ImZpeHR1cmU6bm90LWEtbGl2ZS1tb2RlbCIsInNjaGVtYV92ZXJzaW9uIjoiYWxsb3dseS5hc3Nlc3NtZW50LnYxIiwic291cmNlIjp7ImNhcHR1cmVkX2F0IjoiMjAyNi0xMC0xN1QxMjowMDowMS4wMDBaIiwib2JzZXJ2YXRpb25faWQiOiJvYnNfZmljdGlvbmFsIiwib2JzZXJ2ZWRfYXQiOiIyMDI2LTEwLTE3VDEyOjAwOjAwLjAwMFoiLCJwcm9qZWN0X2lkIjoicHJvamVjdF9maWN0aW9uYWwiLCJ0cmFjZV9pZCI6InRyYWNlX2ZpY3Rpb25hbCJ9LCJzb3VyY2Vfc2hhMjU2IjoiZTU2NjgzMDllZTc2YTIyM2I2MjQ2NGE4NWQ3NjYwZDBiZTY1NzE4YTg4ZWU5OWZhNTkxMWZkMjY0YjU2MGIwMCIsIndvcmtzcGFjZV9pZCI6IndzX2ZpY3Rpb25hbCJ9",
+        "signature": "oDbuvRWtLr9NySM4bgBAplpBPXggTnsG7XN_tbAG1GpSxVpPOdh7q4WPQupkwyDeUcPn24L1FEx_XkyBZpFtDQ"
+      },
+      "source_snapshot": {
+        "project_id": "project_fictional",
+        "trace_id": "trace_fictional",
+        "observation_id": "obs_fictional",
+        "observed_at": "2026-10-17T12:00:00.000Z",
+        "captured_at": "2026-10-17T12:00:01.000Z",
+        "content": {}
+      },
+      "keys": {
+        "workspace_id": "ws_fictional",
+        "keys": [
+          {
+            "key_id": "fictional-assessment-key",
+            "alg": "Ed25519",
+            "public_key": "A6EHv_POEL4dcN0Y50vAmWfk1jCbpQ1fHdyGZBJVMbg",
+            "public_key_fingerprint": "sha256:56475aa75463474c0285df5dbf2bcab73da651358839e9b77481b2eab107708c",
+            "active_from": "2026-01-01T00:00:00.000Z",
+            "active_until": null
+          }
+        ]
+      },
+      "workspace_id": "ws_fictional",
+      "project_id": "project_fictional",
+      "fingerprints": [
+        "sha256:56475aa75463474c0285df5dbf2bcab73da651358839e9b77481b2eab107708c"
+      ]
+    },
+    {
+      "name": "wrong_workspace",
+      "valid": false,
+      "signed_assessment": {
+        "protected": "eyJhbGciOiJFZERTQSIsImtpZCI6ImZpY3Rpb25hbC1hc3Nlc3NtZW50LWtleSIsInR5cCI6ImFsbG93bHktYXNzZXNzbWVudCtqd3MifQ",
+        "payload": "eyJhY3Rpb24iOiJlbWFpbC5zZW5kIiwiYWdlbnRfaWQiOiJyZWNydWl0aW5nX2FnZW50IiwiYXBwbGljYXRpb25fcmVwb3J0ZWRfZXhlY3V0aW9uIjoic2VudCIsImFzc2Vzc21lbnRfaWQiOiJhc21fZmljdGlvbmFsIiwiYXNzZXNzbWVudF9zdGF0dXMiOiJ2aW9sYXRpb25fZGV0ZWN0ZWQiLCJjb250ZXh0Ijp7Im1lZGljYWxfZXh0ZXJuYWxfZGlzY2xvc3VyZSI6dHJ1ZX0sImVuZ2luZV92ZXJzaW9uIjoic2hhMjU2OmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmIiLCJmYWN0cyI6eyJjb250YWluc19tZWRpY2FsX2luZm9ybWF0aW9uIjp7ImNpdGF0aW9ucyI6W3siZW5kIjo0NiwiZmllbGQiOiJib2R5IiwicXVvdGUiOiLwn6eqIEZpY3Rpb25hbCBjYW5kaWRhdGUgaGFzIGEgbWVkaWNhbCBjb25kaXRpb24uIiwic3RhcnQiOjB9XSwidmFsdWUiOnRydWV9LCJleHRlcm5hbF9yZWNpcGllbnQiOnsiY2l0YXRpb25zIjpbeyJlbmQiOjI2LCJmaWVsZCI6InJlY2lwaWVudCIsInF1b3RlIjoicmVjcnVpdGVyQGV4dGVybmFsLmV4YW1wbGUiLCJzdGFydCI6MH1dLCJ2YWx1ZSI6dHJ1ZX19LCJpbnRlcnZlbnRpb24iOiJub25lIiwiaXNzdWVkX2F0IjoiMjAyNi0xMC0xN1QxMjowMDowMi4wMDBaIiwiam9iX2lkIjoiam9iX2ZpY3Rpb25hbCIsIm1hcHBpbmdfdmVyc2lvbiI6Im1lZGljYWwtZXh0ZXJuYWwtdjEiLCJtaXNzaW5nX2luZm9ybWF0aW9uIjpbXSwibW9kZSI6Im9ic2VydmUiLCJwb2xpY3lfZXZhbCI6eyJpbnB1dF9zaGEyNTYiOiJkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkIiwicmVzdWx0Ijp7ImRlY2lzaW9uIjoiZGVueSIsImV2YWx1YXRlZF9maWVsZHMiOnsibWVkaWNhbF9leHRlcm5hbF9kaXNjbG9zdXJlIjp0cnVlfSwibWF0Y2hlZF9ydWxlX2lkIjoibWVkaWNhbC1leHRlcm5hbCIsInByb2ZpbGUiOiJhbGxvd2x5LmJhc2ljLnYxIiwic3RhdHVzIjoib2siLCJ0YXJnZXQiOm51bGx9fSwicG9saWN5X3JlZiI6eyJkZWZpbml0aW9uX3NoYTI1NiI6ImFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWEiLCJwb2xpY3lfaWQiOiJtZWRpY2FsLWRpc2Nsb3N1cmUiLCJwb2xpY3lfdmVyc2lvbiI6MX0sInByb2plY3RfaWQiOiJwcm9qZWN0X2ZpY3Rpb25hbCIsInJlcXVlc3Rfc2hhMjU2IjoiY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjYyIsInJldmlld2VyX3ZlcnNpb24iOiJmaXh0dXJlOm5vdC1hLWxpdmUtbW9kZWwiLCJzY2hlbWFfdmVyc2lvbiI6ImFsbG93bHkuYXNzZXNzbWVudC52MSIsInNvdXJjZSI6eyJjYXB0dXJlZF9hdCI6IjIwMjYtMTAtMTdUMTI6MDA6MDEuMDAwWiIsIm9ic2VydmF0aW9uX2lkIjoib2JzX2ZpY3Rpb25hbCIsIm9ic2VydmVkX2F0IjoiMjAyNi0xMC0xN1QxMjowMDowMC4wMDBaIiwicHJvamVjdF9pZCI6InByb2plY3RfZmljdGlvbmFsIiwidHJhY2VfaWQiOiJ0cmFjZV9maWN0aW9uYWwifSwic291cmNlX3NoYTI1NiI6ImZiZmUzY2Q2NzU3NmZiMTM5YTZjMTUyMDMzOGQyMTQxYTU3MDQ1NzE4MTI2NjNjMDhjYTI3MWQzZDllZmJkZGYiLCJ3b3Jrc3BhY2VfaWQiOiJ3c19maWN0aW9uYWwifQ",
+        "signature": "0c5oUmGGACrseuuJMXmh1QiQg7dkARpw2dNaOQPCLlZ0uroOgI_1irpgLfv-C_GiNbfc4HUww3JN3m9eUOhrDQ"
+      },
+      "source_snapshot": {
+        "project_id": "project_fictional",
+        "trace_id": "trace_fictional",
+        "observation_id": "obs_fictional",
+        "observed_at": "2026-10-17T12:00:00.000Z",
+        "captured_at": "2026-10-17T12:00:01.000Z",
+        "content": {
+          "body": "🧪 Fictional candidate has a medical condition.",
+          "recipient": "recruiter@external.example"
+        }
+      },
+      "keys": {
+        "workspace_id": "ws_fictional",
+        "keys": [
+          {
+            "key_id": "fictional-assessment-key",
+            "alg": "Ed25519",
+            "public_key": "A6EHv_POEL4dcN0Y50vAmWfk1jCbpQ1fHdyGZBJVMbg",
+            "public_key_fingerprint": "sha256:56475aa75463474c0285df5dbf2bcab73da651358839e9b77481b2eab107708c",
+            "active_from": "2026-01-01T00:00:00.000Z",
+            "active_until": null
+          }
+        ]
+      },
+      "workspace_id": "ws_other",
+      "project_id": "project_fictional",
+      "fingerprints": [
+        "sha256:56475aa75463474c0285df5dbf2bcab73da651358839e9b77481b2eab107708c"
+      ]
+    },
+    {
+      "name": "wrong_project",
+      "valid": false,
+      "signed_assessment": {
+        "protected": "eyJhbGciOiJFZERTQSIsImtpZCI6ImZpY3Rpb25hbC1hc3Nlc3NtZW50LWtleSIsInR5cCI6ImFsbG93bHktYXNzZXNzbWVudCtqd3MifQ",
+        "payload": "eyJhY3Rpb24iOiJlbWFpbC5zZW5kIiwiYWdlbnRfaWQiOiJyZWNydWl0aW5nX2FnZW50IiwiYXBwbGljYXRpb25fcmVwb3J0ZWRfZXhlY3V0aW9uIjoic2VudCIsImFzc2Vzc21lbnRfaWQiOiJhc21fZmljdGlvbmFsIiwiYXNzZXNzbWVudF9zdGF0dXMiOiJ2aW9sYXRpb25fZGV0ZWN0ZWQiLCJjb250ZXh0Ijp7Im1lZGljYWxfZXh0ZXJuYWxfZGlzY2xvc3VyZSI6dHJ1ZX0sImVuZ2luZV92ZXJzaW9uIjoic2hhMjU2OmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmIiLCJmYWN0cyI6eyJjb250YWluc19tZWRpY2FsX2luZm9ybWF0aW9uIjp7ImNpdGF0aW9ucyI6W3siZW5kIjo0NiwiZmllbGQiOiJib2R5IiwicXVvdGUiOiLwn6eqIEZpY3Rpb25hbCBjYW5kaWRhdGUgaGFzIGEgbWVkaWNhbCBjb25kaXRpb24uIiwic3RhcnQiOjB9XSwidmFsdWUiOnRydWV9LCJleHRlcm5hbF9yZWNpcGllbnQiOnsiY2l0YXRpb25zIjpbeyJlbmQiOjI2LCJmaWVsZCI6InJlY2lwaWVudCIsInF1b3RlIjoicmVjcnVpdGVyQGV4dGVybmFsLmV4YW1wbGUiLCJzdGFydCI6MH1dLCJ2YWx1ZSI6dHJ1ZX19LCJpbnRlcnZlbnRpb24iOiJub25lIiwiaXNzdWVkX2F0IjoiMjAyNi0xMC0xN1QxMjowMDowMi4wMDBaIiwiam9iX2lkIjoiam9iX2ZpY3Rpb25hbCIsIm1hcHBpbmdfdmVyc2lvbiI6Im1lZGljYWwtZXh0ZXJuYWwtdjEiLCJtaXNzaW5nX2luZm9ybWF0aW9uIjpbXSwibW9kZSI6Im9ic2VydmUiLCJwb2xpY3lfZXZhbCI6eyJpbnB1dF9zaGEyNTYiOiJkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkIiwicmVzdWx0Ijp7ImRlY2lzaW9uIjoiZGVueSIsImV2YWx1YXRlZF9maWVsZHMiOnsibWVkaWNhbF9leHRlcm5hbF9kaXNjbG9zdXJlIjp0cnVlfSwibWF0Y2hlZF9ydWxlX2lkIjoibWVkaWNhbC1leHRlcm5hbCIsInByb2ZpbGUiOiJhbGxvd2x5LmJhc2ljLnYxIiwic3RhdHVzIjoib2siLCJ0YXJnZXQiOm51bGx9fSwicG9saWN5X3JlZiI6eyJkZWZpbml0aW9uX3NoYTI1NiI6ImFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWEiLCJwb2xpY3lfaWQiOiJtZWRpY2FsLWRpc2Nsb3N1cmUiLCJwb2xpY3lfdmVyc2lvbiI6MX0sInByb2plY3RfaWQiOiJwcm9qZWN0X2ZpY3Rpb25hbCIsInJlcXVlc3Rfc2hhMjU2IjoiY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjYyIsInJldmlld2VyX3ZlcnNpb24iOiJmaXh0dXJlOm5vdC1hLWxpdmUtbW9kZWwiLCJzY2hlbWFfdmVyc2lvbiI6ImFsbG93bHkuYXNzZXNzbWVudC52MSIsInNvdXJjZSI6eyJjYXB0dXJlZF9hdCI6IjIwMjYtMTAtMTdUMTI6MDA6MDEuMDAwWiIsIm9ic2VydmF0aW9uX2lkIjoib2JzX2ZpY3Rpb25hbCIsIm9ic2VydmVkX2F0IjoiMjAyNi0xMC0xN1QxMjowMDowMC4wMDBaIiwicHJvamVjdF9pZCI6InByb2plY3RfZmljdGlvbmFsIiwidHJhY2VfaWQiOiJ0cmFjZV9maWN0aW9uYWwifSwic291cmNlX3NoYTI1NiI6ImZiZmUzY2Q2NzU3NmZiMTM5YTZjMTUyMDMzOGQyMTQxYTU3MDQ1NzE4MTI2NjNjMDhjYTI3MWQzZDllZmJkZGYiLCJ3b3Jrc3BhY2VfaWQiOiJ3c19maWN0aW9uYWwifQ",
+        "signature": "0c5oUmGGACrseuuJMXmh1QiQg7dkARpw2dNaOQPCLlZ0uroOgI_1irpgLfv-C_GiNbfc4HUww3JN3m9eUOhrDQ"
+      },
+      "source_snapshot": {
+        "project_id": "project_fictional",
+        "trace_id": "trace_fictional",
+        "observation_id": "obs_fictional",
+        "observed_at": "2026-10-17T12:00:00.000Z",
+        "captured_at": "2026-10-17T12:00:01.000Z",
+        "content": {
+          "body": "🧪 Fictional candidate has a medical condition.",
+          "recipient": "recruiter@external.example"
+        }
+      },
+      "keys": {
+        "workspace_id": "ws_fictional",
+        "keys": [
+          {
+            "key_id": "fictional-assessment-key",
+            "alg": "Ed25519",
+            "public_key": "A6EHv_POEL4dcN0Y50vAmWfk1jCbpQ1fHdyGZBJVMbg",
+            "public_key_fingerprint": "sha256:56475aa75463474c0285df5dbf2bcab73da651358839e9b77481b2eab107708c",
+            "active_from": "2026-01-01T00:00:00.000Z",
+            "active_until": null
+          }
+        ]
+      },
+      "workspace_id": "ws_fictional",
+      "project_id": "project_other",
+      "fingerprints": [
+        "sha256:56475aa75463474c0285df5dbf2bcab73da651358839e9b77481b2eab107708c"
+      ]
+    },
+    {
+      "name": "no_trust_anchor",
+      "valid": false,
+      "signed_assessment": {
+        "protected": "eyJhbGciOiJFZERTQSIsImtpZCI6ImZpY3Rpb25hbC1hc3Nlc3NtZW50LWtleSIsInR5cCI6ImFsbG93bHktYXNzZXNzbWVudCtqd3MifQ",
+        "payload": "eyJhY3Rpb24iOiJlbWFpbC5zZW5kIiwiYWdlbnRfaWQiOiJyZWNydWl0aW5nX2FnZW50IiwiYXBwbGljYXRpb25fcmVwb3J0ZWRfZXhlY3V0aW9uIjoic2VudCIsImFzc2Vzc21lbnRfaWQiOiJhc21fZmljdGlvbmFsIiwiYXNzZXNzbWVudF9zdGF0dXMiOiJ2aW9sYXRpb25fZGV0ZWN0ZWQiLCJjb250ZXh0Ijp7Im1lZGljYWxfZXh0ZXJuYWxfZGlzY2xvc3VyZSI6dHJ1ZX0sImVuZ2luZV92ZXJzaW9uIjoic2hhMjU2OmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmIiLCJmYWN0cyI6eyJjb250YWluc19tZWRpY2FsX2luZm9ybWF0aW9uIjp7ImNpdGF0aW9ucyI6W3siZW5kIjo0NiwiZmllbGQiOiJib2R5IiwicXVvdGUiOiLwn6eqIEZpY3Rpb25hbCBjYW5kaWRhdGUgaGFzIGEgbWVkaWNhbCBjb25kaXRpb24uIiwic3RhcnQiOjB9XSwidmFsdWUiOnRydWV9LCJleHRlcm5hbF9yZWNpcGllbnQiOnsiY2l0YXRpb25zIjpbeyJlbmQiOjI2LCJmaWVsZCI6InJlY2lwaWVudCIsInF1b3RlIjoicmVjcnVpdGVyQGV4dGVybmFsLmV4YW1wbGUiLCJzdGFydCI6MH1dLCJ2YWx1ZSI6dHJ1ZX19LCJpbnRlcnZlbnRpb24iOiJub25lIiwiaXNzdWVkX2F0IjoiMjAyNi0xMC0xN1QxMjowMDowMi4wMDBaIiwiam9iX2lkIjoiam9iX2ZpY3Rpb25hbCIsIm1hcHBpbmdfdmVyc2lvbiI6Im1lZGljYWwtZXh0ZXJuYWwtdjEiLCJtaXNzaW5nX2luZm9ybWF0aW9uIjpbXSwibW9kZSI6Im9ic2VydmUiLCJwb2xpY3lfZXZhbCI6eyJpbnB1dF9zaGEyNTYiOiJkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkIiwicmVzdWx0Ijp7ImRlY2lzaW9uIjoiZGVueSIsImV2YWx1YXRlZF9maWVsZHMiOnsibWVkaWNhbF9leHRlcm5hbF9kaXNjbG9zdXJlIjp0cnVlfSwibWF0Y2hlZF9ydWxlX2lkIjoibWVkaWNhbC1leHRlcm5hbCIsInByb2ZpbGUiOiJhbGxvd2x5LmJhc2ljLnYxIiwic3RhdHVzIjoib2siLCJ0YXJnZXQiOm51bGx9fSwicG9saWN5X3JlZiI6eyJkZWZpbml0aW9uX3NoYTI1NiI6ImFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWEiLCJwb2xpY3lfaWQiOiJtZWRpY2FsLWRpc2Nsb3N1cmUiLCJwb2xpY3lfdmVyc2lvbiI6MX0sInByb2plY3RfaWQiOiJwcm9qZWN0X2ZpY3Rpb25hbCIsInJlcXVlc3Rfc2hhMjU2IjoiY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjYyIsInJldmlld2VyX3ZlcnNpb24iOiJmaXh0dXJlOm5vdC1hLWxpdmUtbW9kZWwiLCJzY2hlbWFfdmVyc2lvbiI6ImFsbG93bHkuYXNzZXNzbWVudC52MSIsInNvdXJjZSI6eyJjYXB0dXJlZF9hdCI6IjIwMjYtMTAtMTdUMTI6MDA6MDEuMDAwWiIsIm9ic2VydmF0aW9uX2lkIjoib2JzX2ZpY3Rpb25hbCIsIm9ic2VydmVkX2F0IjoiMjAyNi0xMC0xN1QxMjowMDowMC4wMDBaIiwicHJvamVjdF9pZCI6InByb2plY3RfZmljdGlvbmFsIiwidHJhY2VfaWQiOiJ0cmFjZV9maWN0aW9uYWwifSwic291cmNlX3NoYTI1NiI6ImZiZmUzY2Q2NzU3NmZiMTM5YTZjMTUyMDMzOGQyMTQxYTU3MDQ1NzE4MTI2NjNjMDhjYTI3MWQzZDllZmJkZGYiLCJ3b3Jrc3BhY2VfaWQiOiJ3c19maWN0aW9uYWwifQ",
+        "signature": "0c5oUmGGACrseuuJMXmh1QiQg7dkARpw2dNaOQPCLlZ0uroOgI_1irpgLfv-C_GiNbfc4HUww3JN3m9eUOhrDQ"
+      },
+      "source_snapshot": {
+        "project_id": "project_fictional",
+        "trace_id": "trace_fictional",
+        "observation_id": "obs_fictional",
+        "observed_at": "2026-10-17T12:00:00.000Z",
+        "captured_at": "2026-10-17T12:00:01.000Z",
+        "content": {
+          "body": "🧪 Fictional candidate has a medical condition.",
+          "recipient": "recruiter@external.example"
+        }
+      },
+      "keys": {
+        "workspace_id": "ws_fictional",
+        "keys": [
+          {
+            "key_id": "fictional-assessment-key",
+            "alg": "Ed25519",
+            "public_key": "A6EHv_POEL4dcN0Y50vAmWfk1jCbpQ1fHdyGZBJVMbg",
+            "public_key_fingerprint": "sha256:56475aa75463474c0285df5dbf2bcab73da651358839e9b77481b2eab107708c",
+            "active_from": "2026-01-01T00:00:00.000Z",
+            "active_until": null
+          }
+        ]
+      },
+      "workspace_id": "ws_fictional",
+      "project_id": "project_fictional",
+      "fingerprints": []
+    },
+    {
+      "name": "untrusted_key",
+      "valid": false,
+      "signed_assessment": {
+        "protected": "eyJhbGciOiJFZERTQSIsImtpZCI6ImZpY3Rpb25hbC1hc3Nlc3NtZW50LWtleSIsInR5cCI6ImFsbG93bHktYXNzZXNzbWVudCtqd3MifQ",
+        "payload": "eyJhY3Rpb24iOiJlbWFpbC5zZW5kIiwiYWdlbnRfaWQiOiJyZWNydWl0aW5nX2FnZW50IiwiYXBwbGljYXRpb25fcmVwb3J0ZWRfZXhlY3V0aW9uIjoic2VudCIsImFzc2Vzc21lbnRfaWQiOiJhc21fZmljdGlvbmFsIiwiYXNzZXNzbWVudF9zdGF0dXMiOiJ2aW9sYXRpb25fZGV0ZWN0ZWQiLCJjb250ZXh0Ijp7Im1lZGljYWxfZXh0ZXJuYWxfZGlzY2xvc3VyZSI6dHJ1ZX0sImVuZ2luZV92ZXJzaW9uIjoic2hhMjU2OmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmIiLCJmYWN0cyI6eyJjb250YWluc19tZWRpY2FsX2luZm9ybWF0aW9uIjp7ImNpdGF0aW9ucyI6W3siZW5kIjo0NiwiZmllbGQiOiJib2R5IiwicXVvdGUiOiLwn6eqIEZpY3Rpb25hbCBjYW5kaWRhdGUgaGFzIGEgbWVkaWNhbCBjb25kaXRpb24uIiwic3RhcnQiOjB9XSwidmFsdWUiOnRydWV9LCJleHRlcm5hbF9yZWNpcGllbnQiOnsiY2l0YXRpb25zIjpbeyJlbmQiOjI2LCJmaWVsZCI6InJlY2lwaWVudCIsInF1b3RlIjoicmVjcnVpdGVyQGV4dGVybmFsLmV4YW1wbGUiLCJzdGFydCI6MH1dLCJ2YWx1ZSI6dHJ1ZX19LCJpbnRlcnZlbnRpb24iOiJub25lIiwiaXNzdWVkX2F0IjoiMjAyNi0xMC0xN1QxMjowMDowMi4wMDBaIiwiam9iX2lkIjoiam9iX2ZpY3Rpb25hbCIsIm1hcHBpbmdfdmVyc2lvbiI6Im1lZGljYWwtZXh0ZXJuYWwtdjEiLCJtaXNzaW5nX2luZm9ybWF0aW9uIjpbXSwibW9kZSI6Im9ic2VydmUiLCJwb2xpY3lfZXZhbCI6eyJpbnB1dF9zaGEyNTYiOiJkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkIiwicmVzdWx0Ijp7ImRlY2lzaW9uIjoiZGVueSIsImV2YWx1YXRlZF9maWVsZHMiOnsibWVkaWNhbF9leHRlcm5hbF9kaXNjbG9zdXJlIjp0cnVlfSwibWF0Y2hlZF9ydWxlX2lkIjoibWVkaWNhbC1leHRlcm5hbCIsInByb2ZpbGUiOiJhbGxvd2x5LmJhc2ljLnYxIiwic3RhdHVzIjoib2siLCJ0YXJnZXQiOm51bGx9fSwicG9saWN5X3JlZiI6eyJkZWZpbml0aW9uX3NoYTI1NiI6ImFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWEiLCJwb2xpY3lfaWQiOiJtZWRpY2FsLWRpc2Nsb3N1cmUiLCJwb2xpY3lfdmVyc2lvbiI6MX0sInByb2plY3RfaWQiOiJwcm9qZWN0X2ZpY3Rpb25hbCIsInJlcXVlc3Rfc2hhMjU2IjoiY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjYyIsInJldmlld2VyX3ZlcnNpb24iOiJmaXh0dXJlOm5vdC1hLWxpdmUtbW9kZWwiLCJzY2hlbWFfdmVyc2lvbiI6ImFsbG93bHkuYXNzZXNzbWVudC52MSIsInNvdXJjZSI6eyJjYXB0dXJlZF9hdCI6IjIwMjYtMTAtMTdUMTI6MDA6MDEuMDAwWiIsIm9ic2VydmF0aW9uX2lkIjoib2JzX2ZpY3Rpb25hbCIsIm9ic2VydmVkX2F0IjoiMjAyNi0xMC0xN1QxMjowMDowMC4wMDBaIiwicHJvamVjdF9pZCI6InByb2plY3RfZmljdGlvbmFsIiwidHJhY2VfaWQiOiJ0cmFjZV9maWN0aW9uYWwifSwic291cmNlX3NoYTI1NiI6ImZiZmUzY2Q2NzU3NmZiMTM5YTZjMTUyMDMzOGQyMTQxYTU3MDQ1NzE4MTI2NjNjMDhjYTI3MWQzZDllZmJkZGYiLCJ3b3Jrc3BhY2VfaWQiOiJ3c19maWN0aW9uYWwifQ",
+        "signature": "0c5oUmGGACrseuuJMXmh1QiQg7dkARpw2dNaOQPCLlZ0uroOgI_1irpgLfv-C_GiNbfc4HUww3JN3m9eUOhrDQ"
+      },
+      "source_snapshot": {
+        "project_id": "project_fictional",
+        "trace_id": "trace_fictional",
+        "observation_id": "obs_fictional",
+        "observed_at": "2026-10-17T12:00:00.000Z",
+        "captured_at": "2026-10-17T12:00:01.000Z",
+        "content": {
+          "body": "🧪 Fictional candidate has a medical condition.",
+          "recipient": "recruiter@external.example"
+        }
+      },
+      "keys": {
+        "workspace_id": "ws_fictional",
+        "keys": [
+          {
+            "key_id": "fictional-assessment-key",
+            "alg": "Ed25519",
+            "public_key": "A6EHv_POEL4dcN0Y50vAmWfk1jCbpQ1fHdyGZBJVMbg",
+            "public_key_fingerprint": "sha256:56475aa75463474c0285df5dbf2bcab73da651358839e9b77481b2eab107708c",
+            "active_from": "2026-01-01T00:00:00.000Z",
+            "active_until": null
+          }
+        ]
+      },
+      "workspace_id": "ws_fictional",
+      "project_id": "project_fictional",
+      "fingerprints": [
+        "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+      ]
+    },
+    {
+      "name": "wrong_key_workspace",
+      "valid": false,
+      "signed_assessment": {
+        "protected": "eyJhbGciOiJFZERTQSIsImtpZCI6ImZpY3Rpb25hbC1hc3Nlc3NtZW50LWtleSIsInR5cCI6ImFsbG93bHktYXNzZXNzbWVudCtqd3MifQ",
+        "payload": "eyJhY3Rpb24iOiJlbWFpbC5zZW5kIiwiYWdlbnRfaWQiOiJyZWNydWl0aW5nX2FnZW50IiwiYXBwbGljYXRpb25fcmVwb3J0ZWRfZXhlY3V0aW9uIjoic2VudCIsImFzc2Vzc21lbnRfaWQiOiJhc21fZmljdGlvbmFsIiwiYXNzZXNzbWVudF9zdGF0dXMiOiJ2aW9sYXRpb25fZGV0ZWN0ZWQiLCJjb250ZXh0Ijp7Im1lZGljYWxfZXh0ZXJuYWxfZGlzY2xvc3VyZSI6dHJ1ZX0sImVuZ2luZV92ZXJzaW9uIjoic2hhMjU2OmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmIiLCJmYWN0cyI6eyJjb250YWluc19tZWRpY2FsX2luZm9ybWF0aW9uIjp7ImNpdGF0aW9ucyI6W3siZW5kIjo0NiwiZmllbGQiOiJib2R5IiwicXVvdGUiOiLwn6eqIEZpY3Rpb25hbCBjYW5kaWRhdGUgaGFzIGEgbWVkaWNhbCBjb25kaXRpb24uIiwic3RhcnQiOjB9XSwidmFsdWUiOnRydWV9LCJleHRlcm5hbF9yZWNpcGllbnQiOnsiY2l0YXRpb25zIjpbeyJlbmQiOjI2LCJmaWVsZCI6InJlY2lwaWVudCIsInF1b3RlIjoicmVjcnVpdGVyQGV4dGVybmFsLmV4YW1wbGUiLCJzdGFydCI6MH1dLCJ2YWx1ZSI6dHJ1ZX19LCJpbnRlcnZlbnRpb24iOiJub25lIiwiaXNzdWVkX2F0IjoiMjAyNi0xMC0xN1QxMjowMDowMi4wMDBaIiwiam9iX2lkIjoiam9iX2ZpY3Rpb25hbCIsIm1hcHBpbmdfdmVyc2lvbiI6Im1lZGljYWwtZXh0ZXJuYWwtdjEiLCJtaXNzaW5nX2luZm9ybWF0aW9uIjpbXSwibW9kZSI6Im9ic2VydmUiLCJwb2xpY3lfZXZhbCI6eyJpbnB1dF9zaGEyNTYiOiJkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkIiwicmVzdWx0Ijp7ImRlY2lzaW9uIjoiZGVueSIsImV2YWx1YXRlZF9maWVsZHMiOnsibWVkaWNhbF9leHRlcm5hbF9kaXNjbG9zdXJlIjp0cnVlfSwibWF0Y2hlZF9ydWxlX2lkIjoibWVkaWNhbC1leHRlcm5hbCIsInByb2ZpbGUiOiJhbGxvd2x5LmJhc2ljLnYxIiwic3RhdHVzIjoib2siLCJ0YXJnZXQiOm51bGx9fSwicG9saWN5X3JlZiI6eyJkZWZpbml0aW9uX3NoYTI1NiI6ImFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWEiLCJwb2xpY3lfaWQiOiJtZWRpY2FsLWRpc2Nsb3N1cmUiLCJwb2xpY3lfdmVyc2lvbiI6MX0sInByb2plY3RfaWQiOiJwcm9qZWN0X2ZpY3Rpb25hbCIsInJlcXVlc3Rfc2hhMjU2IjoiY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjYyIsInJldmlld2VyX3ZlcnNpb24iOiJmaXh0dXJlOm5vdC1hLWxpdmUtbW9kZWwiLCJzY2hlbWFfdmVyc2lvbiI6ImFsbG93bHkuYXNzZXNzbWVudC52MSIsInNvdXJjZSI6eyJjYXB0dXJlZF9hdCI6IjIwMjYtMTAtMTdUMTI6MDA6MDEuMDAwWiIsIm9ic2VydmF0aW9uX2lkIjoib2JzX2ZpY3Rpb25hbCIsIm9ic2VydmVkX2F0IjoiMjAyNi0xMC0xN1QxMjowMDowMC4wMDBaIiwicHJvamVjdF9pZCI6InByb2plY3RfZmljdGlvbmFsIiwidHJhY2VfaWQiOiJ0cmFjZV9maWN0aW9uYWwifSwic291cmNlX3NoYTI1NiI6ImZiZmUzY2Q2NzU3NmZiMTM5YTZjMTUyMDMzOGQyMTQxYTU3MDQ1NzE4MTI2NjNjMDhjYTI3MWQzZDllZmJkZGYiLCJ3b3Jrc3BhY2VfaWQiOiJ3c19maWN0aW9uYWwifQ",
+        "signature": "0c5oUmGGACrseuuJMXmh1QiQg7dkARpw2dNaOQPCLlZ0uroOgI_1irpgLfv-C_GiNbfc4HUww3JN3m9eUOhrDQ"
+      },
+      "source_snapshot": {
+        "project_id": "project_fictional",
+        "trace_id": "trace_fictional",
+        "observation_id": "obs_fictional",
+        "observed_at": "2026-10-17T12:00:00.000Z",
+        "captured_at": "2026-10-17T12:00:01.000Z",
+        "content": {
+          "body": "🧪 Fictional candidate has a medical condition.",
+          "recipient": "recruiter@external.example"
+        }
+      },
+      "keys": {
+        "workspace_id": "ws_other",
+        "keys": [
+          {
+            "key_id": "fictional-assessment-key",
+            "alg": "Ed25519",
+            "public_key": "A6EHv_POEL4dcN0Y50vAmWfk1jCbpQ1fHdyGZBJVMbg",
+            "public_key_fingerprint": "sha256:56475aa75463474c0285df5dbf2bcab73da651358839e9b77481b2eab107708c",
+            "active_from": "2026-01-01T00:00:00.000Z",
+            "active_until": null
+          }
+        ]
+      },
+      "workspace_id": "ws_fictional",
+      "project_id": "project_fictional",
+      "fingerprints": [
+        "sha256:56475aa75463474c0285df5dbf2bcab73da651358839e9b77481b2eab107708c"
+      ]
+    },
+    {
+      "name": "expired_key",
+      "valid": false,
+      "signed_assessment": {
+        "protected": "eyJhbGciOiJFZERTQSIsImtpZCI6ImZpY3Rpb25hbC1hc3Nlc3NtZW50LWtleSIsInR5cCI6ImFsbG93bHktYXNzZXNzbWVudCtqd3MifQ",
+        "payload": "eyJhY3Rpb24iOiJlbWFpbC5zZW5kIiwiYWdlbnRfaWQiOiJyZWNydWl0aW5nX2FnZW50IiwiYXBwbGljYXRpb25fcmVwb3J0ZWRfZXhlY3V0aW9uIjoic2VudCIsImFzc2Vzc21lbnRfaWQiOiJhc21fZmljdGlvbmFsIiwiYXNzZXNzbWVudF9zdGF0dXMiOiJ2aW9sYXRpb25fZGV0ZWN0ZWQiLCJjb250ZXh0Ijp7Im1lZGljYWxfZXh0ZXJuYWxfZGlzY2xvc3VyZSI6dHJ1ZX0sImVuZ2luZV92ZXJzaW9uIjoic2hhMjU2OmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmIiLCJmYWN0cyI6eyJjb250YWluc19tZWRpY2FsX2luZm9ybWF0aW9uIjp7ImNpdGF0aW9ucyI6W3siZW5kIjo0NiwiZmllbGQiOiJib2R5IiwicXVvdGUiOiLwn6eqIEZpY3Rpb25hbCBjYW5kaWRhdGUgaGFzIGEgbWVkaWNhbCBjb25kaXRpb24uIiwic3RhcnQiOjB9XSwidmFsdWUiOnRydWV9LCJleHRlcm5hbF9yZWNpcGllbnQiOnsiY2l0YXRpb25zIjpbeyJlbmQiOjI2LCJmaWVsZCI6InJlY2lwaWVudCIsInF1b3RlIjoicmVjcnVpdGVyQGV4dGVybmFsLmV4YW1wbGUiLCJzdGFydCI6MH1dLCJ2YWx1ZSI6dHJ1ZX19LCJpbnRlcnZlbnRpb24iOiJub25lIiwiaXNzdWVkX2F0IjoiMjAyNi0xMC0xN1QxMjowMDowMi4wMDBaIiwiam9iX2lkIjoiam9iX2ZpY3Rpb25hbCIsIm1hcHBpbmdfdmVyc2lvbiI6Im1lZGljYWwtZXh0ZXJuYWwtdjEiLCJtaXNzaW5nX2luZm9ybWF0aW9uIjpbXSwibW9kZSI6Im9ic2VydmUiLCJwb2xpY3lfZXZhbCI6eyJpbnB1dF9zaGEyNTYiOiJkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkIiwicmVzdWx0Ijp7ImRlY2lzaW9uIjoiZGVueSIsImV2YWx1YXRlZF9maWVsZHMiOnsibWVkaWNhbF9leHRlcm5hbF9kaXNjbG9zdXJlIjp0cnVlfSwibWF0Y2hlZF9ydWxlX2lkIjoibWVkaWNhbC1leHRlcm5hbCIsInByb2ZpbGUiOiJhbGxvd2x5LmJhc2ljLnYxIiwic3RhdHVzIjoib2siLCJ0YXJnZXQiOm51bGx9fSwicG9saWN5X3JlZiI6eyJkZWZpbml0aW9uX3NoYTI1NiI6ImFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWEiLCJwb2xpY3lfaWQiOiJtZWRpY2FsLWRpc2Nsb3N1cmUiLCJwb2xpY3lfdmVyc2lvbiI6MX0sInByb2plY3RfaWQiOiJwcm9qZWN0X2ZpY3Rpb25hbCIsInJlcXVlc3Rfc2hhMjU2IjoiY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjYyIsInJldmlld2VyX3ZlcnNpb24iOiJmaXh0dXJlOm5vdC1hLWxpdmUtbW9kZWwiLCJzY2hlbWFfdmVyc2lvbiI6ImFsbG93bHkuYXNzZXNzbWVudC52MSIsInNvdXJjZSI6eyJjYXB0dXJlZF9hdCI6IjIwMjYtMTAtMTdUMTI6MDA6MDEuMDAwWiIsIm9ic2VydmF0aW9uX2lkIjoib2JzX2ZpY3Rpb25hbCIsIm9ic2VydmVkX2F0IjoiMjAyNi0xMC0xN1QxMjowMDowMC4wMDBaIiwicHJvamVjdF9pZCI6InByb2plY3RfZmljdGlvbmFsIiwidHJhY2VfaWQiOiJ0cmFjZV9maWN0aW9uYWwifSwic291cmNlX3NoYTI1NiI6ImZiZmUzY2Q2NzU3NmZiMTM5YTZjMTUyMDMzOGQyMTQxYTU3MDQ1NzE4MTI2NjNjMDhjYTI3MWQzZDllZmJkZGYiLCJ3b3Jrc3BhY2VfaWQiOiJ3c19maWN0aW9uYWwifQ",
+        "signature": "0c5oUmGGACrseuuJMXmh1QiQg7dkARpw2dNaOQPCLlZ0uroOgI_1irpgLfv-C_GiNbfc4HUww3JN3m9eUOhrDQ"
+      },
+      "source_snapshot": {
+        "project_id": "project_fictional",
+        "trace_id": "trace_fictional",
+        "observation_id": "obs_fictional",
+        "observed_at": "2026-10-17T12:00:00.000Z",
+        "captured_at": "2026-10-17T12:00:01.000Z",
+        "content": {
+          "body": "🧪 Fictional candidate has a medical condition.",
+          "recipient": "recruiter@external.example"
+        }
+      },
+      "keys": {
+        "workspace_id": "ws_fictional",
+        "keys": [
+          {
+            "key_id": "fictional-assessment-key",
+            "alg": "Ed25519",
+            "public_key": "A6EHv_POEL4dcN0Y50vAmWfk1jCbpQ1fHdyGZBJVMbg",
+            "public_key_fingerprint": "sha256:56475aa75463474c0285df5dbf2bcab73da651358839e9b77481b2eab107708c",
+            "active_from": "2026-01-01T00:00:00.000Z",
+            "active_until": "2026-10-16T00:00:00.000Z"
+          }
+        ]
+      },
+      "workspace_id": "ws_fictional",
+      "project_id": "project_fictional",
+      "fingerprints": [
+        "sha256:56475aa75463474c0285df5dbf2bcab73da651358839e9b77481b2eab107708c"
+      ]
+    },
+    {
+      "name": "duplicate_key",
+      "valid": false,
+      "signed_assessment": {
+        "protected": "eyJhbGciOiJFZERTQSIsImtpZCI6ImZpY3Rpb25hbC1hc3Nlc3NtZW50LWtleSIsInR5cCI6ImFsbG93bHktYXNzZXNzbWVudCtqd3MifQ",
+        "payload": "eyJhY3Rpb24iOiJlbWFpbC5zZW5kIiwiYWdlbnRfaWQiOiJyZWNydWl0aW5nX2FnZW50IiwiYXBwbGljYXRpb25fcmVwb3J0ZWRfZXhlY3V0aW9uIjoic2VudCIsImFzc2Vzc21lbnRfaWQiOiJhc21fZmljdGlvbmFsIiwiYXNzZXNzbWVudF9zdGF0dXMiOiJ2aW9sYXRpb25fZGV0ZWN0ZWQiLCJjb250ZXh0Ijp7Im1lZGljYWxfZXh0ZXJuYWxfZGlzY2xvc3VyZSI6dHJ1ZX0sImVuZ2luZV92ZXJzaW9uIjoic2hhMjU2OmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmIiLCJmYWN0cyI6eyJjb250YWluc19tZWRpY2FsX2luZm9ybWF0aW9uIjp7ImNpdGF0aW9ucyI6W3siZW5kIjo0NiwiZmllbGQiOiJib2R5IiwicXVvdGUiOiLwn6eqIEZpY3Rpb25hbCBjYW5kaWRhdGUgaGFzIGEgbWVkaWNhbCBjb25kaXRpb24uIiwic3RhcnQiOjB9XSwidmFsdWUiOnRydWV9LCJleHRlcm5hbF9yZWNpcGllbnQiOnsiY2l0YXRpb25zIjpbeyJlbmQiOjI2LCJmaWVsZCI6InJlY2lwaWVudCIsInF1b3RlIjoicmVjcnVpdGVyQGV4dGVybmFsLmV4YW1wbGUiLCJzdGFydCI6MH1dLCJ2YWx1ZSI6dHJ1ZX19LCJpbnRlcnZlbnRpb24iOiJub25lIiwiaXNzdWVkX2F0IjoiMjAyNi0xMC0xN1QxMjowMDowMi4wMDBaIiwiam9iX2lkIjoiam9iX2ZpY3Rpb25hbCIsIm1hcHBpbmdfdmVyc2lvbiI6Im1lZGljYWwtZXh0ZXJuYWwtdjEiLCJtaXNzaW5nX2luZm9ybWF0aW9uIjpbXSwibW9kZSI6Im9ic2VydmUiLCJwb2xpY3lfZXZhbCI6eyJpbnB1dF9zaGEyNTYiOiJkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkIiwicmVzdWx0Ijp7ImRlY2lzaW9uIjoiZGVueSIsImV2YWx1YXRlZF9maWVsZHMiOnsibWVkaWNhbF9leHRlcm5hbF9kaXNjbG9zdXJlIjp0cnVlfSwibWF0Y2hlZF9ydWxlX2lkIjoibWVkaWNhbC1leHRlcm5hbCIsInByb2ZpbGUiOiJhbGxvd2x5LmJhc2ljLnYxIiwic3RhdHVzIjoib2siLCJ0YXJnZXQiOm51bGx9fSwicG9saWN5X3JlZiI6eyJkZWZpbml0aW9uX3NoYTI1NiI6ImFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWEiLCJwb2xpY3lfaWQiOiJtZWRpY2FsLWRpc2Nsb3N1cmUiLCJwb2xpY3lfdmVyc2lvbiI6MX0sInByb2plY3RfaWQiOiJwcm9qZWN0X2ZpY3Rpb25hbCIsInJlcXVlc3Rfc2hhMjU2IjoiY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjYyIsInJldmlld2VyX3ZlcnNpb24iOiJmaXh0dXJlOm5vdC1hLWxpdmUtbW9kZWwiLCJzY2hlbWFfdmVyc2lvbiI6ImFsbG93bHkuYXNzZXNzbWVudC52MSIsInNvdXJjZSI6eyJjYXB0dXJlZF9hdCI6IjIwMjYtMTAtMTdUMTI6MDA6MDEuMDAwWiIsIm9ic2VydmF0aW9uX2lkIjoib2JzX2ZpY3Rpb25hbCIsIm9ic2VydmVkX2F0IjoiMjAyNi0xMC0xN1QxMjowMDowMC4wMDBaIiwicHJvamVjdF9pZCI6InByb2plY3RfZmljdGlvbmFsIiwidHJhY2VfaWQiOiJ0cmFjZV9maWN0aW9uYWwifSwic291cmNlX3NoYTI1NiI6ImZiZmUzY2Q2NzU3NmZiMTM5YTZjMTUyMDMzOGQyMTQxYTU3MDQ1NzE4MTI2NjNjMDhjYTI3MWQzZDllZmJkZGYiLCJ3b3Jrc3BhY2VfaWQiOiJ3c19maWN0aW9uYWwifQ",
+        "signature": "0c5oUmGGACrseuuJMXmh1QiQg7dkARpw2dNaOQPCLlZ0uroOgI_1irpgLfv-C_GiNbfc4HUww3JN3m9eUOhrDQ"
+      },
+      "source_snapshot": {
+        "project_id": "project_fictional",
+        "trace_id": "trace_fictional",
+        "observation_id": "obs_fictional",
+        "observed_at": "2026-10-17T12:00:00.000Z",
+        "captured_at": "2026-10-17T12:00:01.000Z",
+        "content": {
+          "body": "🧪 Fictional candidate has a medical condition.",
+          "recipient": "recruiter@external.example"
+        }
+      },
+      "keys": {
+        "workspace_id": "ws_fictional",
+        "keys": [
+          {
+            "key_id": "fictional-assessment-key",
+            "alg": "Ed25519",
+            "public_key": "A6EHv_POEL4dcN0Y50vAmWfk1jCbpQ1fHdyGZBJVMbg",
+            "public_key_fingerprint": "sha256:56475aa75463474c0285df5dbf2bcab73da651358839e9b77481b2eab107708c",
+            "active_from": "2026-01-01T00:00:00.000Z",
+            "active_until": null
+          },
+          {
+            "key_id": "fictional-assessment-key",
+            "alg": "Ed25519",
+            "public_key": "A6EHv_POEL4dcN0Y50vAmWfk1jCbpQ1fHdyGZBJVMbg",
+            "public_key_fingerprint": "sha256:56475aa75463474c0285df5dbf2bcab73da651358839e9b77481b2eab107708c",
+            "active_from": "2026-01-01T00:00:00.000Z",
+            "active_until": null
+          }
+        ]
+      },
+      "workspace_id": "ws_fictional",
+      "project_id": "project_fictional",
+      "fingerprints": [
+        "sha256:56475aa75463474c0285df5dbf2bcab73da651358839e9b77481b2eab107708c"
+      ]
+    },
+    {
+      "name": "receipt_type_is_not_assessment",
+      "valid": false,
+      "signed_assessment": {
+        "protected": "eyJhbGciOiJFZERTQSIsImtpZCI6ImZpY3Rpb25hbC1hc3Nlc3NtZW50LWtleSIsInR5cCI6ImFsbG93bHktcmVjZWlwdCtqd3MifQ",
+        "payload": "eyJhY3Rpb24iOiJlbWFpbC5zZW5kIiwiYWdlbnRfaWQiOiJyZWNydWl0aW5nX2FnZW50IiwiYXBwbGljYXRpb25fcmVwb3J0ZWRfZXhlY3V0aW9uIjoic2VudCIsImFzc2Vzc21lbnRfaWQiOiJhc21fZmljdGlvbmFsIiwiYXNzZXNzbWVudF9zdGF0dXMiOiJ2aW9sYXRpb25fZGV0ZWN0ZWQiLCJjb250ZXh0Ijp7Im1lZGljYWxfZXh0ZXJuYWxfZGlzY2xvc3VyZSI6dHJ1ZX0sImVuZ2luZV92ZXJzaW9uIjoic2hhMjU2OmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmIiLCJmYWN0cyI6eyJjb250YWluc19tZWRpY2FsX2luZm9ybWF0aW9uIjp7ImNpdGF0aW9ucyI6W3siZW5kIjo0NiwiZmllbGQiOiJib2R5IiwicXVvdGUiOiLwn6eqIEZpY3Rpb25hbCBjYW5kaWRhdGUgaGFzIGEgbWVkaWNhbCBjb25kaXRpb24uIiwic3RhcnQiOjB9XSwidmFsdWUiOnRydWV9LCJleHRlcm5hbF9yZWNpcGllbnQiOnsiY2l0YXRpb25zIjpbeyJlbmQiOjI2LCJmaWVsZCI6InJlY2lwaWVudCIsInF1b3RlIjoicmVjcnVpdGVyQGV4dGVybmFsLmV4YW1wbGUiLCJzdGFydCI6MH1dLCJ2YWx1ZSI6dHJ1ZX19LCJpbnRlcnZlbnRpb24iOiJub25lIiwiaXNzdWVkX2F0IjoiMjAyNi0xMC0xN1QxMjowMDowMi4wMDBaIiwiam9iX2lkIjoiam9iX2ZpY3Rpb25hbCIsIm1hcHBpbmdfdmVyc2lvbiI6Im1lZGljYWwtZXh0ZXJuYWwtdjEiLCJtaXNzaW5nX2luZm9ybWF0aW9uIjpbXSwibW9kZSI6Im9ic2VydmUiLCJwb2xpY3lfZXZhbCI6eyJpbnB1dF9zaGEyNTYiOiJkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkIiwicmVzdWx0Ijp7ImRlY2lzaW9uIjoiZGVueSIsImV2YWx1YXRlZF9maWVsZHMiOnsibWVkaWNhbF9leHRlcm5hbF9kaXNjbG9zdXJlIjp0cnVlfSwibWF0Y2hlZF9ydWxlX2lkIjoibWVkaWNhbC1leHRlcm5hbCIsInByb2ZpbGUiOiJhbGxvd2x5LmJhc2ljLnYxIiwic3RhdHVzIjoib2siLCJ0YXJnZXQiOm51bGx9fSwicG9saWN5X3JlZiI6eyJkZWZpbml0aW9uX3NoYTI1NiI6ImFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWEiLCJwb2xpY3lfaWQiOiJtZWRpY2FsLWRpc2Nsb3N1cmUiLCJwb2xpY3lfdmVyc2lvbiI6MX0sInByb2plY3RfaWQiOiJwcm9qZWN0X2ZpY3Rpb25hbCIsInJlcXVlc3Rfc2hhMjU2IjoiY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjYyIsInJldmlld2VyX3ZlcnNpb24iOiJmaXh0dXJlOm5vdC1hLWxpdmUtbW9kZWwiLCJzY2hlbWFfdmVyc2lvbiI6ImFsbG93bHkuYXNzZXNzbWVudC52MSIsInNvdXJjZSI6eyJjYXB0dXJlZF9hdCI6IjIwMjYtMTAtMTdUMTI6MDA6MDEuMDAwWiIsIm9ic2VydmF0aW9uX2lkIjoib2JzX2ZpY3Rpb25hbCIsIm9ic2VydmVkX2F0IjoiMjAyNi0xMC0xN1QxMjowMDowMC4wMDBaIiwicHJvamVjdF9pZCI6InByb2plY3RfZmljdGlvbmFsIiwidHJhY2VfaWQiOiJ0cmFjZV9maWN0aW9uYWwifSwic291cmNlX3NoYTI1NiI6ImZiZmUzY2Q2NzU3NmZiMTM5YTZjMTUyMDMzOGQyMTQxYTU3MDQ1NzE4MTI2NjNjMDhjYTI3MWQzZDllZmJkZGYiLCJ3b3Jrc3BhY2VfaWQiOiJ3c19maWN0aW9uYWwifQ",
+        "signature": "FgbYQ8Kl-qtIJE7Ogn1VB0iqmLvw_gYk6eo1JDM572NVnYMZ9Q4lD593tUmyi8TbWNdrQI5CnanyPe0EWU_MDg"
+      },
+      "source_snapshot": {
+        "project_id": "project_fictional",
+        "trace_id": "trace_fictional",
+        "observation_id": "obs_fictional",
+        "observed_at": "2026-10-17T12:00:00.000Z",
+        "captured_at": "2026-10-17T12:00:01.000Z",
+        "content": {
+          "body": "🧪 Fictional candidate has a medical condition.",
+          "recipient": "recruiter@external.example"
+        }
+      },
+      "keys": {
+        "workspace_id": "ws_fictional",
+        "keys": [
+          {
+            "key_id": "fictional-assessment-key",
+            "alg": "Ed25519",
+            "public_key": "A6EHv_POEL4dcN0Y50vAmWfk1jCbpQ1fHdyGZBJVMbg",
+            "public_key_fingerprint": "sha256:56475aa75463474c0285df5dbf2bcab73da651358839e9b77481b2eab107708c",
+            "active_from": "2026-01-01T00:00:00.000Z",
+            "active_until": null
+          }
+        ]
+      },
+      "workspace_id": "ws_fictional",
+      "project_id": "project_fictional",
+      "fingerprints": [
+        "sha256:56475aa75463474c0285df5dbf2bcab73da651358839e9b77481b2eab107708c"
+      ]
+    },
+    {
+      "name": "changed_source",
+      "valid": false,
+      "signed_assessment": {
+        "protected": "eyJhbGciOiJFZERTQSIsImtpZCI6ImZpY3Rpb25hbC1hc3Nlc3NtZW50LWtleSIsInR5cCI6ImFsbG93bHktYXNzZXNzbWVudCtqd3MifQ",
+        "payload": "eyJhY3Rpb24iOiJlbWFpbC5zZW5kIiwiYWdlbnRfaWQiOiJyZWNydWl0aW5nX2FnZW50IiwiYXBwbGljYXRpb25fcmVwb3J0ZWRfZXhlY3V0aW9uIjoic2VudCIsImFzc2Vzc21lbnRfaWQiOiJhc21fZmljdGlvbmFsIiwiYXNzZXNzbWVudF9zdGF0dXMiOiJ2aW9sYXRpb25fZGV0ZWN0ZWQiLCJjb250ZXh0Ijp7Im1lZGljYWxfZXh0ZXJuYWxfZGlzY2xvc3VyZSI6dHJ1ZX0sImVuZ2luZV92ZXJzaW9uIjoic2hhMjU2OmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmIiLCJmYWN0cyI6eyJjb250YWluc19tZWRpY2FsX2luZm9ybWF0aW9uIjp7ImNpdGF0aW9ucyI6W3siZW5kIjo0NiwiZmllbGQiOiJib2R5IiwicXVvdGUiOiLwn6eqIEZpY3Rpb25hbCBjYW5kaWRhdGUgaGFzIGEgbWVkaWNhbCBjb25kaXRpb24uIiwic3RhcnQiOjB9XSwidmFsdWUiOnRydWV9LCJleHRlcm5hbF9yZWNpcGllbnQiOnsiY2l0YXRpb25zIjpbeyJlbmQiOjI2LCJmaWVsZCI6InJlY2lwaWVudCIsInF1b3RlIjoicmVjcnVpdGVyQGV4dGVybmFsLmV4YW1wbGUiLCJzdGFydCI6MH1dLCJ2YWx1ZSI6dHJ1ZX19LCJpbnRlcnZlbnRpb24iOiJub25lIiwiaXNzdWVkX2F0IjoiMjAyNi0xMC0xN1QxMjowMDowMi4wMDBaIiwiam9iX2lkIjoiam9iX2ZpY3Rpb25hbCIsIm1hcHBpbmdfdmVyc2lvbiI6Im1lZGljYWwtZXh0ZXJuYWwtdjEiLCJtaXNzaW5nX2luZm9ybWF0aW9uIjpbXSwibW9kZSI6Im9ic2VydmUiLCJwb2xpY3lfZXZhbCI6eyJpbnB1dF9zaGEyNTYiOiJkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkIiwicmVzdWx0Ijp7ImRlY2lzaW9uIjoiZGVueSIsImV2YWx1YXRlZF9maWVsZHMiOnsibWVkaWNhbF9leHRlcm5hbF9kaXNjbG9zdXJlIjp0cnVlfSwibWF0Y2hlZF9ydWxlX2lkIjoibWVkaWNhbC1leHRlcm5hbCIsInByb2ZpbGUiOiJhbGxvd2x5LmJhc2ljLnYxIiwic3RhdHVzIjoib2siLCJ0YXJnZXQiOm51bGx9fSwicG9saWN5X3JlZiI6eyJkZWZpbml0aW9uX3NoYTI1NiI6ImFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWEiLCJwb2xpY3lfaWQiOiJtZWRpY2FsLWRpc2Nsb3N1cmUiLCJwb2xpY3lfdmVyc2lvbiI6MX0sInByb2plY3RfaWQiOiJwcm9qZWN0X2ZpY3Rpb25hbCIsInJlcXVlc3Rfc2hhMjU2IjoiY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjYyIsInJldmlld2VyX3ZlcnNpb24iOiJmaXh0dXJlOm5vdC1hLWxpdmUtbW9kZWwiLCJzY2hlbWFfdmVyc2lvbiI6ImFsbG93bHkuYXNzZXNzbWVudC52MSIsInNvdXJjZSI6eyJjYXB0dXJlZF9hdCI6IjIwMjYtMTAtMTdUMTI6MDA6MDEuMDAwWiIsIm9ic2VydmF0aW9uX2lkIjoib2JzX2ZpY3Rpb25hbCIsIm9ic2VydmVkX2F0IjoiMjAyNi0xMC0xN1QxMjowMDowMC4wMDBaIiwicHJvamVjdF9pZCI6InByb2plY3RfZmljdGlvbmFsIiwidHJhY2VfaWQiOiJ0cmFjZV9maWN0aW9uYWwifSwic291cmNlX3NoYTI1NiI6ImZiZmUzY2Q2NzU3NmZiMTM5YTZjMTUyMDMzOGQyMTQxYTU3MDQ1NzE4MTI2NjNjMDhjYTI3MWQzZDllZmJkZGYiLCJ3b3Jrc3BhY2VfaWQiOiJ3c19maWN0aW9uYWwifQ",
+        "signature": "0c5oUmGGACrseuuJMXmh1QiQg7dkARpw2dNaOQPCLlZ0uroOgI_1irpgLfv-C_GiNbfc4HUww3JN3m9eUOhrDQ"
+      },
+      "source_snapshot": {
+        "project_id": "project_fictional",
+        "trace_id": "trace_fictional",
+        "observation_id": "obs_fictional",
+        "observed_at": "2026-10-17T12:00:00.000Z",
+        "captured_at": "2026-10-17T12:00:01.000Z",
+        "content": {
+          "body": "Different fictional text",
+          "recipient": "recruiter@external.example"
+        }
+      },
+      "keys": {
+        "workspace_id": "ws_fictional",
+        "keys": [
+          {
+            "key_id": "fictional-assessment-key",
+            "alg": "Ed25519",
+            "public_key": "A6EHv_POEL4dcN0Y50vAmWfk1jCbpQ1fHdyGZBJVMbg",
+            "public_key_fingerprint": "sha256:56475aa75463474c0285df5dbf2bcab73da651358839e9b77481b2eab107708c",
+            "active_from": "2026-01-01T00:00:00.000Z",
+            "active_until": null
+          }
+        ]
+      },
+      "workspace_id": "ws_fictional",
+      "project_id": "project_fictional",
+      "fingerprints": [
+        "sha256:56475aa75463474c0285df5dbf2bcab73da651358839e9b77481b2eab107708c"
+      ]
+    },
+    {
+      "name": "changed_uncited_source",
+      "valid": false,
+      "signed_assessment": {
+        "protected": "eyJhbGciOiJFZERTQSIsImtpZCI6ImZpY3Rpb25hbC1hc3Nlc3NtZW50LWtleSIsInR5cCI6ImFsbG93bHktYXNzZXNzbWVudCtqd3MifQ",
+        "payload": "eyJhY3Rpb24iOiJlbWFpbC5zZW5kIiwiYWdlbnRfaWQiOiJyZWNydWl0aW5nX2FnZW50IiwiYXBwbGljYXRpb25fcmVwb3J0ZWRfZXhlY3V0aW9uIjoic2VudCIsImFzc2Vzc21lbnRfaWQiOiJhc21fZmljdGlvbmFsIiwiYXNzZXNzbWVudF9zdGF0dXMiOiJ2aW9sYXRpb25fZGV0ZWN0ZWQiLCJjb250ZXh0Ijp7Im1lZGljYWxfZXh0ZXJuYWxfZGlzY2xvc3VyZSI6dHJ1ZX0sImVuZ2luZV92ZXJzaW9uIjoic2hhMjU2OmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmIiLCJmYWN0cyI6eyJjb250YWluc19tZWRpY2FsX2luZm9ybWF0aW9uIjp7ImNpdGF0aW9ucyI6W3siZW5kIjo0NiwiZmllbGQiOiJib2R5IiwicXVvdGUiOiLwn6eqIEZpY3Rpb25hbCBjYW5kaWRhdGUgaGFzIGEgbWVkaWNhbCBjb25kaXRpb24uIiwic3RhcnQiOjB9XSwidmFsdWUiOnRydWV9LCJleHRlcm5hbF9yZWNpcGllbnQiOnsiY2l0YXRpb25zIjpbeyJlbmQiOjI2LCJmaWVsZCI6InJlY2lwaWVudCIsInF1b3RlIjoicmVjcnVpdGVyQGV4dGVybmFsLmV4YW1wbGUiLCJzdGFydCI6MH1dLCJ2YWx1ZSI6dHJ1ZX19LCJpbnRlcnZlbnRpb24iOiJub25lIiwiaXNzdWVkX2F0IjoiMjAyNi0xMC0xN1QxMjowMDowMi4wMDBaIiwiam9iX2lkIjoiam9iX2ZpY3Rpb25hbCIsIm1hcHBpbmdfdmVyc2lvbiI6Im1lZGljYWwtZXh0ZXJuYWwtdjEiLCJtaXNzaW5nX2luZm9ybWF0aW9uIjpbXSwibW9kZSI6Im9ic2VydmUiLCJwb2xpY3lfZXZhbCI6eyJpbnB1dF9zaGEyNTYiOiJkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkIiwicmVzdWx0Ijp7ImRlY2lzaW9uIjoiZGVueSIsImV2YWx1YXRlZF9maWVsZHMiOnsibWVkaWNhbF9leHRlcm5hbF9kaXNjbG9zdXJlIjp0cnVlfSwibWF0Y2hlZF9ydWxlX2lkIjoibWVkaWNhbC1leHRlcm5hbCIsInByb2ZpbGUiOiJhbGxvd2x5LmJhc2ljLnYxIiwic3RhdHVzIjoib2siLCJ0YXJnZXQiOm51bGx9fSwicG9saWN5X3JlZiI6eyJkZWZpbml0aW9uX3NoYTI1NiI6ImFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWEiLCJwb2xpY3lfaWQiOiJtZWRpY2FsLWRpc2Nsb3N1cmUiLCJwb2xpY3lfdmVyc2lvbiI6MX0sInByb2plY3RfaWQiOiJwcm9qZWN0X2ZpY3Rpb25hbCIsInJlcXVlc3Rfc2hhMjU2IjoiY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjYyIsInJldmlld2VyX3ZlcnNpb24iOiJmaXh0dXJlOm5vdC1hLWxpdmUtbW9kZWwiLCJzY2hlbWFfdmVyc2lvbiI6ImFsbG93bHkuYXNzZXNzbWVudC52MSIsInNvdXJjZSI6eyJjYXB0dXJlZF9hdCI6IjIwMjYtMTAtMTdUMTI6MDA6MDEuMDAwWiIsIm9ic2VydmF0aW9uX2lkIjoib2JzX2ZpY3Rpb25hbCIsIm9ic2VydmVkX2F0IjoiMjAyNi0xMC0xN1QxMjowMDowMC4wMDBaIiwicHJvamVjdF9pZCI6InByb2plY3RfZmljdGlvbmFsIiwidHJhY2VfaWQiOiJ0cmFjZV9maWN0aW9uYWwifSwic291cmNlX3NoYTI1NiI6ImZiZmUzY2Q2NzU3NmZiMTM5YTZjMTUyMDMzOGQyMTQxYTU3MDQ1NzE4MTI2NjNjMDhjYTI3MWQzZDllZmJkZGYiLCJ3b3Jrc3BhY2VfaWQiOiJ3c19maWN0aW9uYWwifQ",
+        "signature": "0c5oUmGGACrseuuJMXmh1QiQg7dkARpw2dNaOQPCLlZ0uroOgI_1irpgLfv-C_GiNbfc4HUww3JN3m9eUOhrDQ"
+      },
+      "source_snapshot": {
+        "project_id": "project_fictional",
+        "trace_id": "trace_fictional",
+        "observation_id": "obs_fictional",
+        "observed_at": "2026-10-17T12:00:00.000Z",
+        "captured_at": "2026-10-17T12:00:01.000Z",
+        "content": {
+          "body": "🧪 Fictional candidate has a medical condition.",
+          "recipient": "recruiter@external.example",
+          "prompt": "Uncommitted fictional prompt"
+        }
+      },
+      "keys": {
+        "workspace_id": "ws_fictional",
+        "keys": [
+          {
+            "key_id": "fictional-assessment-key",
+            "alg": "Ed25519",
+            "public_key": "A6EHv_POEL4dcN0Y50vAmWfk1jCbpQ1fHdyGZBJVMbg",
+            "public_key_fingerprint": "sha256:56475aa75463474c0285df5dbf2bcab73da651358839e9b77481b2eab107708c",
+            "active_from": "2026-01-01T00:00:00.000Z",
+            "active_until": null
+          }
+        ]
+      },
+      "workspace_id": "ws_fictional",
+      "project_id": "project_fictional",
+      "fingerprints": [
+        "sha256:56475aa75463474c0285df5dbf2bcab73da651358839e9b77481b2eab107708c"
+      ]
+    },
+    {
+      "name": "extra_envelope_field",
+      "valid": false,
+      "signed_assessment": {
+        "protected": "eyJhbGciOiJFZERTQSIsImtpZCI6ImZpY3Rpb25hbC1hc3Nlc3NtZW50LWtleSIsInR5cCI6ImFsbG93bHktYXNzZXNzbWVudCtqd3MifQ",
+        "payload": "eyJhY3Rpb24iOiJlbWFpbC5zZW5kIiwiYWdlbnRfaWQiOiJyZWNydWl0aW5nX2FnZW50IiwiYXBwbGljYXRpb25fcmVwb3J0ZWRfZXhlY3V0aW9uIjoic2VudCIsImFzc2Vzc21lbnRfaWQiOiJhc21fZmljdGlvbmFsIiwiYXNzZXNzbWVudF9zdGF0dXMiOiJ2aW9sYXRpb25fZGV0ZWN0ZWQiLCJjb250ZXh0Ijp7Im1lZGljYWxfZXh0ZXJuYWxfZGlzY2xvc3VyZSI6dHJ1ZX0sImVuZ2luZV92ZXJzaW9uIjoic2hhMjU2OmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmIiLCJmYWN0cyI6eyJjb250YWluc19tZWRpY2FsX2luZm9ybWF0aW9uIjp7ImNpdGF0aW9ucyI6W3siZW5kIjo0NiwiZmllbGQiOiJib2R5IiwicXVvdGUiOiLwn6eqIEZpY3Rpb25hbCBjYW5kaWRhdGUgaGFzIGEgbWVkaWNhbCBjb25kaXRpb24uIiwic3RhcnQiOjB9XSwidmFsdWUiOnRydWV9LCJleHRlcm5hbF9yZWNpcGllbnQiOnsiY2l0YXRpb25zIjpbeyJlbmQiOjI2LCJmaWVsZCI6InJlY2lwaWVudCIsInF1b3RlIjoicmVjcnVpdGVyQGV4dGVybmFsLmV4YW1wbGUiLCJzdGFydCI6MH1dLCJ2YWx1ZSI6dHJ1ZX19LCJpbnRlcnZlbnRpb24iOiJub25lIiwiaXNzdWVkX2F0IjoiMjAyNi0xMC0xN1QxMjowMDowMi4wMDBaIiwiam9iX2lkIjoiam9iX2ZpY3Rpb25hbCIsIm1hcHBpbmdfdmVyc2lvbiI6Im1lZGljYWwtZXh0ZXJuYWwtdjEiLCJtaXNzaW5nX2luZm9ybWF0aW9uIjpbXSwibW9kZSI6Im9ic2VydmUiLCJwb2xpY3lfZXZhbCI6eyJpbnB1dF9zaGEyNTYiOiJkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkIiwicmVzdWx0Ijp7ImRlY2lzaW9uIjoiZGVueSIsImV2YWx1YXRlZF9maWVsZHMiOnsibWVkaWNhbF9leHRlcm5hbF9kaXNjbG9zdXJlIjp0cnVlfSwibWF0Y2hlZF9ydWxlX2lkIjoibWVkaWNhbC1leHRlcm5hbCIsInByb2ZpbGUiOiJhbGxvd2x5LmJhc2ljLnYxIiwic3RhdHVzIjoib2siLCJ0YXJnZXQiOm51bGx9fSwicG9saWN5X3JlZiI6eyJkZWZpbml0aW9uX3NoYTI1NiI6ImFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWEiLCJwb2xpY3lfaWQiOiJtZWRpY2FsLWRpc2Nsb3N1cmUiLCJwb2xpY3lfdmVyc2lvbiI6MX0sInByb2plY3RfaWQiOiJwcm9qZWN0X2ZpY3Rpb25hbCIsInJlcXVlc3Rfc2hhMjU2IjoiY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjYyIsInJldmlld2VyX3ZlcnNpb24iOiJmaXh0dXJlOm5vdC1hLWxpdmUtbW9kZWwiLCJzY2hlbWFfdmVyc2lvbiI6ImFsbG93bHkuYXNzZXNzbWVudC52MSIsInNvdXJjZSI6eyJjYXB0dXJlZF9hdCI6IjIwMjYtMTAtMTdUMTI6MDA6MDEuMDAwWiIsIm9ic2VydmF0aW9uX2lkIjoib2JzX2ZpY3Rpb25hbCIsIm9ic2VydmVkX2F0IjoiMjAyNi0xMC0xN1QxMjowMDowMC4wMDBaIiwicHJvamVjdF9pZCI6InByb2plY3RfZmljdGlvbmFsIiwidHJhY2VfaWQiOiJ0cmFjZV9maWN0aW9uYWwifSwic291cmNlX3NoYTI1NiI6ImZiZmUzY2Q2NzU3NmZiMTM5YTZjMTUyMDMzOGQyMTQxYTU3MDQ1NzE4MTI2NjNjMDhjYTI3MWQzZDllZmJkZGYiLCJ3b3Jrc3BhY2VfaWQiOiJ3c19maWN0aW9uYWwifQ",
+        "signature": "0c5oUmGGACrseuuJMXmh1QiQg7dkARpw2dNaOQPCLlZ0uroOgI_1irpgLfv-C_GiNbfc4HUww3JN3m9eUOhrDQ",
+        "execution_approved": true
+      },
+      "source_snapshot": {
+        "project_id": "project_fictional",
+        "trace_id": "trace_fictional",
+        "observation_id": "obs_fictional",
+        "observed_at": "2026-10-17T12:00:00.000Z",
+        "captured_at": "2026-10-17T12:00:01.000Z",
+        "content": {
+          "body": "🧪 Fictional candidate has a medical condition.",
+          "recipient": "recruiter@external.example"
+        }
+      },
+      "keys": {
+        "workspace_id": "ws_fictional",
+        "keys": [
+          {
+            "key_id": "fictional-assessment-key",
+            "alg": "Ed25519",
+            "public_key": "A6EHv_POEL4dcN0Y50vAmWfk1jCbpQ1fHdyGZBJVMbg",
+            "public_key_fingerprint": "sha256:56475aa75463474c0285df5dbf2bcab73da651358839e9b77481b2eab107708c",
+            "active_from": "2026-01-01T00:00:00.000Z",
+            "active_until": null
+          }
+        ]
+      },
+      "workspace_id": "ws_fictional",
+      "project_id": "project_fictional",
+      "fingerprints": [
+        "sha256:56475aa75463474c0285df5dbf2bcab73da651358839e9b77481b2eab107708c"
+      ]
+    },
+    {
+      "name": "padded_signature",
+      "valid": false,
+      "signed_assessment": {
+        "protected": "eyJhbGciOiJFZERTQSIsImtpZCI6ImZpY3Rpb25hbC1hc3Nlc3NtZW50LWtleSIsInR5cCI6ImFsbG93bHktYXNzZXNzbWVudCtqd3MifQ",
+        "payload": "eyJhY3Rpb24iOiJlbWFpbC5zZW5kIiwiYWdlbnRfaWQiOiJyZWNydWl0aW5nX2FnZW50IiwiYXBwbGljYXRpb25fcmVwb3J0ZWRfZXhlY3V0aW9uIjoic2VudCIsImFzc2Vzc21lbnRfaWQiOiJhc21fZmljdGlvbmFsIiwiYXNzZXNzbWVudF9zdGF0dXMiOiJ2aW9sYXRpb25fZGV0ZWN0ZWQiLCJjb250ZXh0Ijp7Im1lZGljYWxfZXh0ZXJuYWxfZGlzY2xvc3VyZSI6dHJ1ZX0sImVuZ2luZV92ZXJzaW9uIjoic2hhMjU2OmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmIiLCJmYWN0cyI6eyJjb250YWluc19tZWRpY2FsX2luZm9ybWF0aW9uIjp7ImNpdGF0aW9ucyI6W3siZW5kIjo0NiwiZmllbGQiOiJib2R5IiwicXVvdGUiOiLwn6eqIEZpY3Rpb25hbCBjYW5kaWRhdGUgaGFzIGEgbWVkaWNhbCBjb25kaXRpb24uIiwic3RhcnQiOjB9XSwidmFsdWUiOnRydWV9LCJleHRlcm5hbF9yZWNpcGllbnQiOnsiY2l0YXRpb25zIjpbeyJlbmQiOjI2LCJmaWVsZCI6InJlY2lwaWVudCIsInF1b3RlIjoicmVjcnVpdGVyQGV4dGVybmFsLmV4YW1wbGUiLCJzdGFydCI6MH1dLCJ2YWx1ZSI6dHJ1ZX19LCJpbnRlcnZlbnRpb24iOiJub25lIiwiaXNzdWVkX2F0IjoiMjAyNi0xMC0xN1QxMjowMDowMi4wMDBaIiwiam9iX2lkIjoiam9iX2ZpY3Rpb25hbCIsIm1hcHBpbmdfdmVyc2lvbiI6Im1lZGljYWwtZXh0ZXJuYWwtdjEiLCJtaXNzaW5nX2luZm9ybWF0aW9uIjpbXSwibW9kZSI6Im9ic2VydmUiLCJwb2xpY3lfZXZhbCI6eyJpbnB1dF9zaGEyNTYiOiJkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkIiwicmVzdWx0Ijp7ImRlY2lzaW9uIjoiZGVueSIsImV2YWx1YXRlZF9maWVsZHMiOnsibWVkaWNhbF9leHRlcm5hbF9kaXNjbG9zdXJlIjp0cnVlfSwibWF0Y2hlZF9ydWxlX2lkIjoibWVkaWNhbC1leHRlcm5hbCIsInByb2ZpbGUiOiJhbGxvd2x5LmJhc2ljLnYxIiwic3RhdHVzIjoib2siLCJ0YXJnZXQiOm51bGx9fSwicG9saWN5X3JlZiI6eyJkZWZpbml0aW9uX3NoYTI1NiI6ImFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWEiLCJwb2xpY3lfaWQiOiJtZWRpY2FsLWRpc2Nsb3N1cmUiLCJwb2xpY3lfdmVyc2lvbiI6MX0sInByb2plY3RfaWQiOiJwcm9qZWN0X2ZpY3Rpb25hbCIsInJlcXVlc3Rfc2hhMjU2IjoiY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjYyIsInJldmlld2VyX3ZlcnNpb24iOiJmaXh0dXJlOm5vdC1hLWxpdmUtbW9kZWwiLCJzY2hlbWFfdmVyc2lvbiI6ImFsbG93bHkuYXNzZXNzbWVudC52MSIsInNvdXJjZSI6eyJjYXB0dXJlZF9hdCI6IjIwMjYtMTAtMTdUMTI6MDA6MDEuMDAwWiIsIm9ic2VydmF0aW9uX2lkIjoib2JzX2ZpY3Rpb25hbCIsIm9ic2VydmVkX2F0IjoiMjAyNi0xMC0xN1QxMjowMDowMC4wMDBaIiwicHJvamVjdF9pZCI6InByb2plY3RfZmljdGlvbmFsIiwidHJhY2VfaWQiOiJ0cmFjZV9maWN0aW9uYWwifSwic291cmNlX3NoYTI1NiI6ImZiZmUzY2Q2NzU3NmZiMTM5YTZjMTUyMDMzOGQyMTQxYTU3MDQ1NzE4MTI2NjNjMDhjYTI3MWQzZDllZmJkZGYiLCJ3b3Jrc3BhY2VfaWQiOiJ3c19maWN0aW9uYWwifQ",
+        "signature": "0c5oUmGGACrseuuJMXmh1QiQg7dkARpw2dNaOQPCLlZ0uroOgI_1irpgLfv-C_GiNbfc4HUww3JN3m9eUOhrDQ="
+      },
+      "source_snapshot": {
+        "project_id": "project_fictional",
+        "trace_id": "trace_fictional",
+        "observation_id": "obs_fictional",
+        "observed_at": "2026-10-17T12:00:00.000Z",
+        "captured_at": "2026-10-17T12:00:01.000Z",
+        "content": {
+          "body": "🧪 Fictional candidate has a medical condition.",
+          "recipient": "recruiter@external.example"
+        }
+      },
+      "keys": {
+        "workspace_id": "ws_fictional",
+        "keys": [
+          {
+            "key_id": "fictional-assessment-key",
+            "alg": "Ed25519",
+            "public_key": "A6EHv_POEL4dcN0Y50vAmWfk1jCbpQ1fHdyGZBJVMbg",
+            "public_key_fingerprint": "sha256:56475aa75463474c0285df5dbf2bcab73da651358839e9b77481b2eab107708c",
+            "active_from": "2026-01-01T00:00:00.000Z",
+            "active_until": null
+          }
+        ]
+      },
+      "workspace_id": "ws_fictional",
+      "project_id": "project_fictional",
+      "fingerprints": [
+        "sha256:56475aa75463474c0285df5dbf2bcab73da651358839e9b77481b2eab107708c"
+      ]
+    },
+    {
+      "name": "tampered_signature",
+      "valid": false,
+      "signed_assessment": {
+        "protected": "eyJhbGciOiJFZERTQSIsImtpZCI6ImZpY3Rpb25hbC1hc3Nlc3NtZW50LWtleSIsInR5cCI6ImFsbG93bHktYXNzZXNzbWVudCtqd3MifQ",
+        "payload": "eyJhY3Rpb24iOiJlbWFpbC5zZW5kIiwiYWdlbnRfaWQiOiJyZWNydWl0aW5nX2FnZW50IiwiYXBwbGljYXRpb25fcmVwb3J0ZWRfZXhlY3V0aW9uIjoic2VudCIsImFzc2Vzc21lbnRfaWQiOiJhc21fZmljdGlvbmFsIiwiYXNzZXNzbWVudF9zdGF0dXMiOiJ2aW9sYXRpb25fZGV0ZWN0ZWQiLCJjb250ZXh0Ijp7Im1lZGljYWxfZXh0ZXJuYWxfZGlzY2xvc3VyZSI6dHJ1ZX0sImVuZ2luZV92ZXJzaW9uIjoic2hhMjU2OmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmIiLCJmYWN0cyI6eyJjb250YWluc19tZWRpY2FsX2luZm9ybWF0aW9uIjp7ImNpdGF0aW9ucyI6W3siZW5kIjo0NiwiZmllbGQiOiJib2R5IiwicXVvdGUiOiLwn6eqIEZpY3Rpb25hbCBjYW5kaWRhdGUgaGFzIGEgbWVkaWNhbCBjb25kaXRpb24uIiwic3RhcnQiOjB9XSwidmFsdWUiOnRydWV9LCJleHRlcm5hbF9yZWNpcGllbnQiOnsiY2l0YXRpb25zIjpbeyJlbmQiOjI2LCJmaWVsZCI6InJlY2lwaWVudCIsInF1b3RlIjoicmVjcnVpdGVyQGV4dGVybmFsLmV4YW1wbGUiLCJzdGFydCI6MH1dLCJ2YWx1ZSI6dHJ1ZX19LCJpbnRlcnZlbnRpb24iOiJub25lIiwiaXNzdWVkX2F0IjoiMjAyNi0xMC0xN1QxMjowMDowMi4wMDBaIiwiam9iX2lkIjoiam9iX2ZpY3Rpb25hbCIsIm1hcHBpbmdfdmVyc2lvbiI6Im1lZGljYWwtZXh0ZXJuYWwtdjEiLCJtaXNzaW5nX2luZm9ybWF0aW9uIjpbXSwibW9kZSI6Im9ic2VydmUiLCJwb2xpY3lfZXZhbCI6eyJpbnB1dF9zaGEyNTYiOiJkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkIiwicmVzdWx0Ijp7ImRlY2lzaW9uIjoiZGVueSIsImV2YWx1YXRlZF9maWVsZHMiOnsibWVkaWNhbF9leHRlcm5hbF9kaXNjbG9zdXJlIjp0cnVlfSwibWF0Y2hlZF9ydWxlX2lkIjoibWVkaWNhbC1leHRlcm5hbCIsInByb2ZpbGUiOiJhbGxvd2x5LmJhc2ljLnYxIiwic3RhdHVzIjoib2siLCJ0YXJnZXQiOm51bGx9fSwicG9saWN5X3JlZiI6eyJkZWZpbml0aW9uX3NoYTI1NiI6ImFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWEiLCJwb2xpY3lfaWQiOiJtZWRpY2FsLWRpc2Nsb3N1cmUiLCJwb2xpY3lfdmVyc2lvbiI6MX0sInByb2plY3RfaWQiOiJwcm9qZWN0X2ZpY3Rpb25hbCIsInJlcXVlc3Rfc2hhMjU2IjoiY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjYyIsInJldmlld2VyX3ZlcnNpb24iOiJmaXh0dXJlOm5vdC1hLWxpdmUtbW9kZWwiLCJzY2hlbWFfdmVyc2lvbiI6ImFsbG93bHkuYXNzZXNzbWVudC52MSIsInNvdXJjZSI6eyJjYXB0dXJlZF9hdCI6IjIwMjYtMTAtMTdUMTI6MDA6MDEuMDAwWiIsIm9ic2VydmF0aW9uX2lkIjoib2JzX2ZpY3Rpb25hbCIsIm9ic2VydmVkX2F0IjoiMjAyNi0xMC0xN1QxMjowMDowMC4wMDBaIiwicHJvamVjdF9pZCI6InByb2plY3RfZmljdGlvbmFsIiwidHJhY2VfaWQiOiJ0cmFjZV9maWN0aW9uYWwifSwic291cmNlX3NoYTI1NiI6ImZiZmUzY2Q2NzU3NmZiMTM5YTZjMTUyMDMzOGQyMTQxYTU3MDQ1NzE4MTI2NjNjMDhjYTI3MWQzZDllZmJkZGYiLCJ3b3Jrc3BhY2VfaWQiOiJ3c19maWN0aW9uYWwifQ",
+        "signature": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+      },
+      "source_snapshot": {
+        "project_id": "project_fictional",
+        "trace_id": "trace_fictional",
+        "observation_id": "obs_fictional",
+        "observed_at": "2026-10-17T12:00:00.000Z",
+        "captured_at": "2026-10-17T12:00:01.000Z",
+        "content": {
+          "body": "🧪 Fictional candidate has a medical condition.",
+          "recipient": "recruiter@external.example"
+        }
+      },
+      "keys": {
+        "workspace_id": "ws_fictional",
+        "keys": [
+          {
+            "key_id": "fictional-assessment-key",
+            "alg": "Ed25519",
+            "public_key": "A6EHv_POEL4dcN0Y50vAmWfk1jCbpQ1fHdyGZBJVMbg",
+            "public_key_fingerprint": "sha256:56475aa75463474c0285df5dbf2bcab73da651358839e9b77481b2eab107708c",
+            "active_from": "2026-01-01T00:00:00.000Z",
+            "active_until": null
+          }
+        ]
+      },
+      "workspace_id": "ws_fictional",
+      "project_id": "project_fictional",
+      "fingerprints": [
+        "sha256:56475aa75463474c0285df5dbf2bcab73da651358839e9b77481b2eab107708c"
+      ]
+    },
+    {
+      "name": "extra_payload_field",
+      "valid": false,
+      "signed_assessment": {
+        "protected": "eyJhbGciOiJFZERTQSIsImtpZCI6ImZpY3Rpb25hbC1hc3Nlc3NtZW50LWtleSIsInR5cCI6ImFsbG93bHktYXNzZXNzbWVudCtqd3MifQ",
+        "payload": "eyJhY3Rpb24iOiJlbWFpbC5zZW5kIiwiYWdlbnRfaWQiOiJyZWNydWl0aW5nX2FnZW50IiwiYXBwbGljYXRpb25fcmVwb3J0ZWRfZXhlY3V0aW9uIjoic2VudCIsImFzc2Vzc21lbnRfaWQiOiJhc21fZmljdGlvbmFsIiwiYXNzZXNzbWVudF9zdGF0dXMiOiJ2aW9sYXRpb25fZGV0ZWN0ZWQiLCJhdXRob3JpemF0aW9uX2lkIjoibm90LWFuLWF1dGhvcml6YXRpb24iLCJjb250ZXh0Ijp7Im1lZGljYWxfZXh0ZXJuYWxfZGlzY2xvc3VyZSI6dHJ1ZX0sImVuZ2luZV92ZXJzaW9uIjoic2hhMjU2OmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmIiLCJmYWN0cyI6eyJjb250YWluc19tZWRpY2FsX2luZm9ybWF0aW9uIjp7ImNpdGF0aW9ucyI6W3siZW5kIjo0NiwiZmllbGQiOiJib2R5IiwicXVvdGUiOiLwn6eqIEZpY3Rpb25hbCBjYW5kaWRhdGUgaGFzIGEgbWVkaWNhbCBjb25kaXRpb24uIiwic3RhcnQiOjB9XSwidmFsdWUiOnRydWV9LCJleHRlcm5hbF9yZWNpcGllbnQiOnsiY2l0YXRpb25zIjpbeyJlbmQiOjI2LCJmaWVsZCI6InJlY2lwaWVudCIsInF1b3RlIjoicmVjcnVpdGVyQGV4dGVybmFsLmV4YW1wbGUiLCJzdGFydCI6MH1dLCJ2YWx1ZSI6dHJ1ZX19LCJpbnRlcnZlbnRpb24iOiJub25lIiwiaXNzdWVkX2F0IjoiMjAyNi0xMC0xN1QxMjowMDowMi4wMDBaIiwiam9iX2lkIjoiam9iX2ZpY3Rpb25hbCIsIm1hcHBpbmdfdmVyc2lvbiI6Im1lZGljYWwtZXh0ZXJuYWwtdjEiLCJtaXNzaW5nX2luZm9ybWF0aW9uIjpbXSwibW9kZSI6Im9ic2VydmUiLCJwb2xpY3lfZXZhbCI6eyJpbnB1dF9zaGEyNTYiOiJkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkIiwicmVzdWx0Ijp7ImRlY2lzaW9uIjoiZGVueSIsImV2YWx1YXRlZF9maWVsZHMiOnsibWVkaWNhbF9leHRlcm5hbF9kaXNjbG9zdXJlIjp0cnVlfSwibWF0Y2hlZF9ydWxlX2lkIjoibWVkaWNhbC1leHRlcm5hbCIsInByb2ZpbGUiOiJhbGxvd2x5LmJhc2ljLnYxIiwic3RhdHVzIjoib2siLCJ0YXJnZXQiOm51bGx9fSwicG9saWN5X3JlZiI6eyJkZWZpbml0aW9uX3NoYTI1NiI6ImFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWEiLCJwb2xpY3lfaWQiOiJtZWRpY2FsLWRpc2Nsb3N1cmUiLCJwb2xpY3lfdmVyc2lvbiI6MX0sInByb2plY3RfaWQiOiJwcm9qZWN0X2ZpY3Rpb25hbCIsInJlcXVlc3Rfc2hhMjU2IjoiY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjYyIsInJldmlld2VyX3ZlcnNpb24iOiJmaXh0dXJlOm5vdC1hLWxpdmUtbW9kZWwiLCJzY2hlbWFfdmVyc2lvbiI6ImFsbG93bHkuYXNzZXNzbWVudC52MSIsInNvdXJjZSI6eyJjYXB0dXJlZF9hdCI6IjIwMjYtMTAtMTdUMTI6MDA6MDEuMDAwWiIsIm9ic2VydmF0aW9uX2lkIjoib2JzX2ZpY3Rpb25hbCIsIm9ic2VydmVkX2F0IjoiMjAyNi0xMC0xN1QxMjowMDowMC4wMDBaIiwicHJvamVjdF9pZCI6InByb2plY3RfZmljdGlvbmFsIiwidHJhY2VfaWQiOiJ0cmFjZV9maWN0aW9uYWwifSwic291cmNlX3NoYTI1NiI6ImZiZmUzY2Q2NzU3NmZiMTM5YTZjMTUyMDMzOGQyMTQxYTU3MDQ1NzE4MTI2NjNjMDhjYTI3MWQzZDllZmJkZGYiLCJ3b3Jrc3BhY2VfaWQiOiJ3c19maWN0aW9uYWwifQ",
+        "signature": "waAOe94XEhe4JXdBvXKUgSDd3yUEH2HwKX92v3Vqmnqj6ohE0aaO-und-AtzSRSTX4qnd5nu10IcBZ4Q4SC4Dw"
+      },
+      "source_snapshot": {
+        "project_id": "project_fictional",
+        "trace_id": "trace_fictional",
+        "observation_id": "obs_fictional",
+        "observed_at": "2026-10-17T12:00:00.000Z",
+        "captured_at": "2026-10-17T12:00:01.000Z",
+        "content": {
+          "body": "🧪 Fictional candidate has a medical condition.",
+          "recipient": "recruiter@external.example"
+        }
+      },
+      "keys": {
+        "workspace_id": "ws_fictional",
+        "keys": [
+          {
+            "key_id": "fictional-assessment-key",
+            "alg": "Ed25519",
+            "public_key": "A6EHv_POEL4dcN0Y50vAmWfk1jCbpQ1fHdyGZBJVMbg",
+            "public_key_fingerprint": "sha256:56475aa75463474c0285df5dbf2bcab73da651358839e9b77481b2eab107708c",
+            "active_from": "2026-01-01T00:00:00.000Z",
+            "active_until": null
+          }
+        ]
+      },
+      "workspace_id": "ws_fictional",
+      "project_id": "project_fictional",
+      "fingerprints": [
+        "sha256:56475aa75463474c0285df5dbf2bcab73da651358839e9b77481b2eab107708c"
+      ]
+    },
+    {
+      "name": "missing_payload_field",
+      "valid": false,
+      "signed_assessment": {
+        "protected": "eyJhbGciOiJFZERTQSIsImtpZCI6ImZpY3Rpb25hbC1hc3Nlc3NtZW50LWtleSIsInR5cCI6ImFsbG93bHktYXNzZXNzbWVudCtqd3MifQ",
+        "payload": "eyJhY3Rpb24iOiJlbWFpbC5zZW5kIiwiYXBwbGljYXRpb25fcmVwb3J0ZWRfZXhlY3V0aW9uIjoic2VudCIsImFzc2Vzc21lbnRfaWQiOiJhc21fZmljdGlvbmFsIiwiYXNzZXNzbWVudF9zdGF0dXMiOiJ2aW9sYXRpb25fZGV0ZWN0ZWQiLCJjb250ZXh0Ijp7Im1lZGljYWxfZXh0ZXJuYWxfZGlzY2xvc3VyZSI6dHJ1ZX0sImVuZ2luZV92ZXJzaW9uIjoic2hhMjU2OmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmIiLCJmYWN0cyI6eyJjb250YWluc19tZWRpY2FsX2luZm9ybWF0aW9uIjp7ImNpdGF0aW9ucyI6W3siZW5kIjo0NiwiZmllbGQiOiJib2R5IiwicXVvdGUiOiLwn6eqIEZpY3Rpb25hbCBjYW5kaWRhdGUgaGFzIGEgbWVkaWNhbCBjb25kaXRpb24uIiwic3RhcnQiOjB9XSwidmFsdWUiOnRydWV9LCJleHRlcm5hbF9yZWNpcGllbnQiOnsiY2l0YXRpb25zIjpbeyJlbmQiOjI2LCJmaWVsZCI6InJlY2lwaWVudCIsInF1b3RlIjoicmVjcnVpdGVyQGV4dGVybmFsLmV4YW1wbGUiLCJzdGFydCI6MH1dLCJ2YWx1ZSI6dHJ1ZX19LCJpbnRlcnZlbnRpb24iOiJub25lIiwiaXNzdWVkX2F0IjoiMjAyNi0xMC0xN1QxMjowMDowMi4wMDBaIiwiam9iX2lkIjoiam9iX2ZpY3Rpb25hbCIsIm1hcHBpbmdfdmVyc2lvbiI6Im1lZGljYWwtZXh0ZXJuYWwtdjEiLCJtaXNzaW5nX2luZm9ybWF0aW9uIjpbXSwibW9kZSI6Im9ic2VydmUiLCJwb2xpY3lfZXZhbCI6eyJpbnB1dF9zaGEyNTYiOiJkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkIiwicmVzdWx0Ijp7ImRlY2lzaW9uIjoiZGVueSIsImV2YWx1YXRlZF9maWVsZHMiOnsibWVkaWNhbF9leHRlcm5hbF9kaXNjbG9zdXJlIjp0cnVlfSwibWF0Y2hlZF9ydWxlX2lkIjoibWVkaWNhbC1leHRlcm5hbCIsInByb2ZpbGUiOiJhbGxvd2x5LmJhc2ljLnYxIiwic3RhdHVzIjoib2siLCJ0YXJnZXQiOm51bGx9fSwicG9saWN5X3JlZiI6eyJkZWZpbml0aW9uX3NoYTI1NiI6ImFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWEiLCJwb2xpY3lfaWQiOiJtZWRpY2FsLWRpc2Nsb3N1cmUiLCJwb2xpY3lfdmVyc2lvbiI6MX0sInByb2plY3RfaWQiOiJwcm9qZWN0X2ZpY3Rpb25hbCIsInJlcXVlc3Rfc2hhMjU2IjoiY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjYyIsInJldmlld2VyX3ZlcnNpb24iOiJmaXh0dXJlOm5vdC1hLWxpdmUtbW9kZWwiLCJzY2hlbWFfdmVyc2lvbiI6ImFsbG93bHkuYXNzZXNzbWVudC52MSIsInNvdXJjZSI6eyJjYXB0dXJlZF9hdCI6IjIwMjYtMTAtMTdUMTI6MDA6MDEuMDAwWiIsIm9ic2VydmF0aW9uX2lkIjoib2JzX2ZpY3Rpb25hbCIsIm9ic2VydmVkX2F0IjoiMjAyNi0xMC0xN1QxMjowMDowMC4wMDBaIiwicHJvamVjdF9pZCI6InByb2plY3RfZmljdGlvbmFsIiwidHJhY2VfaWQiOiJ0cmFjZV9maWN0aW9uYWwifSwic291cmNlX3NoYTI1NiI6ImZiZmUzY2Q2NzU3NmZiMTM5YTZjMTUyMDMzOGQyMTQxYTU3MDQ1NzE4MTI2NjNjMDhjYTI3MWQzZDllZmJkZGYiLCJ3b3Jrc3BhY2VfaWQiOiJ3c19maWN0aW9uYWwifQ",
+        "signature": "NZhSRRPHLP2VnNpy_Fe9S1VRijKLSCpmsizAV52EO3PwHTELuwn-z-_nJbECqU-BfjNeDExWuXd0gPYvrPZtBQ"
+      },
+      "source_snapshot": {
+        "project_id": "project_fictional",
+        "trace_id": "trace_fictional",
+        "observation_id": "obs_fictional",
+        "observed_at": "2026-10-17T12:00:00.000Z",
+        "captured_at": "2026-10-17T12:00:01.000Z",
+        "content": {
+          "body": "🧪 Fictional candidate has a medical condition.",
+          "recipient": "recruiter@external.example"
+        }
+      },
+      "keys": {
+        "workspace_id": "ws_fictional",
+        "keys": [
+          {
+            "key_id": "fictional-assessment-key",
+            "alg": "Ed25519",
+            "public_key": "A6EHv_POEL4dcN0Y50vAmWfk1jCbpQ1fHdyGZBJVMbg",
+            "public_key_fingerprint": "sha256:56475aa75463474c0285df5dbf2bcab73da651358839e9b77481b2eab107708c",
+            "active_from": "2026-01-01T00:00:00.000Z",
+            "active_until": null
+          }
+        ]
+      },
+      "workspace_id": "ws_fictional",
+      "project_id": "project_fictional",
+      "fingerprints": [
+        "sha256:56475aa75463474c0285df5dbf2bcab73da651358839e9b77481b2eab107708c"
+      ]
+    },
+    {
+      "name": "coerced_policy_version",
+      "valid": false,
+      "signed_assessment": {
+        "protected": "eyJhbGciOiJFZERTQSIsImtpZCI6ImZpY3Rpb25hbC1hc3Nlc3NtZW50LWtleSIsInR5cCI6ImFsbG93bHktYXNzZXNzbWVudCtqd3MifQ",
+        "payload": "eyJhY3Rpb24iOiJlbWFpbC5zZW5kIiwiYWdlbnRfaWQiOiJyZWNydWl0aW5nX2FnZW50IiwiYXBwbGljYXRpb25fcmVwb3J0ZWRfZXhlY3V0aW9uIjoic2VudCIsImFzc2Vzc21lbnRfaWQiOiJhc21fZmljdGlvbmFsIiwiYXNzZXNzbWVudF9zdGF0dXMiOiJ2aW9sYXRpb25fZGV0ZWN0ZWQiLCJjb250ZXh0Ijp7Im1lZGljYWxfZXh0ZXJuYWxfZGlzY2xvc3VyZSI6dHJ1ZX0sImVuZ2luZV92ZXJzaW9uIjoic2hhMjU2OmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmIiLCJmYWN0cyI6eyJjb250YWluc19tZWRpY2FsX2luZm9ybWF0aW9uIjp7ImNpdGF0aW9ucyI6W3siZW5kIjo0NiwiZmllbGQiOiJib2R5IiwicXVvdGUiOiLwn6eqIEZpY3Rpb25hbCBjYW5kaWRhdGUgaGFzIGEgbWVkaWNhbCBjb25kaXRpb24uIiwic3RhcnQiOjB9XSwidmFsdWUiOnRydWV9LCJleHRlcm5hbF9yZWNpcGllbnQiOnsiY2l0YXRpb25zIjpbeyJlbmQiOjI2LCJmaWVsZCI6InJlY2lwaWVudCIsInF1b3RlIjoicmVjcnVpdGVyQGV4dGVybmFsLmV4YW1wbGUiLCJzdGFydCI6MH1dLCJ2YWx1ZSI6dHJ1ZX19LCJpbnRlcnZlbnRpb24iOiJub25lIiwiaXNzdWVkX2F0IjoiMjAyNi0xMC0xN1QxMjowMDowMi4wMDBaIiwiam9iX2lkIjoiam9iX2ZpY3Rpb25hbCIsIm1hcHBpbmdfdmVyc2lvbiI6Im1lZGljYWwtZXh0ZXJuYWwtdjEiLCJtaXNzaW5nX2luZm9ybWF0aW9uIjpbXSwibW9kZSI6Im9ic2VydmUiLCJwb2xpY3lfZXZhbCI6eyJpbnB1dF9zaGEyNTYiOiJkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkIiwicmVzdWx0Ijp7ImRlY2lzaW9uIjoiZGVueSIsImV2YWx1YXRlZF9maWVsZHMiOnsibWVkaWNhbF9leHRlcm5hbF9kaXNjbG9zdXJlIjp0cnVlfSwibWF0Y2hlZF9ydWxlX2lkIjoibWVkaWNhbC1leHRlcm5hbCIsInByb2ZpbGUiOiJhbGxvd2x5LmJhc2ljLnYxIiwic3RhdHVzIjoib2siLCJ0YXJnZXQiOm51bGx9fSwicG9saWN5X3JlZiI6eyJkZWZpbml0aW9uX3NoYTI1NiI6ImFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWEiLCJwb2xpY3lfaWQiOiJtZWRpY2FsLWRpc2Nsb3N1cmUiLCJwb2xpY3lfdmVyc2lvbiI6dHJ1ZX0sInByb2plY3RfaWQiOiJwcm9qZWN0X2ZpY3Rpb25hbCIsInJlcXVlc3Rfc2hhMjU2IjoiY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjYyIsInJldmlld2VyX3ZlcnNpb24iOiJmaXh0dXJlOm5vdC1hLWxpdmUtbW9kZWwiLCJzY2hlbWFfdmVyc2lvbiI6ImFsbG93bHkuYXNzZXNzbWVudC52MSIsInNvdXJjZSI6eyJjYXB0dXJlZF9hdCI6IjIwMjYtMTAtMTdUMTI6MDA6MDEuMDAwWiIsIm9ic2VydmF0aW9uX2lkIjoib2JzX2ZpY3Rpb25hbCIsIm9ic2VydmVkX2F0IjoiMjAyNi0xMC0xN1QxMjowMDowMC4wMDBaIiwicHJvamVjdF9pZCI6InByb2plY3RfZmljdGlvbmFsIiwidHJhY2VfaWQiOiJ0cmFjZV9maWN0aW9uYWwifSwic291cmNlX3NoYTI1NiI6ImZiZmUzY2Q2NzU3NmZiMTM5YTZjMTUyMDMzOGQyMTQxYTU3MDQ1NzE4MTI2NjNjMDhjYTI3MWQzZDllZmJkZGYiLCJ3b3Jrc3BhY2VfaWQiOiJ3c19maWN0aW9uYWwifQ",
+        "signature": "IevujwRk9SIxvasyVFldP2e5YmNZ-vYuUUtglBv3Bj5P_npNGWThILbRo8Unj_dwJ8PKHj2cPMwexFHd_5mPBw"
+      },
+      "source_snapshot": {
+        "project_id": "project_fictional",
+        "trace_id": "trace_fictional",
+        "observation_id": "obs_fictional",
+        "observed_at": "2026-10-17T12:00:00.000Z",
+        "captured_at": "2026-10-17T12:00:01.000Z",
+        "content": {
+          "body": "🧪 Fictional candidate has a medical condition.",
+          "recipient": "recruiter@external.example"
+        }
+      },
+      "keys": {
+        "workspace_id": "ws_fictional",
+        "keys": [
+          {
+            "key_id": "fictional-assessment-key",
+            "alg": "Ed25519",
+            "public_key": "A6EHv_POEL4dcN0Y50vAmWfk1jCbpQ1fHdyGZBJVMbg",
+            "public_key_fingerprint": "sha256:56475aa75463474c0285df5dbf2bcab73da651358839e9b77481b2eab107708c",
+            "active_from": "2026-01-01T00:00:00.000Z",
+            "active_until": null
+          }
+        ]
+      },
+      "workspace_id": "ws_fictional",
+      "project_id": "project_fictional",
+      "fingerprints": [
+        "sha256:56475aa75463474c0285df5dbf2bcab73da651358839e9b77481b2eab107708c"
+      ]
+    },
+    {
+      "name": "zero_policy_version",
+      "valid": false,
+      "signed_assessment": {
+        "protected": "eyJhbGciOiJFZERTQSIsImtpZCI6ImZpY3Rpb25hbC1hc3Nlc3NtZW50LWtleSIsInR5cCI6ImFsbG93bHktYXNzZXNzbWVudCtqd3MifQ",
+        "payload": "eyJhY3Rpb24iOiJlbWFpbC5zZW5kIiwiYWdlbnRfaWQiOiJyZWNydWl0aW5nX2FnZW50IiwiYXBwbGljYXRpb25fcmVwb3J0ZWRfZXhlY3V0aW9uIjoic2VudCIsImFzc2Vzc21lbnRfaWQiOiJhc21fZmljdGlvbmFsIiwiYXNzZXNzbWVudF9zdGF0dXMiOiJ2aW9sYXRpb25fZGV0ZWN0ZWQiLCJjb250ZXh0Ijp7Im1lZGljYWxfZXh0ZXJuYWxfZGlzY2xvc3VyZSI6dHJ1ZX0sImVuZ2luZV92ZXJzaW9uIjoic2hhMjU2OmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmIiLCJmYWN0cyI6eyJjb250YWluc19tZWRpY2FsX2luZm9ybWF0aW9uIjp7ImNpdGF0aW9ucyI6W3siZW5kIjo0NiwiZmllbGQiOiJib2R5IiwicXVvdGUiOiLwn6eqIEZpY3Rpb25hbCBjYW5kaWRhdGUgaGFzIGEgbWVkaWNhbCBjb25kaXRpb24uIiwic3RhcnQiOjB9XSwidmFsdWUiOnRydWV9LCJleHRlcm5hbF9yZWNpcGllbnQiOnsiY2l0YXRpb25zIjpbeyJlbmQiOjI2LCJmaWVsZCI6InJlY2lwaWVudCIsInF1b3RlIjoicmVjcnVpdGVyQGV4dGVybmFsLmV4YW1wbGUiLCJzdGFydCI6MH1dLCJ2YWx1ZSI6dHJ1ZX19LCJpbnRlcnZlbnRpb24iOiJub25lIiwiaXNzdWVkX2F0IjoiMjAyNi0xMC0xN1QxMjowMDowMi4wMDBaIiwiam9iX2lkIjoiam9iX2ZpY3Rpb25hbCIsIm1hcHBpbmdfdmVyc2lvbiI6Im1lZGljYWwtZXh0ZXJuYWwtdjEiLCJtaXNzaW5nX2luZm9ybWF0aW9uIjpbXSwibW9kZSI6Im9ic2VydmUiLCJwb2xpY3lfZXZhbCI6eyJpbnB1dF9zaGEyNTYiOiJkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkIiwicmVzdWx0Ijp7ImRlY2lzaW9uIjoiZGVueSIsImV2YWx1YXRlZF9maWVsZHMiOnsibWVkaWNhbF9leHRlcm5hbF9kaXNjbG9zdXJlIjp0cnVlfSwibWF0Y2hlZF9ydWxlX2lkIjoibWVkaWNhbC1leHRlcm5hbCIsInByb2ZpbGUiOiJhbGxvd2x5LmJhc2ljLnYxIiwic3RhdHVzIjoib2siLCJ0YXJnZXQiOm51bGx9fSwicG9saWN5X3JlZiI6eyJkZWZpbml0aW9uX3NoYTI1NiI6ImFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWEiLCJwb2xpY3lfaWQiOiJtZWRpY2FsLWRpc2Nsb3N1cmUiLCJwb2xpY3lfdmVyc2lvbiI6MH0sInByb2plY3RfaWQiOiJwcm9qZWN0X2ZpY3Rpb25hbCIsInJlcXVlc3Rfc2hhMjU2IjoiY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjYyIsInJldmlld2VyX3ZlcnNpb24iOiJmaXh0dXJlOm5vdC1hLWxpdmUtbW9kZWwiLCJzY2hlbWFfdmVyc2lvbiI6ImFsbG93bHkuYXNzZXNzbWVudC52MSIsInNvdXJjZSI6eyJjYXB0dXJlZF9hdCI6IjIwMjYtMTAtMTdUMTI6MDA6MDEuMDAwWiIsIm9ic2VydmF0aW9uX2lkIjoib2JzX2ZpY3Rpb25hbCIsIm9ic2VydmVkX2F0IjoiMjAyNi0xMC0xN1QxMjowMDowMC4wMDBaIiwicHJvamVjdF9pZCI6InByb2plY3RfZmljdGlvbmFsIiwidHJhY2VfaWQiOiJ0cmFjZV9maWN0aW9uYWwifSwic291cmNlX3NoYTI1NiI6ImZiZmUzY2Q2NzU3NmZiMTM5YTZjMTUyMDMzOGQyMTQxYTU3MDQ1NzE4MTI2NjNjMDhjYTI3MWQzZDllZmJkZGYiLCJ3b3Jrc3BhY2VfaWQiOiJ3c19maWN0aW9uYWwifQ",
+        "signature": "7ERff-rGyUBE1Bga7PaQ2Z9S1Oa51_sgR7d4CqWw5JsyNjiUsoc7cNoYWuzGPl11sDSoxTr8r4GGw55V1vhIDw"
+      },
+      "source_snapshot": {
+        "project_id": "project_fictional",
+        "trace_id": "trace_fictional",
+        "observation_id": "obs_fictional",
+        "observed_at": "2026-10-17T12:00:00.000Z",
+        "captured_at": "2026-10-17T12:00:01.000Z",
+        "content": {
+          "body": "🧪 Fictional candidate has a medical condition.",
+          "recipient": "recruiter@external.example"
+        }
+      },
+      "keys": {
+        "workspace_id": "ws_fictional",
+        "keys": [
+          {
+            "key_id": "fictional-assessment-key",
+            "alg": "Ed25519",
+            "public_key": "A6EHv_POEL4dcN0Y50vAmWfk1jCbpQ1fHdyGZBJVMbg",
+            "public_key_fingerprint": "sha256:56475aa75463474c0285df5dbf2bcab73da651358839e9b77481b2eab107708c",
+            "active_from": "2026-01-01T00:00:00.000Z",
+            "active_until": null
+          }
+        ]
+      },
+      "workspace_id": "ws_fictional",
+      "project_id": "project_fictional",
+      "fingerprints": [
+        "sha256:56475aa75463474c0285df5dbf2bcab73da651358839e9b77481b2eab107708c"
+      ]
+    },
+    {
+      "name": "coerced_fact",
+      "valid": false,
+      "signed_assessment": {
+        "protected": "eyJhbGciOiJFZERTQSIsImtpZCI6ImZpY3Rpb25hbC1hc3Nlc3NtZW50LWtleSIsInR5cCI6ImFsbG93bHktYXNzZXNzbWVudCtqd3MifQ",
+        "payload": "eyJhY3Rpb24iOiJlbWFpbC5zZW5kIiwiYWdlbnRfaWQiOiJyZWNydWl0aW5nX2FnZW50IiwiYXBwbGljYXRpb25fcmVwb3J0ZWRfZXhlY3V0aW9uIjoic2VudCIsImFzc2Vzc21lbnRfaWQiOiJhc21fZmljdGlvbmFsIiwiYXNzZXNzbWVudF9zdGF0dXMiOiJ2aW9sYXRpb25fZGV0ZWN0ZWQiLCJjb250ZXh0Ijp7Im1lZGljYWxfZXh0ZXJuYWxfZGlzY2xvc3VyZSI6dHJ1ZX0sImVuZ2luZV92ZXJzaW9uIjoic2hhMjU2OmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmIiLCJmYWN0cyI6eyJjb250YWluc19tZWRpY2FsX2luZm9ybWF0aW9uIjp7ImNpdGF0aW9ucyI6W3siZW5kIjo0NiwiZmllbGQiOiJib2R5IiwicXVvdGUiOiLwn6eqIEZpY3Rpb25hbCBjYW5kaWRhdGUgaGFzIGEgbWVkaWNhbCBjb25kaXRpb24uIiwic3RhcnQiOjB9XSwidmFsdWUiOiJ0cnVlIn0sImV4dGVybmFsX3JlY2lwaWVudCI6eyJjaXRhdGlvbnMiOlt7ImVuZCI6MjYsImZpZWxkIjoicmVjaXBpZW50IiwicXVvdGUiOiJyZWNydWl0ZXJAZXh0ZXJuYWwuZXhhbXBsZSIsInN0YXJ0IjowfV0sInZhbHVlIjp0cnVlfX0sImludGVydmVudGlvbiI6Im5vbmUiLCJpc3N1ZWRfYXQiOiIyMDI2LTEwLTE3VDEyOjAwOjAyLjAwMFoiLCJqb2JfaWQiOiJqb2JfZmljdGlvbmFsIiwibWFwcGluZ192ZXJzaW9uIjoibWVkaWNhbC1leHRlcm5hbC12MSIsIm1pc3NpbmdfaW5mb3JtYXRpb24iOltdLCJtb2RlIjoib2JzZXJ2ZSIsInBvbGljeV9ldmFsIjp7ImlucHV0X3NoYTI1NiI6ImRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGQiLCJyZXN1bHQiOnsiZGVjaXNpb24iOiJkZW55IiwiZXZhbHVhdGVkX2ZpZWxkcyI6eyJtZWRpY2FsX2V4dGVybmFsX2Rpc2Nsb3N1cmUiOnRydWV9LCJtYXRjaGVkX3J1bGVfaWQiOiJtZWRpY2FsLWV4dGVybmFsIiwicHJvZmlsZSI6ImFsbG93bHkuYmFzaWMudjEiLCJzdGF0dXMiOiJvayIsInRhcmdldCI6bnVsbH19LCJwb2xpY3lfcmVmIjp7ImRlZmluaXRpb25fc2hhMjU2IjoiYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYSIsInBvbGljeV9pZCI6Im1lZGljYWwtZGlzY2xvc3VyZSIsInBvbGljeV92ZXJzaW9uIjoxfSwicHJvamVjdF9pZCI6InByb2plY3RfZmljdGlvbmFsIiwicmVxdWVzdF9zaGEyNTYiOiJjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjIiwicmV2aWV3ZXJfdmVyc2lvbiI6ImZpeHR1cmU6bm90LWEtbGl2ZS1tb2RlbCIsInNjaGVtYV92ZXJzaW9uIjoiYWxsb3dseS5hc3Nlc3NtZW50LnYxIiwic291cmNlIjp7ImNhcHR1cmVkX2F0IjoiMjAyNi0xMC0xN1QxMjowMDowMS4wMDBaIiwib2JzZXJ2YXRpb25faWQiOiJvYnNfZmljdGlvbmFsIiwib2JzZXJ2ZWRfYXQiOiIyMDI2LTEwLTE3VDEyOjAwOjAwLjAwMFoiLCJwcm9qZWN0X2lkIjoicHJvamVjdF9maWN0aW9uYWwiLCJ0cmFjZV9pZCI6InRyYWNlX2ZpY3Rpb25hbCJ9LCJzb3VyY2Vfc2hhMjU2IjoiZmJmZTNjZDY3NTc2ZmIxMzlhNmMxNTIwMzM4ZDIxNDFhNTcwNDU3MTgxMjY2M2MwOGNhMjcxZDNkOWVmYmRkZiIsIndvcmtzcGFjZV9pZCI6IndzX2ZpY3Rpb25hbCJ9",
+        "signature": "DUAq3FE2cua2Y-J48KmM6EzSOGq1KMXJHS66XxGOK3_khonGKnM0wqEeIpUsk9LQEDxyps1ncaSSpOSTMFsqCA"
+      },
+      "source_snapshot": {
+        "project_id": "project_fictional",
+        "trace_id": "trace_fictional",
+        "observation_id": "obs_fictional",
+        "observed_at": "2026-10-17T12:00:00.000Z",
+        "captured_at": "2026-10-17T12:00:01.000Z",
+        "content": {
+          "body": "🧪 Fictional candidate has a medical condition.",
+          "recipient": "recruiter@external.example"
+        }
+      },
+      "keys": {
+        "workspace_id": "ws_fictional",
+        "keys": [
+          {
+            "key_id": "fictional-assessment-key",
+            "alg": "Ed25519",
+            "public_key": "A6EHv_POEL4dcN0Y50vAmWfk1jCbpQ1fHdyGZBJVMbg",
+            "public_key_fingerprint": "sha256:56475aa75463474c0285df5dbf2bcab73da651358839e9b77481b2eab107708c",
+            "active_from": "2026-01-01T00:00:00.000Z",
+            "active_until": null
+          }
+        ]
+      },
+      "workspace_id": "ws_fictional",
+      "project_id": "project_fictional",
+      "fingerprints": [
+        "sha256:56475aa75463474c0285df5dbf2bcab73da651358839e9b77481b2eab107708c"
+      ]
+    },
+    {
+      "name": "unsupported_quote",
+      "valid": false,
+      "signed_assessment": {
+        "protected": "eyJhbGciOiJFZERTQSIsImtpZCI6ImZpY3Rpb25hbC1hc3Nlc3NtZW50LWtleSIsInR5cCI6ImFsbG93bHktYXNzZXNzbWVudCtqd3MifQ",
+        "payload": "eyJhY3Rpb24iOiJlbWFpbC5zZW5kIiwiYWdlbnRfaWQiOiJyZWNydWl0aW5nX2FnZW50IiwiYXBwbGljYXRpb25fcmVwb3J0ZWRfZXhlY3V0aW9uIjoic2VudCIsImFzc2Vzc21lbnRfaWQiOiJhc21fZmljdGlvbmFsIiwiYXNzZXNzbWVudF9zdGF0dXMiOiJ2aW9sYXRpb25fZGV0ZWN0ZWQiLCJjb250ZXh0Ijp7Im1lZGljYWxfZXh0ZXJuYWxfZGlzY2xvc3VyZSI6dHJ1ZX0sImVuZ2luZV92ZXJzaW9uIjoic2hhMjU2OmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmIiLCJmYWN0cyI6eyJjb250YWluc19tZWRpY2FsX2luZm9ybWF0aW9uIjp7ImNpdGF0aW9ucyI6W3siZW5kIjo0NiwiZmllbGQiOiJib2R5IiwicXVvdGUiOiJpbnZlbnRlZCIsInN0YXJ0IjowfV0sInZhbHVlIjp0cnVlfSwiZXh0ZXJuYWxfcmVjaXBpZW50Ijp7ImNpdGF0aW9ucyI6W3siZW5kIjoyNiwiZmllbGQiOiJyZWNpcGllbnQiLCJxdW90ZSI6InJlY3J1aXRlckBleHRlcm5hbC5leGFtcGxlIiwic3RhcnQiOjB9XSwidmFsdWUiOnRydWV9fSwiaW50ZXJ2ZW50aW9uIjoibm9uZSIsImlzc3VlZF9hdCI6IjIwMjYtMTAtMTdUMTI6MDA6MDIuMDAwWiIsImpvYl9pZCI6ImpvYl9maWN0aW9uYWwiLCJtYXBwaW5nX3ZlcnNpb24iOiJtZWRpY2FsLWV4dGVybmFsLXYxIiwibWlzc2luZ19pbmZvcm1hdGlvbiI6W10sIm1vZGUiOiJvYnNlcnZlIiwicG9saWN5X2V2YWwiOnsiaW5wdXRfc2hhMjU2IjoiZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZCIsInJlc3VsdCI6eyJkZWNpc2lvbiI6ImRlbnkiLCJldmFsdWF0ZWRfZmllbGRzIjp7Im1lZGljYWxfZXh0ZXJuYWxfZGlzY2xvc3VyZSI6dHJ1ZX0sIm1hdGNoZWRfcnVsZV9pZCI6Im1lZGljYWwtZXh0ZXJuYWwiLCJwcm9maWxlIjoiYWxsb3dseS5iYXNpYy52MSIsInN0YXR1cyI6Im9rIiwidGFyZ2V0IjpudWxsfX0sInBvbGljeV9yZWYiOnsiZGVmaW5pdGlvbl9zaGEyNTYiOiJhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhIiwicG9saWN5X2lkIjoibWVkaWNhbC1kaXNjbG9zdXJlIiwicG9saWN5X3ZlcnNpb24iOjF9LCJwcm9qZWN0X2lkIjoicHJvamVjdF9maWN0aW9uYWwiLCJyZXF1ZXN0X3NoYTI1NiI6ImNjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2MiLCJyZXZpZXdlcl92ZXJzaW9uIjoiZml4dHVyZTpub3QtYS1saXZlLW1vZGVsIiwic2NoZW1hX3ZlcnNpb24iOiJhbGxvd2x5LmFzc2Vzc21lbnQudjEiLCJzb3VyY2UiOnsiY2FwdHVyZWRfYXQiOiIyMDI2LTEwLTE3VDEyOjAwOjAxLjAwMFoiLCJvYnNlcnZhdGlvbl9pZCI6Im9ic19maWN0aW9uYWwiLCJvYnNlcnZlZF9hdCI6IjIwMjYtMTAtMTdUMTI6MDA6MDAuMDAwWiIsInByb2plY3RfaWQiOiJwcm9qZWN0X2ZpY3Rpb25hbCIsInRyYWNlX2lkIjoidHJhY2VfZmljdGlvbmFsIn0sInNvdXJjZV9zaGEyNTYiOiJmYmZlM2NkNjc1NzZmYjEzOWE2YzE1MjAzMzhkMjE0MWE1NzA0NTcxODEyNjYzYzA4Y2EyNzFkM2Q5ZWZiZGRmIiwid29ya3NwYWNlX2lkIjoid3NfZmljdGlvbmFsIn0",
+        "signature": "MyaN_TypC-TWBawZx_9pBP4m5VDgAiduoHJiDmrXlf8tZU5l56SLd3xdo7B60llkuP9VTP_WF-7wk0_-Hk6mDg"
+      },
+      "source_snapshot": {
+        "project_id": "project_fictional",
+        "trace_id": "trace_fictional",
+        "observation_id": "obs_fictional",
+        "observed_at": "2026-10-17T12:00:00.000Z",
+        "captured_at": "2026-10-17T12:00:01.000Z",
+        "content": {
+          "body": "🧪 Fictional candidate has a medical condition.",
+          "recipient": "recruiter@external.example"
+        }
+      },
+      "keys": {
+        "workspace_id": "ws_fictional",
+        "keys": [
+          {
+            "key_id": "fictional-assessment-key",
+            "alg": "Ed25519",
+            "public_key": "A6EHv_POEL4dcN0Y50vAmWfk1jCbpQ1fHdyGZBJVMbg",
+            "public_key_fingerprint": "sha256:56475aa75463474c0285df5dbf2bcab73da651358839e9b77481b2eab107708c",
+            "active_from": "2026-01-01T00:00:00.000Z",
+            "active_until": null
+          }
+        ]
+      },
+      "workspace_id": "ws_fictional",
+      "project_id": "project_fictional",
+      "fingerprints": [
+        "sha256:56475aa75463474c0285df5dbf2bcab73da651358839e9b77481b2eab107708c"
+      ]
+    },
+    {
+      "name": "wrong_semantic_source_field",
+      "valid": false,
+      "signed_assessment": {
+        "protected": "eyJhbGciOiJFZERTQSIsImtpZCI6ImZpY3Rpb25hbC1hc3Nlc3NtZW50LWtleSIsInR5cCI6ImFsbG93bHktYXNzZXNzbWVudCtqd3MifQ",
+        "payload": "eyJhY3Rpb24iOiJlbWFpbC5zZW5kIiwiYWdlbnRfaWQiOiJyZWNydWl0aW5nX2FnZW50IiwiYXBwbGljYXRpb25fcmVwb3J0ZWRfZXhlY3V0aW9uIjoic2VudCIsImFzc2Vzc21lbnRfaWQiOiJhc21fZmljdGlvbmFsIiwiYXNzZXNzbWVudF9zdGF0dXMiOiJ2aW9sYXRpb25fZGV0ZWN0ZWQiLCJjb250ZXh0Ijp7Im1lZGljYWxfZXh0ZXJuYWxfZGlzY2xvc3VyZSI6dHJ1ZX0sImVuZ2luZV92ZXJzaW9uIjoic2hhMjU2OmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmIiLCJmYWN0cyI6eyJjb250YWluc19tZWRpY2FsX2luZm9ybWF0aW9uIjp7ImNpdGF0aW9ucyI6W3siZW5kIjoyNiwiZmllbGQiOiJyZWNpcGllbnQiLCJxdW90ZSI6InJlY3J1aXRlckBleHRlcm5hbC5leGFtcGxlIiwic3RhcnQiOjB9XSwidmFsdWUiOnRydWV9LCJleHRlcm5hbF9yZWNpcGllbnQiOnsiY2l0YXRpb25zIjpbeyJlbmQiOjI2LCJmaWVsZCI6InJlY2lwaWVudCIsInF1b3RlIjoicmVjcnVpdGVyQGV4dGVybmFsLmV4YW1wbGUiLCJzdGFydCI6MH1dLCJ2YWx1ZSI6dHJ1ZX19LCJpbnRlcnZlbnRpb24iOiJub25lIiwiaXNzdWVkX2F0IjoiMjAyNi0xMC0xN1QxMjowMDowMi4wMDBaIiwiam9iX2lkIjoiam9iX2ZpY3Rpb25hbCIsIm1hcHBpbmdfdmVyc2lvbiI6Im1lZGljYWwtZXh0ZXJuYWwtdjEiLCJtaXNzaW5nX2luZm9ybWF0aW9uIjpbXSwibW9kZSI6Im9ic2VydmUiLCJwb2xpY3lfZXZhbCI6eyJpbnB1dF9zaGEyNTYiOiJkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkIiwicmVzdWx0Ijp7ImRlY2lzaW9uIjoiZGVueSIsImV2YWx1YXRlZF9maWVsZHMiOnsibWVkaWNhbF9leHRlcm5hbF9kaXNjbG9zdXJlIjp0cnVlfSwibWF0Y2hlZF9ydWxlX2lkIjoibWVkaWNhbC1leHRlcm5hbCIsInByb2ZpbGUiOiJhbGxvd2x5LmJhc2ljLnYxIiwic3RhdHVzIjoib2siLCJ0YXJnZXQiOm51bGx9fSwicG9saWN5X3JlZiI6eyJkZWZpbml0aW9uX3NoYTI1NiI6ImFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWEiLCJwb2xpY3lfaWQiOiJtZWRpY2FsLWRpc2Nsb3N1cmUiLCJwb2xpY3lfdmVyc2lvbiI6MX0sInByb2plY3RfaWQiOiJwcm9qZWN0X2ZpY3Rpb25hbCIsInJlcXVlc3Rfc2hhMjU2IjoiY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjYyIsInJldmlld2VyX3ZlcnNpb24iOiJmaXh0dXJlOm5vdC1hLWxpdmUtbW9kZWwiLCJzY2hlbWFfdmVyc2lvbiI6ImFsbG93bHkuYXNzZXNzbWVudC52MSIsInNvdXJjZSI6eyJjYXB0dXJlZF9hdCI6IjIwMjYtMTAtMTdUMTI6MDA6MDEuMDAwWiIsIm9ic2VydmF0aW9uX2lkIjoib2JzX2ZpY3Rpb25hbCIsIm9ic2VydmVkX2F0IjoiMjAyNi0xMC0xN1QxMjowMDowMC4wMDBaIiwicHJvamVjdF9pZCI6InByb2plY3RfZmljdGlvbmFsIiwidHJhY2VfaWQiOiJ0cmFjZV9maWN0aW9uYWwifSwic291cmNlX3NoYTI1NiI6ImZiZmUzY2Q2NzU3NmZiMTM5YTZjMTUyMDMzOGQyMTQxYTU3MDQ1NzE4MTI2NjNjMDhjYTI3MWQzZDllZmJkZGYiLCJ3b3Jrc3BhY2VfaWQiOiJ3c19maWN0aW9uYWwifQ",
+        "signature": "CDZTpLI9eFbdoP9rmtfJ2j8_GAKJUihigB7zDYLBU2c11MTza1XniuWzqchuNbsn35ODkX58EVAVUdV0g5uSCg"
+      },
+      "source_snapshot": {
+        "project_id": "project_fictional",
+        "trace_id": "trace_fictional",
+        "observation_id": "obs_fictional",
+        "observed_at": "2026-10-17T12:00:00.000Z",
+        "captured_at": "2026-10-17T12:00:01.000Z",
+        "content": {
+          "body": "🧪 Fictional candidate has a medical condition.",
+          "recipient": "recruiter@external.example"
+        }
+      },
+      "keys": {
+        "workspace_id": "ws_fictional",
+        "keys": [
+          {
+            "key_id": "fictional-assessment-key",
+            "alg": "Ed25519",
+            "public_key": "A6EHv_POEL4dcN0Y50vAmWfk1jCbpQ1fHdyGZBJVMbg",
+            "public_key_fingerprint": "sha256:56475aa75463474c0285df5dbf2bcab73da651358839e9b77481b2eab107708c",
+            "active_from": "2026-01-01T00:00:00.000Z",
+            "active_until": null
+          }
+        ]
+      },
+      "workspace_id": "ws_fictional",
+      "project_id": "project_fictional",
+      "fingerprints": [
+        "sha256:56475aa75463474c0285df5dbf2bcab73da651358839e9b77481b2eab107708c"
+      ]
+    },
+    {
+      "name": "utf16_offsets_are_wrong",
+      "valid": false,
+      "signed_assessment": {
+        "protected": "eyJhbGciOiJFZERTQSIsImtpZCI6ImZpY3Rpb25hbC1hc3Nlc3NtZW50LWtleSIsInR5cCI6ImFsbG93bHktYXNzZXNzbWVudCtqd3MifQ",
+        "payload": "eyJhY3Rpb24iOiJlbWFpbC5zZW5kIiwiYWdlbnRfaWQiOiJyZWNydWl0aW5nX2FnZW50IiwiYXBwbGljYXRpb25fcmVwb3J0ZWRfZXhlY3V0aW9uIjoic2VudCIsImFzc2Vzc21lbnRfaWQiOiJhc21fZmljdGlvbmFsIiwiYXNzZXNzbWVudF9zdGF0dXMiOiJ2aW9sYXRpb25fZGV0ZWN0ZWQiLCJjb250ZXh0Ijp7Im1lZGljYWxfZXh0ZXJuYWxfZGlzY2xvc3VyZSI6dHJ1ZX0sImVuZ2luZV92ZXJzaW9uIjoic2hhMjU2OmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmIiLCJmYWN0cyI6eyJjb250YWluc19tZWRpY2FsX2luZm9ybWF0aW9uIjp7ImNpdGF0aW9ucyI6W3siZW5kIjo0NywiZmllbGQiOiJib2R5IiwicXVvdGUiOiLwn6eqIEZpY3Rpb25hbCBjYW5kaWRhdGUgaGFzIGEgbWVkaWNhbCBjb25kaXRpb24uIiwic3RhcnQiOjB9XSwidmFsdWUiOnRydWV9LCJleHRlcm5hbF9yZWNpcGllbnQiOnsiY2l0YXRpb25zIjpbeyJlbmQiOjI2LCJmaWVsZCI6InJlY2lwaWVudCIsInF1b3RlIjoicmVjcnVpdGVyQGV4dGVybmFsLmV4YW1wbGUiLCJzdGFydCI6MH1dLCJ2YWx1ZSI6dHJ1ZX19LCJpbnRlcnZlbnRpb24iOiJub25lIiwiaXNzdWVkX2F0IjoiMjAyNi0xMC0xN1QxMjowMDowMi4wMDBaIiwiam9iX2lkIjoiam9iX2ZpY3Rpb25hbCIsIm1hcHBpbmdfdmVyc2lvbiI6Im1lZGljYWwtZXh0ZXJuYWwtdjEiLCJtaXNzaW5nX2luZm9ybWF0aW9uIjpbXSwibW9kZSI6Im9ic2VydmUiLCJwb2xpY3lfZXZhbCI6eyJpbnB1dF9zaGEyNTYiOiJkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkIiwicmVzdWx0Ijp7ImRlY2lzaW9uIjoiZGVueSIsImV2YWx1YXRlZF9maWVsZHMiOnsibWVkaWNhbF9leHRlcm5hbF9kaXNjbG9zdXJlIjp0cnVlfSwibWF0Y2hlZF9ydWxlX2lkIjoibWVkaWNhbC1leHRlcm5hbCIsInByb2ZpbGUiOiJhbGxvd2x5LmJhc2ljLnYxIiwic3RhdHVzIjoib2siLCJ0YXJnZXQiOm51bGx9fSwicG9saWN5X3JlZiI6eyJkZWZpbml0aW9uX3NoYTI1NiI6ImFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWEiLCJwb2xpY3lfaWQiOiJtZWRpY2FsLWRpc2Nsb3N1cmUiLCJwb2xpY3lfdmVyc2lvbiI6MX0sInByb2plY3RfaWQiOiJwcm9qZWN0X2ZpY3Rpb25hbCIsInJlcXVlc3Rfc2hhMjU2IjoiY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjYyIsInJldmlld2VyX3ZlcnNpb24iOiJmaXh0dXJlOm5vdC1hLWxpdmUtbW9kZWwiLCJzY2hlbWFfdmVyc2lvbiI6ImFsbG93bHkuYXNzZXNzbWVudC52MSIsInNvdXJjZSI6eyJjYXB0dXJlZF9hdCI6IjIwMjYtMTAtMTdUMTI6MDA6MDEuMDAwWiIsIm9ic2VydmF0aW9uX2lkIjoib2JzX2ZpY3Rpb25hbCIsIm9ic2VydmVkX2F0IjoiMjAyNi0xMC0xN1QxMjowMDowMC4wMDBaIiwicHJvamVjdF9pZCI6InByb2plY3RfZmljdGlvbmFsIiwidHJhY2VfaWQiOiJ0cmFjZV9maWN0aW9uYWwifSwic291cmNlX3NoYTI1NiI6ImZiZmUzY2Q2NzU3NmZiMTM5YTZjMTUyMDMzOGQyMTQxYTU3MDQ1NzE4MTI2NjNjMDhjYTI3MWQzZDllZmJkZGYiLCJ3b3Jrc3BhY2VfaWQiOiJ3c19maWN0aW9uYWwifQ",
+        "signature": "H6NtbXia8YGIwjzFauHnErxkiWrrsxt4LLk0KCzymUVrqZaQX0sSWj_93kn5sq9TyLRV1gGGluoo6SpKrnLKBA"
+      },
+      "source_snapshot": {
+        "project_id": "project_fictional",
+        "trace_id": "trace_fictional",
+        "observation_id": "obs_fictional",
+        "observed_at": "2026-10-17T12:00:00.000Z",
+        "captured_at": "2026-10-17T12:00:01.000Z",
+        "content": {
+          "body": "🧪 Fictional candidate has a medical condition.",
+          "recipient": "recruiter@external.example"
+        }
+      },
+      "keys": {
+        "workspace_id": "ws_fictional",
+        "keys": [
+          {
+            "key_id": "fictional-assessment-key",
+            "alg": "Ed25519",
+            "public_key": "A6EHv_POEL4dcN0Y50vAmWfk1jCbpQ1fHdyGZBJVMbg",
+            "public_key_fingerprint": "sha256:56475aa75463474c0285df5dbf2bcab73da651358839e9b77481b2eab107708c",
+            "active_from": "2026-01-01T00:00:00.000Z",
+            "active_until": null
+          }
+        ]
+      },
+      "workspace_id": "ws_fictional",
+      "project_id": "project_fictional",
+      "fingerprints": [
+        "sha256:56475aa75463474c0285df5dbf2bcab73da651358839e9b77481b2eab107708c"
+      ]
+    },
+    {
+      "name": "conjunction_mismatch",
+      "valid": false,
+      "signed_assessment": {
+        "protected": "eyJhbGciOiJFZERTQSIsImtpZCI6ImZpY3Rpb25hbC1hc3Nlc3NtZW50LWtleSIsInR5cCI6ImFsbG93bHktYXNzZXNzbWVudCtqd3MifQ",
+        "payload": "eyJhY3Rpb24iOiJlbWFpbC5zZW5kIiwiYWdlbnRfaWQiOiJyZWNydWl0aW5nX2FnZW50IiwiYXBwbGljYXRpb25fcmVwb3J0ZWRfZXhlY3V0aW9uIjoic2VudCIsImFzc2Vzc21lbnRfaWQiOiJhc21fZmljdGlvbmFsIiwiYXNzZXNzbWVudF9zdGF0dXMiOiJ2aW9sYXRpb25fZGV0ZWN0ZWQiLCJjb250ZXh0Ijp7Im1lZGljYWxfZXh0ZXJuYWxfZGlzY2xvc3VyZSI6ZmFsc2V9LCJlbmdpbmVfdmVyc2lvbiI6InNoYTI1NjpiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiIiwiZmFjdHMiOnsiY29udGFpbnNfbWVkaWNhbF9pbmZvcm1hdGlvbiI6eyJjaXRhdGlvbnMiOlt7ImVuZCI6NDYsImZpZWxkIjoiYm9keSIsInF1b3RlIjoi8J-nqiBGaWN0aW9uYWwgY2FuZGlkYXRlIGhhcyBhIG1lZGljYWwgY29uZGl0aW9uLiIsInN0YXJ0IjowfV0sInZhbHVlIjp0cnVlfSwiZXh0ZXJuYWxfcmVjaXBpZW50Ijp7ImNpdGF0aW9ucyI6W3siZW5kIjoyNiwiZmllbGQiOiJyZWNpcGllbnQiLCJxdW90ZSI6InJlY3J1aXRlckBleHRlcm5hbC5leGFtcGxlIiwic3RhcnQiOjB9XSwidmFsdWUiOnRydWV9fSwiaW50ZXJ2ZW50aW9uIjoibm9uZSIsImlzc3VlZF9hdCI6IjIwMjYtMTAtMTdUMTI6MDA6MDIuMDAwWiIsImpvYl9pZCI6ImpvYl9maWN0aW9uYWwiLCJtYXBwaW5nX3ZlcnNpb24iOiJtZWRpY2FsLWV4dGVybmFsLXYxIiwibWlzc2luZ19pbmZvcm1hdGlvbiI6W10sIm1vZGUiOiJvYnNlcnZlIiwicG9saWN5X2V2YWwiOnsiaW5wdXRfc2hhMjU2IjoiZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZCIsInJlc3VsdCI6eyJkZWNpc2lvbiI6ImRlbnkiLCJldmFsdWF0ZWRfZmllbGRzIjp7Im1lZGljYWxfZXh0ZXJuYWxfZGlzY2xvc3VyZSI6dHJ1ZX0sIm1hdGNoZWRfcnVsZV9pZCI6Im1lZGljYWwtZXh0ZXJuYWwiLCJwcm9maWxlIjoiYWxsb3dseS5iYXNpYy52MSIsInN0YXR1cyI6Im9rIiwidGFyZ2V0IjpudWxsfX0sInBvbGljeV9yZWYiOnsiZGVmaW5pdGlvbl9zaGEyNTYiOiJhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhIiwicG9saWN5X2lkIjoibWVkaWNhbC1kaXNjbG9zdXJlIiwicG9saWN5X3ZlcnNpb24iOjF9LCJwcm9qZWN0X2lkIjoicHJvamVjdF9maWN0aW9uYWwiLCJyZXF1ZXN0X3NoYTI1NiI6ImNjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2MiLCJyZXZpZXdlcl92ZXJzaW9uIjoiZml4dHVyZTpub3QtYS1saXZlLW1vZGVsIiwic2NoZW1hX3ZlcnNpb24iOiJhbGxvd2x5LmFzc2Vzc21lbnQudjEiLCJzb3VyY2UiOnsiY2FwdHVyZWRfYXQiOiIyMDI2LTEwLTE3VDEyOjAwOjAxLjAwMFoiLCJvYnNlcnZhdGlvbl9pZCI6Im9ic19maWN0aW9uYWwiLCJvYnNlcnZlZF9hdCI6IjIwMjYtMTAtMTdUMTI6MDA6MDAuMDAwWiIsInByb2plY3RfaWQiOiJwcm9qZWN0X2ZpY3Rpb25hbCIsInRyYWNlX2lkIjoidHJhY2VfZmljdGlvbmFsIn0sInNvdXJjZV9zaGEyNTYiOiJmYmZlM2NkNjc1NzZmYjEzOWE2YzE1MjAzMzhkMjE0MWE1NzA0NTcxODEyNjYzYzA4Y2EyNzFkM2Q5ZWZiZGRmIiwid29ya3NwYWNlX2lkIjoid3NfZmljdGlvbmFsIn0",
+        "signature": "r6c5LrJae8ltJKY9JcMTcEKhDdoGs0CWQevCJUpvVVT-VbZxAgMIrJQaG9TY9Zfq4jf-EScHkmBxo3xHnxyoAw"
+      },
+      "source_snapshot": {
+        "project_id": "project_fictional",
+        "trace_id": "trace_fictional",
+        "observation_id": "obs_fictional",
+        "observed_at": "2026-10-17T12:00:00.000Z",
+        "captured_at": "2026-10-17T12:00:01.000Z",
+        "content": {
+          "body": "🧪 Fictional candidate has a medical condition.",
+          "recipient": "recruiter@external.example"
+        }
+      },
+      "keys": {
+        "workspace_id": "ws_fictional",
+        "keys": [
+          {
+            "key_id": "fictional-assessment-key",
+            "alg": "Ed25519",
+            "public_key": "A6EHv_POEL4dcN0Y50vAmWfk1jCbpQ1fHdyGZBJVMbg",
+            "public_key_fingerprint": "sha256:56475aa75463474c0285df5dbf2bcab73da651358839e9b77481b2eab107708c",
+            "active_from": "2026-01-01T00:00:00.000Z",
+            "active_until": null
+          }
+        ]
+      },
+      "workspace_id": "ws_fictional",
+      "project_id": "project_fictional",
+      "fingerprints": [
+        "sha256:56475aa75463474c0285df5dbf2bcab73da651358839e9b77481b2eab107708c"
+      ]
+    },
+    {
+      "name": "status_mismatch",
+      "valid": false,
+      "signed_assessment": {
+        "protected": "eyJhbGciOiJFZERTQSIsImtpZCI6ImZpY3Rpb25hbC1hc3Nlc3NtZW50LWtleSIsInR5cCI6ImFsbG93bHktYXNzZXNzbWVudCtqd3MifQ",
+        "payload": "eyJhY3Rpb24iOiJlbWFpbC5zZW5kIiwiYWdlbnRfaWQiOiJyZWNydWl0aW5nX2FnZW50IiwiYXBwbGljYXRpb25fcmVwb3J0ZWRfZXhlY3V0aW9uIjoic2VudCIsImFzc2Vzc21lbnRfaWQiOiJhc21fZmljdGlvbmFsIiwiYXNzZXNzbWVudF9zdGF0dXMiOiJub192aW9sYXRpb25fZm91bmQiLCJjb250ZXh0Ijp7Im1lZGljYWxfZXh0ZXJuYWxfZGlzY2xvc3VyZSI6dHJ1ZX0sImVuZ2luZV92ZXJzaW9uIjoic2hhMjU2OmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmIiLCJmYWN0cyI6eyJjb250YWluc19tZWRpY2FsX2luZm9ybWF0aW9uIjp7ImNpdGF0aW9ucyI6W3siZW5kIjo0NiwiZmllbGQiOiJib2R5IiwicXVvdGUiOiLwn6eqIEZpY3Rpb25hbCBjYW5kaWRhdGUgaGFzIGEgbWVkaWNhbCBjb25kaXRpb24uIiwic3RhcnQiOjB9XSwidmFsdWUiOnRydWV9LCJleHRlcm5hbF9yZWNpcGllbnQiOnsiY2l0YXRpb25zIjpbeyJlbmQiOjI2LCJmaWVsZCI6InJlY2lwaWVudCIsInF1b3RlIjoicmVjcnVpdGVyQGV4dGVybmFsLmV4YW1wbGUiLCJzdGFydCI6MH1dLCJ2YWx1ZSI6dHJ1ZX19LCJpbnRlcnZlbnRpb24iOiJub25lIiwiaXNzdWVkX2F0IjoiMjAyNi0xMC0xN1QxMjowMDowMi4wMDBaIiwiam9iX2lkIjoiam9iX2ZpY3Rpb25hbCIsIm1hcHBpbmdfdmVyc2lvbiI6Im1lZGljYWwtZXh0ZXJuYWwtdjEiLCJtaXNzaW5nX2luZm9ybWF0aW9uIjpbXSwibW9kZSI6Im9ic2VydmUiLCJwb2xpY3lfZXZhbCI6eyJpbnB1dF9zaGEyNTYiOiJkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkIiwicmVzdWx0Ijp7ImRlY2lzaW9uIjoiZGVueSIsImV2YWx1YXRlZF9maWVsZHMiOnsibWVkaWNhbF9leHRlcm5hbF9kaXNjbG9zdXJlIjp0cnVlfSwibWF0Y2hlZF9ydWxlX2lkIjoibWVkaWNhbC1leHRlcm5hbCIsInByb2ZpbGUiOiJhbGxvd2x5LmJhc2ljLnYxIiwic3RhdHVzIjoib2siLCJ0YXJnZXQiOm51bGx9fSwicG9saWN5X3JlZiI6eyJkZWZpbml0aW9uX3NoYTI1NiI6ImFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWEiLCJwb2xpY3lfaWQiOiJtZWRpY2FsLWRpc2Nsb3N1cmUiLCJwb2xpY3lfdmVyc2lvbiI6MX0sInByb2plY3RfaWQiOiJwcm9qZWN0X2ZpY3Rpb25hbCIsInJlcXVlc3Rfc2hhMjU2IjoiY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjYyIsInJldmlld2VyX3ZlcnNpb24iOiJmaXh0dXJlOm5vdC1hLWxpdmUtbW9kZWwiLCJzY2hlbWFfdmVyc2lvbiI6ImFsbG93bHkuYXNzZXNzbWVudC52MSIsInNvdXJjZSI6eyJjYXB0dXJlZF9hdCI6IjIwMjYtMTAtMTdUMTI6MDA6MDEuMDAwWiIsIm9ic2VydmF0aW9uX2lkIjoib2JzX2ZpY3Rpb25hbCIsIm9ic2VydmVkX2F0IjoiMjAyNi0xMC0xN1QxMjowMDowMC4wMDBaIiwicHJvamVjdF9pZCI6InByb2plY3RfZmljdGlvbmFsIiwidHJhY2VfaWQiOiJ0cmFjZV9maWN0aW9uYWwifSwic291cmNlX3NoYTI1NiI6ImZiZmUzY2Q2NzU3NmZiMTM5YTZjMTUyMDMzOGQyMTQxYTU3MDQ1NzE4MTI2NjNjMDhjYTI3MWQzZDllZmJkZGYiLCJ3b3Jrc3BhY2VfaWQiOiJ3c19maWN0aW9uYWwifQ",
+        "signature": "9G2s40oP2twWXX4xCZafcxTOv2lZrO1SuZagNIgTyH2QYGsXFbYAFGd6KGxBHQE5TvLMqJWwYFz74Mo7Ur5xDQ"
+      },
+      "source_snapshot": {
+        "project_id": "project_fictional",
+        "trace_id": "trace_fictional",
+        "observation_id": "obs_fictional",
+        "observed_at": "2026-10-17T12:00:00.000Z",
+        "captured_at": "2026-10-17T12:00:01.000Z",
+        "content": {
+          "body": "🧪 Fictional candidate has a medical condition.",
+          "recipient": "recruiter@external.example"
+        }
+      },
+      "keys": {
+        "workspace_id": "ws_fictional",
+        "keys": [
+          {
+            "key_id": "fictional-assessment-key",
+            "alg": "Ed25519",
+            "public_key": "A6EHv_POEL4dcN0Y50vAmWfk1jCbpQ1fHdyGZBJVMbg",
+            "public_key_fingerprint": "sha256:56475aa75463474c0285df5dbf2bcab73da651358839e9b77481b2eab107708c",
+            "active_from": "2026-01-01T00:00:00.000Z",
+            "active_until": null
+          }
+        ]
+      },
+      "workspace_id": "ws_fictional",
+      "project_id": "project_fictional",
+      "fingerprints": [
+        "sha256:56475aa75463474c0285df5dbf2bcab73da651358839e9b77481b2eab107708c"
+      ]
+    },
+    {
+      "name": "execution_authority",
+      "valid": false,
+      "signed_assessment": {
+        "protected": "eyJhbGciOiJFZERTQSIsImtpZCI6ImZpY3Rpb25hbC1hc3Nlc3NtZW50LWtleSIsInR5cCI6ImFsbG93bHktYXNzZXNzbWVudCtqd3MifQ",
+        "payload": "eyJhY3Rpb24iOiJlbWFpbC5zZW5kIiwiYWdlbnRfaWQiOiJyZWNydWl0aW5nX2FnZW50IiwiYXBwbGljYXRpb25fcmVwb3J0ZWRfZXhlY3V0aW9uIjoic2VudCIsImFzc2Vzc21lbnRfaWQiOiJhc21fZmljdGlvbmFsIiwiYXNzZXNzbWVudF9zdGF0dXMiOiJ2aW9sYXRpb25fZGV0ZWN0ZWQiLCJjb250ZXh0Ijp7Im1lZGljYWxfZXh0ZXJuYWxfZGlzY2xvc3VyZSI6dHJ1ZX0sImVuZ2luZV92ZXJzaW9uIjoic2hhMjU2OmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmIiLCJmYWN0cyI6eyJjb250YWluc19tZWRpY2FsX2luZm9ybWF0aW9uIjp7ImNpdGF0aW9ucyI6W3siZW5kIjo0NiwiZmllbGQiOiJib2R5IiwicXVvdGUiOiLwn6eqIEZpY3Rpb25hbCBjYW5kaWRhdGUgaGFzIGEgbWVkaWNhbCBjb25kaXRpb24uIiwic3RhcnQiOjB9XSwidmFsdWUiOnRydWV9LCJleHRlcm5hbF9yZWNpcGllbnQiOnsiY2l0YXRpb25zIjpbeyJlbmQiOjI2LCJmaWVsZCI6InJlY2lwaWVudCIsInF1b3RlIjoicmVjcnVpdGVyQGV4dGVybmFsLmV4YW1wbGUiLCJzdGFydCI6MH1dLCJ2YWx1ZSI6dHJ1ZX19LCJpbnRlcnZlbnRpb24iOiJibG9ja2VkIiwiaXNzdWVkX2F0IjoiMjAyNi0xMC0xN1QxMjowMDowMi4wMDBaIiwiam9iX2lkIjoiam9iX2ZpY3Rpb25hbCIsIm1hcHBpbmdfdmVyc2lvbiI6Im1lZGljYWwtZXh0ZXJuYWwtdjEiLCJtaXNzaW5nX2luZm9ybWF0aW9uIjpbXSwibW9kZSI6Im9ic2VydmUiLCJwb2xpY3lfZXZhbCI6eyJpbnB1dF9zaGEyNTYiOiJkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkIiwicmVzdWx0Ijp7ImRlY2lzaW9uIjoiZGVueSIsImV2YWx1YXRlZF9maWVsZHMiOnsibWVkaWNhbF9leHRlcm5hbF9kaXNjbG9zdXJlIjp0cnVlfSwibWF0Y2hlZF9ydWxlX2lkIjoibWVkaWNhbC1leHRlcm5hbCIsInByb2ZpbGUiOiJhbGxvd2x5LmJhc2ljLnYxIiwic3RhdHVzIjoib2siLCJ0YXJnZXQiOm51bGx9fSwicG9saWN5X3JlZiI6eyJkZWZpbml0aW9uX3NoYTI1NiI6ImFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWEiLCJwb2xpY3lfaWQiOiJtZWRpY2FsLWRpc2Nsb3N1cmUiLCJwb2xpY3lfdmVyc2lvbiI6MX0sInByb2plY3RfaWQiOiJwcm9qZWN0X2ZpY3Rpb25hbCIsInJlcXVlc3Rfc2hhMjU2IjoiY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjYyIsInJldmlld2VyX3ZlcnNpb24iOiJmaXh0dXJlOm5vdC1hLWxpdmUtbW9kZWwiLCJzY2hlbWFfdmVyc2lvbiI6ImFsbG93bHkuYXNzZXNzbWVudC52MSIsInNvdXJjZSI6eyJjYXB0dXJlZF9hdCI6IjIwMjYtMTAtMTdUMTI6MDA6MDEuMDAwWiIsIm9ic2VydmF0aW9uX2lkIjoib2JzX2ZpY3Rpb25hbCIsIm9ic2VydmVkX2F0IjoiMjAyNi0xMC0xN1QxMjowMDowMC4wMDBaIiwicHJvamVjdF9pZCI6InByb2plY3RfZmljdGlvbmFsIiwidHJhY2VfaWQiOiJ0cmFjZV9maWN0aW9uYWwifSwic291cmNlX3NoYTI1NiI6ImZiZmUzY2Q2NzU3NmZiMTM5YTZjMTUyMDMzOGQyMTQxYTU3MDQ1NzE4MTI2NjNjMDhjYTI3MWQzZDllZmJkZGYiLCJ3b3Jrc3BhY2VfaWQiOiJ3c19maWN0aW9uYWwifQ",
+        "signature": "hIMmci-nuwZedelOln9r_WQzDKbC1HopOZ6zL2sD_ronqPffmwGtvLJa3ToXmA-zd8mi6t5cp4XJOFk6EoTTCw"
+      },
+      "source_snapshot": {
+        "project_id": "project_fictional",
+        "trace_id": "trace_fictional",
+        "observation_id": "obs_fictional",
+        "observed_at": "2026-10-17T12:00:00.000Z",
+        "captured_at": "2026-10-17T12:00:01.000Z",
+        "content": {
+          "body": "🧪 Fictional candidate has a medical condition.",
+          "recipient": "recruiter@external.example"
+        }
+      },
+      "keys": {
+        "workspace_id": "ws_fictional",
+        "keys": [
+          {
+            "key_id": "fictional-assessment-key",
+            "alg": "Ed25519",
+            "public_key": "A6EHv_POEL4dcN0Y50vAmWfk1jCbpQ1fHdyGZBJVMbg",
+            "public_key_fingerprint": "sha256:56475aa75463474c0285df5dbf2bcab73da651358839e9b77481b2eab107708c",
+            "active_from": "2026-01-01T00:00:00.000Z",
+            "active_until": null
+          }
+        ]
+      },
+      "workspace_id": "ws_fictional",
+      "project_id": "project_fictional",
+      "fingerprints": [
+        "sha256:56475aa75463474c0285df5dbf2bcab73da651358839e9b77481b2eab107708c"
+      ]
+    },
+    {
+      "name": "unknown_mapping",
+      "valid": false,
+      "signed_assessment": {
+        "protected": "eyJhbGciOiJFZERTQSIsImtpZCI6ImZpY3Rpb25hbC1hc3Nlc3NtZW50LWtleSIsInR5cCI6ImFsbG93bHktYXNzZXNzbWVudCtqd3MifQ",
+        "payload": "eyJhY3Rpb24iOiJlbWFpbC5zZW5kIiwiYWdlbnRfaWQiOiJyZWNydWl0aW5nX2FnZW50IiwiYXBwbGljYXRpb25fcmVwb3J0ZWRfZXhlY3V0aW9uIjoic2VudCIsImFzc2Vzc21lbnRfaWQiOiJhc21fZmljdGlvbmFsIiwiYXNzZXNzbWVudF9zdGF0dXMiOiJ2aW9sYXRpb25fZGV0ZWN0ZWQiLCJjb250ZXh0Ijp7Im1lZGljYWxfZXh0ZXJuYWxfZGlzY2xvc3VyZSI6dHJ1ZX0sImVuZ2luZV92ZXJzaW9uIjoic2hhMjU2OmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmIiLCJmYWN0cyI6eyJjb250YWluc19tZWRpY2FsX2luZm9ybWF0aW9uIjp7ImNpdGF0aW9ucyI6W3siZW5kIjo0NiwiZmllbGQiOiJib2R5IiwicXVvdGUiOiLwn6eqIEZpY3Rpb25hbCBjYW5kaWRhdGUgaGFzIGEgbWVkaWNhbCBjb25kaXRpb24uIiwic3RhcnQiOjB9XSwidmFsdWUiOnRydWV9LCJleHRlcm5hbF9yZWNpcGllbnQiOnsiY2l0YXRpb25zIjpbeyJlbmQiOjI2LCJmaWVsZCI6InJlY2lwaWVudCIsInF1b3RlIjoicmVjcnVpdGVyQGV4dGVybmFsLmV4YW1wbGUiLCJzdGFydCI6MH1dLCJ2YWx1ZSI6dHJ1ZX19LCJpbnRlcnZlbnRpb24iOiJub25lIiwiaXNzdWVkX2F0IjoiMjAyNi0xMC0xN1QxMjowMDowMi4wMDBaIiwiam9iX2lkIjoiam9iX2ZpY3Rpb25hbCIsIm1hcHBpbmdfdmVyc2lvbiI6InVucmV2aWV3ZWQiLCJtaXNzaW5nX2luZm9ybWF0aW9uIjpbXSwibW9kZSI6Im9ic2VydmUiLCJwb2xpY3lfZXZhbCI6eyJpbnB1dF9zaGEyNTYiOiJkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkIiwicmVzdWx0Ijp7ImRlY2lzaW9uIjoiZGVueSIsImV2YWx1YXRlZF9maWVsZHMiOnsibWVkaWNhbF9leHRlcm5hbF9kaXNjbG9zdXJlIjp0cnVlfSwibWF0Y2hlZF9ydWxlX2lkIjoibWVkaWNhbC1leHRlcm5hbCIsInByb2ZpbGUiOiJhbGxvd2x5LmJhc2ljLnYxIiwic3RhdHVzIjoib2siLCJ0YXJnZXQiOm51bGx9fSwicG9saWN5X3JlZiI6eyJkZWZpbml0aW9uX3NoYTI1NiI6ImFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWEiLCJwb2xpY3lfaWQiOiJtZWRpY2FsLWRpc2Nsb3N1cmUiLCJwb2xpY3lfdmVyc2lvbiI6MX0sInByb2plY3RfaWQiOiJwcm9qZWN0X2ZpY3Rpb25hbCIsInJlcXVlc3Rfc2hhMjU2IjoiY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjYyIsInJldmlld2VyX3ZlcnNpb24iOiJmaXh0dXJlOm5vdC1hLWxpdmUtbW9kZWwiLCJzY2hlbWFfdmVyc2lvbiI6ImFsbG93bHkuYXNzZXNzbWVudC52MSIsInNvdXJjZSI6eyJjYXB0dXJlZF9hdCI6IjIwMjYtMTAtMTdUMTI6MDA6MDEuMDAwWiIsIm9ic2VydmF0aW9uX2lkIjoib2JzX2ZpY3Rpb25hbCIsIm9ic2VydmVkX2F0IjoiMjAyNi0xMC0xN1QxMjowMDowMC4wMDBaIiwicHJvamVjdF9pZCI6InByb2plY3RfZmljdGlvbmFsIiwidHJhY2VfaWQiOiJ0cmFjZV9maWN0aW9uYWwifSwic291cmNlX3NoYTI1NiI6ImZiZmUzY2Q2NzU3NmZiMTM5YTZjMTUyMDMzOGQyMTQxYTU3MDQ1NzE4MTI2NjNjMDhjYTI3MWQzZDllZmJkZGYiLCJ3b3Jrc3BhY2VfaWQiOiJ3c19maWN0aW9uYWwifQ",
+        "signature": "5p-Lc8V437gOLriTOvP6RQJgkd542_FJUO6JBGN0kbTcd4evFSxSKqtoljlIan0jyYMbs7FftDr8FiBJF_d-Ag"
+      },
+      "source_snapshot": {
+        "project_id": "project_fictional",
+        "trace_id": "trace_fictional",
+        "observation_id": "obs_fictional",
+        "observed_at": "2026-10-17T12:00:00.000Z",
+        "captured_at": "2026-10-17T12:00:01.000Z",
+        "content": {
+          "body": "🧪 Fictional candidate has a medical condition.",
+          "recipient": "recruiter@external.example"
+        }
+      },
+      "keys": {
+        "workspace_id": "ws_fictional",
+        "keys": [
+          {
+            "key_id": "fictional-assessment-key",
+            "alg": "Ed25519",
+            "public_key": "A6EHv_POEL4dcN0Y50vAmWfk1jCbpQ1fHdyGZBJVMbg",
+            "public_key_fingerprint": "sha256:56475aa75463474c0285df5dbf2bcab73da651358839e9b77481b2eab107708c",
+            "active_from": "2026-01-01T00:00:00.000Z",
+            "active_until": null
+          }
+        ]
+      },
+      "workspace_id": "ws_fictional",
+      "project_id": "project_fictional",
+      "fingerprints": [
+        "sha256:56475aa75463474c0285df5dbf2bcab73da651358839e9b77481b2eab107708c"
+      ]
+    },
+    {
+      "name": "future_issue",
+      "valid": false,
+      "signed_assessment": {
+        "protected": "eyJhbGciOiJFZERTQSIsImtpZCI6ImZpY3Rpb25hbC1hc3Nlc3NtZW50LWtleSIsInR5cCI6ImFsbG93bHktYXNzZXNzbWVudCtqd3MifQ",
+        "payload": "eyJhY3Rpb24iOiJlbWFpbC5zZW5kIiwiYWdlbnRfaWQiOiJyZWNydWl0aW5nX2FnZW50IiwiYXBwbGljYXRpb25fcmVwb3J0ZWRfZXhlY3V0aW9uIjoic2VudCIsImFzc2Vzc21lbnRfaWQiOiJhc21fZmljdGlvbmFsIiwiYXNzZXNzbWVudF9zdGF0dXMiOiJ2aW9sYXRpb25fZGV0ZWN0ZWQiLCJjb250ZXh0Ijp7Im1lZGljYWxfZXh0ZXJuYWxfZGlzY2xvc3VyZSI6dHJ1ZX0sImVuZ2luZV92ZXJzaW9uIjoic2hhMjU2OmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmIiLCJmYWN0cyI6eyJjb250YWluc19tZWRpY2FsX2luZm9ybWF0aW9uIjp7ImNpdGF0aW9ucyI6W3siZW5kIjo0NiwiZmllbGQiOiJib2R5IiwicXVvdGUiOiLwn6eqIEZpY3Rpb25hbCBjYW5kaWRhdGUgaGFzIGEgbWVkaWNhbCBjb25kaXRpb24uIiwic3RhcnQiOjB9XSwidmFsdWUiOnRydWV9LCJleHRlcm5hbF9yZWNpcGllbnQiOnsiY2l0YXRpb25zIjpbeyJlbmQiOjI2LCJmaWVsZCI6InJlY2lwaWVudCIsInF1b3RlIjoicmVjcnVpdGVyQGV4dGVybmFsLmV4YW1wbGUiLCJzdGFydCI6MH1dLCJ2YWx1ZSI6dHJ1ZX19LCJpbnRlcnZlbnRpb24iOiJub25lIiwiaXNzdWVkX2F0IjoiMjk5OS0wMS0wMVQwMDowMDowMC4wMDBaIiwiam9iX2lkIjoiam9iX2ZpY3Rpb25hbCIsIm1hcHBpbmdfdmVyc2lvbiI6Im1lZGljYWwtZXh0ZXJuYWwtdjEiLCJtaXNzaW5nX2luZm9ybWF0aW9uIjpbXSwibW9kZSI6Im9ic2VydmUiLCJwb2xpY3lfZXZhbCI6eyJpbnB1dF9zaGEyNTYiOiJkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkIiwicmVzdWx0Ijp7ImRlY2lzaW9uIjoiZGVueSIsImV2YWx1YXRlZF9maWVsZHMiOnsibWVkaWNhbF9leHRlcm5hbF9kaXNjbG9zdXJlIjp0cnVlfSwibWF0Y2hlZF9ydWxlX2lkIjoibWVkaWNhbC1leHRlcm5hbCIsInByb2ZpbGUiOiJhbGxvd2x5LmJhc2ljLnYxIiwic3RhdHVzIjoib2siLCJ0YXJnZXQiOm51bGx9fSwicG9saWN5X3JlZiI6eyJkZWZpbml0aW9uX3NoYTI1NiI6ImFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWEiLCJwb2xpY3lfaWQiOiJtZWRpY2FsLWRpc2Nsb3N1cmUiLCJwb2xpY3lfdmVyc2lvbiI6MX0sInByb2plY3RfaWQiOiJwcm9qZWN0X2ZpY3Rpb25hbCIsInJlcXVlc3Rfc2hhMjU2IjoiY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjYyIsInJldmlld2VyX3ZlcnNpb24iOiJmaXh0dXJlOm5vdC1hLWxpdmUtbW9kZWwiLCJzY2hlbWFfdmVyc2lvbiI6ImFsbG93bHkuYXNzZXNzbWVudC52MSIsInNvdXJjZSI6eyJjYXB0dXJlZF9hdCI6IjIwMjYtMTAtMTdUMTI6MDA6MDEuMDAwWiIsIm9ic2VydmF0aW9uX2lkIjoib2JzX2ZpY3Rpb25hbCIsIm9ic2VydmVkX2F0IjoiMjAyNi0xMC0xN1QxMjowMDowMC4wMDBaIiwicHJvamVjdF9pZCI6InByb2plY3RfZmljdGlvbmFsIiwidHJhY2VfaWQiOiJ0cmFjZV9maWN0aW9uYWwifSwic291cmNlX3NoYTI1NiI6ImZiZmUzY2Q2NzU3NmZiMTM5YTZjMTUyMDMzOGQyMTQxYTU3MDQ1NzE4MTI2NjNjMDhjYTI3MWQzZDllZmJkZGYiLCJ3b3Jrc3BhY2VfaWQiOiJ3c19maWN0aW9uYWwifQ",
+        "signature": "GkwRvemq-ySAdLWPyCK4UUZDasdiD9z249n0G0jfusmquQRS7VVcfUTQE4hS_iMnQi86j8DJ2l0xvVdpxg3XDg"
+      },
+      "source_snapshot": {
+        "project_id": "project_fictional",
+        "trace_id": "trace_fictional",
+        "observation_id": "obs_fictional",
+        "observed_at": "2026-10-17T12:00:00.000Z",
+        "captured_at": "2026-10-17T12:00:01.000Z",
+        "content": {
+          "body": "🧪 Fictional candidate has a medical condition.",
+          "recipient": "recruiter@external.example"
+        }
+      },
+      "keys": {
+        "workspace_id": "ws_fictional",
+        "keys": [
+          {
+            "key_id": "fictional-assessment-key",
+            "alg": "Ed25519",
+            "public_key": "A6EHv_POEL4dcN0Y50vAmWfk1jCbpQ1fHdyGZBJVMbg",
+            "public_key_fingerprint": "sha256:56475aa75463474c0285df5dbf2bcab73da651358839e9b77481b2eab107708c",
+            "active_from": "2026-01-01T00:00:00.000Z",
+            "active_until": null
+          }
+        ]
+      },
+      "workspace_id": "ws_fictional",
+      "project_id": "project_fictional",
+      "fingerprints": [
+        "sha256:56475aa75463474c0285df5dbf2bcab73da651358839e9b77481b2eab107708c"
+      ]
+    },
+    {
+      "name": "invalid_calendar",
+      "valid": false,
+      "signed_assessment": {
+        "protected": "eyJhbGciOiJFZERTQSIsImtpZCI6ImZpY3Rpb25hbC1hc3Nlc3NtZW50LWtleSIsInR5cCI6ImFsbG93bHktYXNzZXNzbWVudCtqd3MifQ",
+        "payload": "eyJhY3Rpb24iOiJlbWFpbC5zZW5kIiwiYWdlbnRfaWQiOiJyZWNydWl0aW5nX2FnZW50IiwiYXBwbGljYXRpb25fcmVwb3J0ZWRfZXhlY3V0aW9uIjoic2VudCIsImFzc2Vzc21lbnRfaWQiOiJhc21fZmljdGlvbmFsIiwiYXNzZXNzbWVudF9zdGF0dXMiOiJ2aW9sYXRpb25fZGV0ZWN0ZWQiLCJjb250ZXh0Ijp7Im1lZGljYWxfZXh0ZXJuYWxfZGlzY2xvc3VyZSI6dHJ1ZX0sImVuZ2luZV92ZXJzaW9uIjoic2hhMjU2OmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmIiLCJmYWN0cyI6eyJjb250YWluc19tZWRpY2FsX2luZm9ybWF0aW9uIjp7ImNpdGF0aW9ucyI6W3siZW5kIjo0NiwiZmllbGQiOiJib2R5IiwicXVvdGUiOiLwn6eqIEZpY3Rpb25hbCBjYW5kaWRhdGUgaGFzIGEgbWVkaWNhbCBjb25kaXRpb24uIiwic3RhcnQiOjB9XSwidmFsdWUiOnRydWV9LCJleHRlcm5hbF9yZWNpcGllbnQiOnsiY2l0YXRpb25zIjpbeyJlbmQiOjI2LCJmaWVsZCI6InJlY2lwaWVudCIsInF1b3RlIjoicmVjcnVpdGVyQGV4dGVybmFsLmV4YW1wbGUiLCJzdGFydCI6MH1dLCJ2YWx1ZSI6dHJ1ZX19LCJpbnRlcnZlbnRpb24iOiJub25lIiwiaXNzdWVkX2F0IjoiMjAyNi0wMi0zMFQxMjowMDowMC4wMDBaIiwiam9iX2lkIjoiam9iX2ZpY3Rpb25hbCIsIm1hcHBpbmdfdmVyc2lvbiI6Im1lZGljYWwtZXh0ZXJuYWwtdjEiLCJtaXNzaW5nX2luZm9ybWF0aW9uIjpbXSwibW9kZSI6Im9ic2VydmUiLCJwb2xpY3lfZXZhbCI6eyJpbnB1dF9zaGEyNTYiOiJkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkIiwicmVzdWx0Ijp7ImRlY2lzaW9uIjoiZGVueSIsImV2YWx1YXRlZF9maWVsZHMiOnsibWVkaWNhbF9leHRlcm5hbF9kaXNjbG9zdXJlIjp0cnVlfSwibWF0Y2hlZF9ydWxlX2lkIjoibWVkaWNhbC1leHRlcm5hbCIsInByb2ZpbGUiOiJhbGxvd2x5LmJhc2ljLnYxIiwic3RhdHVzIjoib2siLCJ0YXJnZXQiOm51bGx9fSwicG9saWN5X3JlZiI6eyJkZWZpbml0aW9uX3NoYTI1NiI6ImFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWEiLCJwb2xpY3lfaWQiOiJtZWRpY2FsLWRpc2Nsb3N1cmUiLCJwb2xpY3lfdmVyc2lvbiI6MX0sInByb2plY3RfaWQiOiJwcm9qZWN0X2ZpY3Rpb25hbCIsInJlcXVlc3Rfc2hhMjU2IjoiY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjYyIsInJldmlld2VyX3ZlcnNpb24iOiJmaXh0dXJlOm5vdC1hLWxpdmUtbW9kZWwiLCJzY2hlbWFfdmVyc2lvbiI6ImFsbG93bHkuYXNzZXNzbWVudC52MSIsInNvdXJjZSI6eyJjYXB0dXJlZF9hdCI6IjIwMjYtMTAtMTdUMTI6MDA6MDEuMDAwWiIsIm9ic2VydmF0aW9uX2lkIjoib2JzX2ZpY3Rpb25hbCIsIm9ic2VydmVkX2F0IjoiMjAyNi0xMC0xN1QxMjowMDowMC4wMDBaIiwicHJvamVjdF9pZCI6InByb2plY3RfZmljdGlvbmFsIiwidHJhY2VfaWQiOiJ0cmFjZV9maWN0aW9uYWwifSwic291cmNlX3NoYTI1NiI6ImZiZmUzY2Q2NzU3NmZiMTM5YTZjMTUyMDMzOGQyMTQxYTU3MDQ1NzE4MTI2NjNjMDhjYTI3MWQzZDllZmJkZGYiLCJ3b3Jrc3BhY2VfaWQiOiJ3c19maWN0aW9uYWwifQ",
+        "signature": "YuYhLLBvBBVxOHajsR2-YhmjfRKNQQBF__dJV4u_Q6hNW8ADIqS1AIpRxMKsdQYgEPZJE4m05_2sMWM-owFvBg"
+      },
+      "source_snapshot": {
+        "project_id": "project_fictional",
+        "trace_id": "trace_fictional",
+        "observation_id": "obs_fictional",
+        "observed_at": "2026-10-17T12:00:00.000Z",
+        "captured_at": "2026-10-17T12:00:01.000Z",
+        "content": {
+          "body": "🧪 Fictional candidate has a medical condition.",
+          "recipient": "recruiter@external.example"
+        }
+      },
+      "keys": {
+        "workspace_id": "ws_fictional",
+        "keys": [
+          {
+            "key_id": "fictional-assessment-key",
+            "alg": "Ed25519",
+            "public_key": "A6EHv_POEL4dcN0Y50vAmWfk1jCbpQ1fHdyGZBJVMbg",
+            "public_key_fingerprint": "sha256:56475aa75463474c0285df5dbf2bcab73da651358839e9b77481b2eab107708c",
+            "active_from": "2026-01-01T00:00:00.000Z",
+            "active_until": null
+          }
+        ]
+      },
+      "workspace_id": "ws_fictional",
+      "project_id": "project_fictional",
+      "fingerprints": [
+        "sha256:56475aa75463474c0285df5dbf2bcab73da651358839e9b77481b2eab107708c"
+      ]
+    },
+    {
+      "name": "confirmation_is_not_observe",
+      "valid": false,
+      "signed_assessment": {
+        "protected": "eyJhbGciOiJFZERTQSIsImtpZCI6ImZpY3Rpb25hbC1hc3Nlc3NtZW50LWtleSIsInR5cCI6ImFsbG93bHktYXNzZXNzbWVudCtqd3MifQ",
+        "payload": "eyJhY3Rpb24iOiJlbWFpbC5zZW5kIiwiYWdlbnRfaWQiOiJyZWNydWl0aW5nX2FnZW50IiwiYXBwbGljYXRpb25fcmVwb3J0ZWRfZXhlY3V0aW9uIjoic2VudCIsImFzc2Vzc21lbnRfaWQiOiJhc21fZmljdGlvbmFsIiwiYXNzZXNzbWVudF9zdGF0dXMiOiJ2aW9sYXRpb25fZGV0ZWN0ZWQiLCJjb250ZXh0Ijp7Im1lZGljYWxfZXh0ZXJuYWxfZGlzY2xvc3VyZSI6dHJ1ZX0sImVuZ2luZV92ZXJzaW9uIjoic2hhMjU2OmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmIiLCJmYWN0cyI6eyJjb250YWluc19tZWRpY2FsX2luZm9ybWF0aW9uIjp7ImNpdGF0aW9ucyI6W3siZW5kIjo0NiwiZmllbGQiOiJib2R5IiwicXVvdGUiOiLwn6eqIEZpY3Rpb25hbCBjYW5kaWRhdGUgaGFzIGEgbWVkaWNhbCBjb25kaXRpb24uIiwic3RhcnQiOjB9XSwidmFsdWUiOnRydWV9LCJleHRlcm5hbF9yZWNpcGllbnQiOnsiY2l0YXRpb25zIjpbeyJlbmQiOjI2LCJmaWVsZCI6InJlY2lwaWVudCIsInF1b3RlIjoicmVjcnVpdGVyQGV4dGVybmFsLmV4YW1wbGUiLCJzdGFydCI6MH1dLCJ2YWx1ZSI6dHJ1ZX19LCJpbnRlcnZlbnRpb24iOiJub25lIiwiaXNzdWVkX2F0IjoiMjAyNi0xMC0xN1QxMjowMDowMi4wMDBaIiwiam9iX2lkIjoiam9iX2ZpY3Rpb25hbCIsIm1hcHBpbmdfdmVyc2lvbiI6Im1lZGljYWwtZXh0ZXJuYWwtdjEiLCJtaXNzaW5nX2luZm9ybWF0aW9uIjpbXSwibW9kZSI6Im9ic2VydmUiLCJwb2xpY3lfZXZhbCI6eyJpbnB1dF9zaGEyNTYiOiJkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkIiwicmVzdWx0Ijp7ImRlY2lzaW9uIjoiY29uZmlybSIsImV2YWx1YXRlZF9maWVsZHMiOnsibWVkaWNhbF9leHRlcm5hbF9kaXNjbG9zdXJlIjp0cnVlfSwibWF0Y2hlZF9ydWxlX2lkIjoibWVkaWNhbC1leHRlcm5hbCIsInByb2ZpbGUiOiJhbGxvd2x5LmJhc2ljLnYxIiwic3RhdHVzIjoib2siLCJ0YXJnZXQiOm51bGx9fSwicG9saWN5X3JlZiI6eyJkZWZpbml0aW9uX3NoYTI1NiI6ImFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWEiLCJwb2xpY3lfaWQiOiJtZWRpY2FsLWRpc2Nsb3N1cmUiLCJwb2xpY3lfdmVyc2lvbiI6MX0sInByb2plY3RfaWQiOiJwcm9qZWN0X2ZpY3Rpb25hbCIsInJlcXVlc3Rfc2hhMjU2IjoiY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjYyIsInJldmlld2VyX3ZlcnNpb24iOiJmaXh0dXJlOm5vdC1hLWxpdmUtbW9kZWwiLCJzY2hlbWFfdmVyc2lvbiI6ImFsbG93bHkuYXNzZXNzbWVudC52MSIsInNvdXJjZSI6eyJjYXB0dXJlZF9hdCI6IjIwMjYtMTAtMTdUMTI6MDA6MDEuMDAwWiIsIm9ic2VydmF0aW9uX2lkIjoib2JzX2ZpY3Rpb25hbCIsIm9ic2VydmVkX2F0IjoiMjAyNi0xMC0xN1QxMjowMDowMC4wMDBaIiwicHJvamVjdF9pZCI6InByb2plY3RfZmljdGlvbmFsIiwidHJhY2VfaWQiOiJ0cmFjZV9maWN0aW9uYWwifSwic291cmNlX3NoYTI1NiI6ImZiZmUzY2Q2NzU3NmZiMTM5YTZjMTUyMDMzOGQyMTQxYTU3MDQ1NzE4MTI2NjNjMDhjYTI3MWQzZDllZmJkZGYiLCJ3b3Jrc3BhY2VfaWQiOiJ3c19maWN0aW9uYWwifQ",
+        "signature": "MjIbQohAN1ijzg-Bx_s6QFGHNy8TPvVcg61zcMU7M0CdZACpgzXna80IwQmFPXpjlZVGFuPyJ0CmAhK2PuarDw"
+      },
+      "source_snapshot": {
+        "project_id": "project_fictional",
+        "trace_id": "trace_fictional",
+        "observation_id": "obs_fictional",
+        "observed_at": "2026-10-17T12:00:00.000Z",
+        "captured_at": "2026-10-17T12:00:01.000Z",
+        "content": {
+          "body": "🧪 Fictional candidate has a medical condition.",
+          "recipient": "recruiter@external.example"
+        }
+      },
+      "keys": {
+        "workspace_id": "ws_fictional",
+        "keys": [
+          {
+            "key_id": "fictional-assessment-key",
+            "alg": "Ed25519",
+            "public_key": "A6EHv_POEL4dcN0Y50vAmWfk1jCbpQ1fHdyGZBJVMbg",
+            "public_key_fingerprint": "sha256:56475aa75463474c0285df5dbf2bcab73da651358839e9b77481b2eab107708c",
+            "active_from": "2026-01-01T00:00:00.000Z",
+            "active_until": null
+          }
+        ]
+      },
+      "workspace_id": "ws_fictional",
+      "project_id": "project_fictional",
+      "fingerprints": [
+        "sha256:56475aa75463474c0285df5dbf2bcab73da651358839e9b77481b2eab107708c"
+      ]
+    },
+    {
+      "name": "duplicate_json_field",
+      "valid": false,
+      "signed_assessment": {
+        "protected": "eyJhbGciOiJFZERTQSIsImtpZCI6ImZpY3Rpb25hbC1hc3Nlc3NtZW50LWtleSIsInR5cCI6ImFsbG93bHktYXNzZXNzbWVudCtqd3MifQ",
+        "payload": "eyJhY3Rpb24iOiJlbWFpbC5zZW5kIiwiYWdlbnRfaWQiOiJyZWNydWl0aW5nX2FnZW50IiwiYXBwbGljYXRpb25fcmVwb3J0ZWRfZXhlY3V0aW9uIjoic2VudCIsImFzc2Vzc21lbnRfaWQiOiJhc21fZmljdGlvbmFsIiwiYXNzZXNzbWVudF9zdGF0dXMiOiJ2aW9sYXRpb25fZGV0ZWN0ZWQiLCJjb250ZXh0Ijp7Im1lZGljYWxfZXh0ZXJuYWxfZGlzY2xvc3VyZSI6dHJ1ZX0sImVuZ2luZV92ZXJzaW9uIjoic2hhMjU2OmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmIiLCJmYWN0cyI6eyJjb250YWluc19tZWRpY2FsX2luZm9ybWF0aW9uIjp7ImNpdGF0aW9ucyI6W3siZW5kIjo0NiwiZmllbGQiOiJib2R5IiwicXVvdGUiOiLwn6eqIEZpY3Rpb25hbCBjYW5kaWRhdGUgaGFzIGEgbWVkaWNhbCBjb25kaXRpb24uIiwic3RhcnQiOjB9XSwidmFsdWUiOnRydWV9LCJleHRlcm5hbF9yZWNpcGllbnQiOnsiY2l0YXRpb25zIjpbeyJlbmQiOjI2LCJmaWVsZCI6InJlY2lwaWVudCIsInF1b3RlIjoicmVjcnVpdGVyQGV4dGVybmFsLmV4YW1wbGUiLCJzdGFydCI6MH1dLCJ2YWx1ZSI6dHJ1ZX19LCJpbnRlcnZlbnRpb24iOiJub25lIiwiaXNzdWVkX2F0IjoiMjAyNi0xMC0xN1QxMjowMDowMi4wMDBaIiwiam9iX2lkIjoiam9iX2ZpY3Rpb25hbCIsIm1hcHBpbmdfdmVyc2lvbiI6Im1lZGljYWwtZXh0ZXJuYWwtdjEiLCJtaXNzaW5nX2luZm9ybWF0aW9uIjpbXSwibW9kZSI6Im9ic2VydmUiLCJtb2RlIjoib2JzZXJ2ZSIsInBvbGljeV9ldmFsIjp7ImlucHV0X3NoYTI1NiI6ImRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGQiLCJyZXN1bHQiOnsiZGVjaXNpb24iOiJkZW55IiwiZXZhbHVhdGVkX2ZpZWxkcyI6eyJtZWRpY2FsX2V4dGVybmFsX2Rpc2Nsb3N1cmUiOnRydWV9LCJtYXRjaGVkX3J1bGVfaWQiOiJtZWRpY2FsLWV4dGVybmFsIiwicHJvZmlsZSI6ImFsbG93bHkuYmFzaWMudjEiLCJzdGF0dXMiOiJvayIsInRhcmdldCI6bnVsbH19LCJwb2xpY3lfcmVmIjp7ImRlZmluaXRpb25fc2hhMjU2IjoiYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYSIsInBvbGljeV9pZCI6Im1lZGljYWwtZGlzY2xvc3VyZSIsInBvbGljeV92ZXJzaW9uIjoxfSwicHJvamVjdF9pZCI6InByb2plY3RfZmljdGlvbmFsIiwicmVxdWVzdF9zaGEyNTYiOiJjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjIiwicmV2aWV3ZXJfdmVyc2lvbiI6ImZpeHR1cmU6bm90LWEtbGl2ZS1tb2RlbCIsInNjaGVtYV92ZXJzaW9uIjoiYWxsb3dseS5hc3Nlc3NtZW50LnYxIiwic291cmNlIjp7ImNhcHR1cmVkX2F0IjoiMjAyNi0xMC0xN1QxMjowMDowMS4wMDBaIiwib2JzZXJ2YXRpb25faWQiOiJvYnNfZmljdGlvbmFsIiwib2JzZXJ2ZWRfYXQiOiIyMDI2LTEwLTE3VDEyOjAwOjAwLjAwMFoiLCJwcm9qZWN0X2lkIjoicHJvamVjdF9maWN0aW9uYWwiLCJ0cmFjZV9pZCI6InRyYWNlX2ZpY3Rpb25hbCJ9LCJzb3VyY2Vfc2hhMjU2IjoiZmJmZTNjZDY3NTc2ZmIxMzlhNmMxNTIwMzM4ZDIxNDFhNTcwNDU3MTgxMjY2M2MwOGNhMjcxZDNkOWVmYmRkZiIsIndvcmtzcGFjZV9pZCI6IndzX2ZpY3Rpb25hbCJ9",
+        "signature": "EuIzOoxBQD7_0vlNMNHpVK8H4mVZf1whqlgLbjWp_sNFrOYCS8fUohv_CQLm43iqHMBLZSGJoB-w-3M58rAOCA"
+      },
+      "source_snapshot": {
+        "project_id": "project_fictional",
+        "trace_id": "trace_fictional",
+        "observation_id": "obs_fictional",
+        "observed_at": "2026-10-17T12:00:00.000Z",
+        "captured_at": "2026-10-17T12:00:01.000Z",
+        "content": {
+          "body": "🧪 Fictional candidate has a medical condition.",
+          "recipient": "recruiter@external.example"
+        }
+      },
+      "keys": {
+        "workspace_id": "ws_fictional",
+        "keys": [
+          {
+            "key_id": "fictional-assessment-key",
+            "alg": "Ed25519",
+            "public_key": "A6EHv_POEL4dcN0Y50vAmWfk1jCbpQ1fHdyGZBJVMbg",
+            "public_key_fingerprint": "sha256:56475aa75463474c0285df5dbf2bcab73da651358839e9b77481b2eab107708c",
+            "active_from": "2026-01-01T00:00:00.000Z",
+            "active_until": null
+          }
+        ]
+      },
+      "workspace_id": "ws_fictional",
+      "project_id": "project_fictional",
+      "fingerprints": [
+        "sha256:56475aa75463474c0285df5dbf2bcab73da651358839e9b77481b2eab107708c"
+      ]
+    },
+    {
+      "name": "noncanonical_header",
+      "valid": false,
+      "signed_assessment": {
+        "protected": "eyAiYWxnIjoiRWREU0EiLCJraWQiOiJmaWN0aW9uYWwtYXNzZXNzbWVudC1rZXkiLCJ0eXAiOiJhbGxvd2x5LWFzc2Vzc21lbnQrandzIn0",
+        "payload": "eyJhY3Rpb24iOiJlbWFpbC5zZW5kIiwiYWdlbnRfaWQiOiJyZWNydWl0aW5nX2FnZW50IiwiYXBwbGljYXRpb25fcmVwb3J0ZWRfZXhlY3V0aW9uIjoic2VudCIsImFzc2Vzc21lbnRfaWQiOiJhc21fZmljdGlvbmFsIiwiYXNzZXNzbWVudF9zdGF0dXMiOiJ2aW9sYXRpb25fZGV0ZWN0ZWQiLCJjb250ZXh0Ijp7Im1lZGljYWxfZXh0ZXJuYWxfZGlzY2xvc3VyZSI6dHJ1ZX0sImVuZ2luZV92ZXJzaW9uIjoic2hhMjU2OmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmIiLCJmYWN0cyI6eyJjb250YWluc19tZWRpY2FsX2luZm9ybWF0aW9uIjp7ImNpdGF0aW9ucyI6W3siZW5kIjo0NiwiZmllbGQiOiJib2R5IiwicXVvdGUiOiLwn6eqIEZpY3Rpb25hbCBjYW5kaWRhdGUgaGFzIGEgbWVkaWNhbCBjb25kaXRpb24uIiwic3RhcnQiOjB9XSwidmFsdWUiOnRydWV9LCJleHRlcm5hbF9yZWNpcGllbnQiOnsiY2l0YXRpb25zIjpbeyJlbmQiOjI2LCJmaWVsZCI6InJlY2lwaWVudCIsInF1b3RlIjoicmVjcnVpdGVyQGV4dGVybmFsLmV4YW1wbGUiLCJzdGFydCI6MH1dLCJ2YWx1ZSI6dHJ1ZX19LCJpbnRlcnZlbnRpb24iOiJub25lIiwiaXNzdWVkX2F0IjoiMjAyNi0xMC0xN1QxMjowMDowMi4wMDBaIiwiam9iX2lkIjoiam9iX2ZpY3Rpb25hbCIsIm1hcHBpbmdfdmVyc2lvbiI6Im1lZGljYWwtZXh0ZXJuYWwtdjEiLCJtaXNzaW5nX2luZm9ybWF0aW9uIjpbXSwibW9kZSI6Im9ic2VydmUiLCJwb2xpY3lfZXZhbCI6eyJpbnB1dF9zaGEyNTYiOiJkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkIiwicmVzdWx0Ijp7ImRlY2lzaW9uIjoiZGVueSIsImV2YWx1YXRlZF9maWVsZHMiOnsibWVkaWNhbF9leHRlcm5hbF9kaXNjbG9zdXJlIjp0cnVlfSwibWF0Y2hlZF9ydWxlX2lkIjoibWVkaWNhbC1leHRlcm5hbCIsInByb2ZpbGUiOiJhbGxvd2x5LmJhc2ljLnYxIiwic3RhdHVzIjoib2siLCJ0YXJnZXQiOm51bGx9fSwicG9saWN5X3JlZiI6eyJkZWZpbml0aW9uX3NoYTI1NiI6ImFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWEiLCJwb2xpY3lfaWQiOiJtZWRpY2FsLWRpc2Nsb3N1cmUiLCJwb2xpY3lfdmVyc2lvbiI6MX0sInByb2plY3RfaWQiOiJwcm9qZWN0X2ZpY3Rpb25hbCIsInJlcXVlc3Rfc2hhMjU2IjoiY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjYyIsInJldmlld2VyX3ZlcnNpb24iOiJmaXh0dXJlOm5vdC1hLWxpdmUtbW9kZWwiLCJzY2hlbWFfdmVyc2lvbiI6ImFsbG93bHkuYXNzZXNzbWVudC52MSIsInNvdXJjZSI6eyJjYXB0dXJlZF9hdCI6IjIwMjYtMTAtMTdUMTI6MDA6MDEuMDAwWiIsIm9ic2VydmF0aW9uX2lkIjoib2JzX2ZpY3Rpb25hbCIsIm9ic2VydmVkX2F0IjoiMjAyNi0xMC0xN1QxMjowMDowMC4wMDBaIiwicHJvamVjdF9pZCI6InByb2plY3RfZmljdGlvbmFsIiwidHJhY2VfaWQiOiJ0cmFjZV9maWN0aW9uYWwifSwic291cmNlX3NoYTI1NiI6ImZiZmUzY2Q2NzU3NmZiMTM5YTZjMTUyMDMzOGQyMTQxYTU3MDQ1NzE4MTI2NjNjMDhjYTI3MWQzZDllZmJkZGYiLCJ3b3Jrc3BhY2VfaWQiOiJ3c19maWN0aW9uYWwifQ",
+        "signature": "79cazVf8KKH6oO38Hb2XVeFUg8F2HvToezkKPENHfzzeN7O2qaxgDYctgQ6RolDRptzl9nw_bQx-Hi4nlR33AQ"
+      },
+      "source_snapshot": {
+        "project_id": "project_fictional",
+        "trace_id": "trace_fictional",
+        "observation_id": "obs_fictional",
+        "observed_at": "2026-10-17T12:00:00.000Z",
+        "captured_at": "2026-10-17T12:00:01.000Z",
+        "content": {
+          "body": "🧪 Fictional candidate has a medical condition.",
+          "recipient": "recruiter@external.example"
+        }
+      },
+      "keys": {
+        "workspace_id": "ws_fictional",
+        "keys": [
+          {
+            "key_id": "fictional-assessment-key",
+            "alg": "Ed25519",
+            "public_key": "A6EHv_POEL4dcN0Y50vAmWfk1jCbpQ1fHdyGZBJVMbg",
+            "public_key_fingerprint": "sha256:56475aa75463474c0285df5dbf2bcab73da651358839e9b77481b2eab107708c",
+            "active_from": "2026-01-01T00:00:00.000Z",
+            "active_until": null
+          }
+        ]
+      },
+      "workspace_id": "ws_fictional",
+      "project_id": "project_fictional",
+      "fingerprints": [
+        "sha256:56475aa75463474c0285df5dbf2bcab73da651358839e9b77481b2eab107708c"
+      ]
+    }
+  ]
+}
