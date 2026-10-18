@@ -7,6 +7,9 @@ import { canonicalize, loadKeysFromJson, publicKeyFingerprint } from '../verifie
 const fields = 'schema_version assessment_id workspace_id job_id project_id agent_id action issued_at policy_ref mapping_version reviewer_version engine_version source source_sha256 request_sha256 facts missing_information context policy_eval assessment_status application_reported_execution mode intervention'.split(' ');
 const factNames = ['contains_medical_information', 'external_recipient'];
 const hex = /^[0-9a-f]{64}$/;
+const dotAtom = "[A-Za-z0-9!#$%&'*+/=?^_`{|}~-]+";
+const domainLabel = '[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?';
+const mailbox = new RegExp(`^(${dotAtom}(?:\\.${dotAtom})*)@(${domainLabel}(?:\\.${domainLabel})+)$`);
 const text = new TextDecoder('utf-8', { fatal: true });
 const assert = (test, message) => { if (!test) throw new Error(message); };
 const object = value => value !== null && typeof value === 'object' && !Array.isArray(value);
@@ -30,15 +33,25 @@ function json(value) {
   assert(raw.equals(Buffer.from(canonicalize(parsed))), 'noncanonical or duplicate JSON');
   return parsed;
 }
+function recipientDomain(content) {
+  const recipient = content.recipient ?? '';
+  if (!Object.hasOwn(content, 'cc') || !Object.hasOwn(content, 'bcc') || content.cc !== '' || content.bcc !== '' || recipient.length > 254) return null;
+  const match = mailbox.exec(recipient);
+  if (!match || match[0] !== recipient || match[1].length > 64 || match[2].length > 253) return null;
+  return match[2].toLowerCase();
+}
 
 export async function validatePayload(payload, source) {
   exact(payload, fields);
   for (const field of ['assessment_id', 'workspace_id', 'job_id', 'project_id', 'agent_id', 'action', 'reviewer_version']) {
     assert(typeof payload[field] === 'string' && payload[field].length > 0 && payload[field].length <= 512, 'invalid identifier');
   }
-  assert(payload.schema_version === 'allowly.assessment.v1' && payload.mapping_version === 'medical-external-v1', 'unsupported assessment or mapping');
+  assert(payload.schema_version === 'allowly.assessment.v1' && ['medical-external-v1', 'email-recipient-domain-v1'].includes(payload.mapping_version), 'unsupported assessment or mapping');
+  const domainMapping = payload.mapping_version === 'email-recipient-domain-v1';
+  const names = domainMapping ? ['recipient_domain'] : factNames;
+  assert(!domainMapping || payload.reviewer_version === 'deterministic:email-recipient-domain-v1', 'invalid deterministic reviewer');
   assert(payload.mode === 'observe' && payload.intervention === 'none', 'invalid Observe mode');
-  assert(['sent', 'failed', 'unknown'].includes(payload.application_reported_execution), 'invalid reported execution');
+  assert((domainMapping ? ['sent', 'accepted', 'failed', 'unknown'] : ['sent', 'failed', 'unknown']).includes(payload.application_reported_execution), 'invalid reported execution');
   assert(timestamp(payload.issued_at) <= Date.now() + 300000, 'future assessment');
   for (const field of ['source_sha256', 'request_sha256']) assert(typeof payload[field] === 'string' && hex.test(payload[field]), 'invalid digest');
   assert(typeof payload.engine_version === 'string' && /^sha256:[0-9a-f]{64}$/.test(payload.engine_version), 'invalid engine digest');
@@ -52,13 +65,14 @@ export async function validatePayload(payload, source) {
   assert(timestamp(source.observed_at) <= timestamp(source.captured_at) + 300000 && timestamp(source.captured_at) <= Date.now() + 300000, 'invalid source time');
   assert(object(content) && Object.keys(content).length <= 32 && Object.values(content).every(value => typeof value === 'string'), 'invalid source content');
   assert(canonicalize(source).length <= 65536 && await digest(source) === payload.source_sha256, 'source digest mismatch');
-  exact(payload.facts, factNames);
+  exact(payload.facts, names);
   const absent = [];
-  for (const name of factNames) {
+  for (const name of names) {
     const fact = payload.facts[name];
     if (fact === null) { absent.push(name); continue; }
     exact(fact, ['value', 'citations']);
-    assert(typeof fact.value === 'boolean' && Array.isArray(fact.citations) && fact.citations.length > 0 && fact.citations.length <= 8, 'invalid fact or missing evidence');
+    assert(typeof fact.value === (domainMapping ? 'string' : 'boolean') && Array.isArray(fact.citations) && fact.citations.length > 0 && fact.citations.length <= 8, 'invalid fact or missing evidence');
+    if (domainMapping) assert(fact.citations.length === 1 && fact.value === recipientDomain(content), 'domain does not match captured envelope');
     for (const citation of fact.citations) {
       exact(citation, ['field', 'start', 'end', 'quote']);
       assert(citation.field === (name === 'contains_medical_information' ? 'body' : 'recipient'), 'unsupported evidence mapping');
@@ -66,6 +80,7 @@ export async function validatePayload(payload, source) {
       const characters = Array.from(content[citation.field]);
       assert(Number.isSafeInteger(citation.start) && Number.isSafeInteger(citation.end) && citation.start >= 0 && citation.end > citation.start && citation.end <= characters.length, 'invalid evidence span');
       assert(typeof citation.quote === 'string' && characters.slice(citation.start, citation.end).join('') === citation.quote, 'unsupported evidence quote');
+      if (domainMapping) assert(citation.start === 0 && citation.end === characters.length, 'domain citation must cover the whole recipient');
     }
   }
   const missing = payload.missing_information;
@@ -73,8 +88,13 @@ export async function validatePayload(payload, source) {
   if (absent.length) {
     assert(equal(payload.context, {}) && payload.policy_eval === null && payload.assessment_status === 'insufficient_evidence', 'missing evidence cannot become an assessment result');
   } else {
-    exact(payload.context, ['medical_external_disclosure']);
-    assert(payload.context.medical_external_disclosure === factNames.every(name => payload.facts[name].value), 'incorrect conjunction');
+    if (domainMapping) {
+      exact(payload.context, ['recipient_domain']);
+      assert(payload.context.recipient_domain === payload.facts.recipient_domain.value, 'incorrect recipient domain context');
+    } else {
+      exact(payload.context, ['medical_external_disclosure']);
+      assert(payload.context.medical_external_disclosure === factNames.every(name => payload.facts[name].value), 'incorrect conjunction');
+    }
     const evidence = payload.policy_eval;
     exact(evidence, ['input_sha256', 'result']);
     assert(typeof evidence.input_sha256 === 'string' && hex.test(evidence.input_sha256), 'invalid OPA input digest');

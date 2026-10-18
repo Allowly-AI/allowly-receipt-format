@@ -91,6 +91,127 @@ def main():
     duplicate = canonicalize(payload).decode().replace('"mode":"observe"', '"mode":"observe","mode":"observe"')
     add("duplicate_json_field", raw_payload=duplicate.encode())
     add("noncanonical_header", raw_header=b'{ "alg":"EdDSA","kid":"fictional-assessment-key","typ":"allowly-assessment+jws"}')
+
+    # Keep every historical medical vector byte-for-byte; append the new mapping.
+    payload, source, _ = fixture()
+    source["content"] = {"sender": "support@internal.example", "recipient": "recruiter@external.example",
+                         "cc": "", "bcc": "", "subject": "Fictional Observe example", "body": "Fictional example only.", "attachments": "[]"}
+    def domain_fact(recipient):
+        return {"value": recipient.rsplit("@", 1)[1].lower(), "citations": [{"field": "recipient", "start": 0, "end": len(recipient), "quote": recipient}]}
+    payload.update(mapping_version="email-recipient-domain-v1", reviewer_version="deterministic:email-recipient-domain-v1",
+                   facts={"recipient_domain": domain_fact(source["content"]["recipient"])}, context={"recipient_domain": "external.example"},
+                   source_sha256=hashlib.sha256(canonicalize(source)).hexdigest(), application_reported_execution="accepted")
+    payload["policy_eval"]["result"].update(matched_rule_id="internal-email-only", evaluated_fields={"recipient_domain": "external.example"})
+    add("domain_external_provider_accepted", valid=True)
+    def changed_source(value):
+        value["source_sha256"] = hashlib.sha256(canonicalize(source)).hexdigest()
+    source["content"]["recipient"] = "Recruiter@INTERNAL.EXAMPLE"
+    payload["facts"]["recipient_domain"] = domain_fact(source["content"]["recipient"])
+    payload["context"] = {"recipient_domain": "internal.example"}
+    payload["policy_eval"]["result"].update(decision="allow", matched_rule_id=None, evaluated_fields={})
+    payload["assessment_status"] = "no_violation_found"
+    changed_source(payload)
+    add("domain_internal_uppercase_normalized", valid=True)
+    for execution in ("sent", "failed", "unknown"):
+        add("domain_reported_" + execution, mutate=lambda p, execution=execution: p.update(application_reported_execution=execution), valid=True)
+    for field in ("recipient", "cc", "bcc"):
+        original = source["content"].pop(field)
+        def absent_domain(value):
+            changed_source(value)
+            value.update(facts={"recipient_domain": None}, missing_information=["recipient_domain"], context={}, policy_eval=None, assessment_status="insufficient_evidence")
+        add("domain_missing_" + field + "_is_insufficient", mutate=absent_domain, valid=True)
+        add("domain_missing_" + field + "_cannot_be_green", mutate=changed_source)
+        source["content"][field] = original
+    for field in ("cc", "bcc"):
+        source["content"][field] = "other@external.example"
+        add("domain_nonempty_" + field + "_is_insufficient", mutate=absent_domain, valid=True)
+        add("domain_nonempty_" + field + "_cannot_be_green", mutate=changed_source)
+        source["content"][field] = ""
+        source["content"][field] = None
+        add("domain_null_" + field + "_source_rejected", mutate=changed_source)
+        add("domain_null_" + field + "_cannot_be_insufficient", mutate=absent_domain)
+        source["content"][field] = ""
+    changed_source(payload)
+    add("domain_source_metadata_mismatch", mutate=lambda p: p["source"].update(trace_id="different_trace"))
+    source["project_id"] = "different_project"
+    def rehashed_project_mismatch(value):
+        changed_source(value)
+        value["source"]["project_id"] = source["project_id"]
+    add("domain_source_project_rehashed_mismatch", mutate=rehashed_project_mismatch)
+    source["project_id"] = payload["project_id"]
+    add("domain_forged_value", mutate=lambda p: p["facts"]["recipient_domain"].update(value="external.example"))
+    add("domain_boolean_fact", mutate=lambda p: p["facts"]["recipient_domain"].update(value=True))
+    add("domain_wrong_context", mutate=lambda p: p.update(context={"recipient_domain": "external.example"}))
+    recipient = source["content"]["recipient"]
+    add("domain_partial_recipient_citation", mutate=lambda p: p["facts"]["recipient_domain"]["citations"][0].update(
+        start=len("Recruiter@"), end=len(recipient), quote="INTERNAL.EXAMPLE"))
+    add("domain_prefix_only_recipient_citation", mutate=lambda p: p["facts"]["recipient_domain"]["citations"][0].update(
+        start=0, end=len("Recruiter"), quote="Recruiter"))
+    add("domain_non_deterministic_reviewer", mutate=lambda p: p.update(reviewer_version="vertex:untrusted"))
+    add("domain_medical_facts", mutate=lambda p: p.update(facts=fixture()[0]["facts"]))
+    add("domain_extra_fact", mutate=lambda p: p["facts"].update(external_recipient=None))
+    add("domain_missing_fact_not_declared", mutate=lambda p: p["facts"].update(recipient_domain=None))
+    add("domain_duplicate_missing", mutate=lambda p: (absent_domain(p), p.update(missing_information=["recipient_domain", "recipient_domain"])))
+    add("domain_duplicate_recipient_citation", mutate=lambda p: p["facts"]["recipient_domain"]["citations"].append(
+        deepcopy(p["facts"]["recipient_domain"]["citations"][0])))
+    original_source = deepcopy(source)
+    def bound_source(value):
+        changed_source(value)
+        value["source"] = {key: item for key, item in source.items() if key != "content"}
+    for name, field, replacement in (
+        ("empty_trace_id", "trace_id", ""),
+        ("long_trace_id", "trace_id", "t" * 513),
+        ("nonstring_observation_id", "observation_id", 17),
+        ("future_capture", "captured_at", "2999-01-01T00:00:00.000Z"),
+        ("observation_after_capture", "observed_at", "2026-10-17T12:05:01.001Z"),
+    ):
+        source[field] = replacement
+        add("domain_source_" + name, mutate=bound_source)
+        source = deepcopy(original_source)
+    for name, content in (
+        ("null_content", None), ("array_content", []),
+        ("nonstring_content_value", dict(source["content"], body=17)),
+        ("too_many_content_fields", dict(source["content"], **{f"extra_{i}": "" for i in range(26)})),
+        ("over_64k", dict(source["content"], body="a" * 65536)),
+    ):
+        source["content"] = content
+        add("domain_source_" + name, mutate=bound_source)
+        source = deepcopy(original_source)
+    source["content"].update({f"extra_{i}": "" for i in range(25)})
+    add("domain_source_32_content_fields", mutate=bound_source, valid=True)
+    source = deepcopy(original_source)
+    for length, valid in ((254, True), (255, False)):
+        source["content"]["recipient"] = "a" * 64 + "@" + "b" * 63 + "." + "b" * 63 + "." + "b" * (length - 193)
+        assert len(source["content"]["recipient"]) == length
+        def long_recipient(value):
+            bound_source(value)
+            fact = domain_fact(source["content"]["recipient"])
+            value.update(facts={"recipient_domain": fact}, context={"recipient_domain": fact["value"]}, assessment_status="violation_detected")
+            value["policy_eval"]["result"].update(decision="deny", matched_rule_id="internal-email-only", evaluated_fields={"recipient_domain": fact["value"]})
+        add(f"domain_recipient_{length}_characters", mutate=long_recipient, valid=valid)
+        source = deepcopy(original_source)
+    for name, recipient in (
+        ("display_name", "Recruiter <recruiter@internal.example>"),
+        ("list", "a@internal.example,b@external.example"),
+        ("group", "Team:a@internal.example;"),
+        ("quoted", '"recruiter"@internal.example'),
+        ("comment", "recruiter(comment)@internal.example"),
+        ("crlf", "recruiter@internal.example\r\n"),
+        ("newline", "recruiter@internal.example\n"),
+        ("unicode", "recruiter@internаl.example"),
+        ("literal", "recruiter@[127.0.0.1]"),
+        ("bad_label", "recruiter@-internal.example"),
+        ("long_local", "a" * 65 + "@internal.example"),
+        ("long_label", "a@" + "b" * 64 + ".example"),
+    ):
+        source["content"]["recipient"] = recipient
+        def unsupported(value):
+            changed_source(value)
+            value["facts"]["recipient_domain"]["citations"][0].update(end=len(recipient), quote=recipient)
+        add("domain_unsupported_" + name, mutate=unsupported)
+    medical_payload, medical_source, _ = fixture()
+    payload, source = medical_payload, medical_source
+    add("medical_mapping_rejects_provider_accepted", mutate=lambda p: p.update(application_reported_execution="accepted"))
     ROOT.joinpath("vectors.json").write_text(json.dumps({"profile": "allowly.assessment.v1", "cases": cases}, ensure_ascii=False, indent=2) + "\n")
     print(f"Wrote {len(cases)} fictional signed vectors")
 

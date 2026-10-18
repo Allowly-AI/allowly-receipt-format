@@ -33,6 +33,14 @@ A success authenticates the frozen record, source digest and cited passages.
 It does not establish that a model's interpretation is right or that an action
 occurred. Read application-reported execution separately from the OPA result.
 
+Both source tools support the original `medical-external-v1` mapping and
+`email-recipient-domain-v1`. The latter recomputes one plain ASCII To domain,
+requires captured empty Cc/Bcc fields and a whole-recipient citation, and keeps
+unsupported envelope evidence insufficient. Its application-reported `accepted`
+status means provider acceptance, not delivery. Older source tools reject this
+mapping; update the Python and Node tools together. Public receipt packages,
+exports and wire 5 remain unchanged.
+
 Run the shared signed-vector/negative-case checks:
 
 ```sh

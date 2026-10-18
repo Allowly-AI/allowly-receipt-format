@@ -15,6 +15,9 @@ FIELDS = set("schema_version assessment_id workspace_id job_id project_id agent_
 FACTS = ("contains_medical_information", "external_recipient")
 HEX = re.compile(r"[0-9a-f]{64}\Z")
 STAMP = re.compile(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z\Z")
+DOT_ATOM = r"[A-Za-z0-9!#$%&'*+/=?^_`{|}~-]+"
+DOMAIN_LABEL = r"[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?"
+MAILBOX = re.compile(rf"({DOT_ATOM}(?:\.{DOT_ATOM})*)@({DOMAIN_LABEL}(?:\.{DOMAIN_LABEL})+)")
 
 
 class AssessmentError(ValueError):
@@ -56,14 +59,27 @@ def encoded_json(value):
         raise AssessmentError("invalid canonical assessment JSON") from exc
 
 
+def recipient_domain(content):
+    recipient = content.get("recipient", "")
+    if content.get("cc") != "" or content.get("bcc") != "" or len(recipient) > 254:
+        return None
+    mailbox = MAILBOX.fullmatch(recipient)
+    if mailbox is None or len(mailbox[1]) > 64 or len(mailbox[2]) > 253:
+        return None
+    return mailbox[2].lower()
+
+
 def validate_payload(payload, source):
     exact(payload, FIELDS)
     for field in ("assessment_id", "workspace_id", "job_id", "project_id", "agent_id", "action", "reviewer_version"):
         require(type(payload[field]) is str and 0 < len(payload[field]) <= 512, "invalid identifier")
     require(payload["schema_version"] == "allowly.assessment.v1", "unsupported assessment schema")
-    require(payload["mapping_version"] == "medical-external-v1", "unsupported mapping")
+    require(payload["mapping_version"] in ("medical-external-v1", "email-recipient-domain-v1"), "unsupported mapping")
+    domain_mapping = payload["mapping_version"] == "email-recipient-domain-v1"
+    fact_names = ("recipient_domain",) if domain_mapping else FACTS
+    require(not domain_mapping or payload["reviewer_version"] == "deterministic:email-recipient-domain-v1", "invalid deterministic reviewer")
     require(payload["mode"] == "observe" and payload["intervention"] == "none", "invalid Observe mode")
-    require(payload["application_reported_execution"] in ("sent", "failed", "unknown"), "invalid reported execution")
+    require(payload["application_reported_execution"] in (("sent", "accepted", "failed", "unknown") if domain_mapping else ("sent", "failed", "unknown")), "invalid reported execution")
     issued = timestamp(payload["issued_at"])
     require(issued <= datetime.now(timezone.utc) + timedelta(minutes=5), "future assessment")
     for field in ("source_sha256", "request_sha256"):
@@ -85,16 +101,18 @@ def validate_payload(payload, source):
     require(type(content) is dict and len(content) <= 32 and all(type(k) is str and type(v) is str for k, v in content.items()), "invalid source content")
     require(len(canonicalize(source)) <= 65536, "source too large")
     require(hashlib.sha256(canonicalize(source)).hexdigest() == payload["source_sha256"], "source digest mismatch")
-    exact(payload["facts"], FACTS)
+    exact(payload["facts"], fact_names)
     absent = []
-    for name in FACTS:
+    for name in fact_names:
         fact = payload["facts"][name]
         if fact is None:
             absent.append(name)
             continue
         exact(fact, ("value", "citations"))
-        require(type(fact["value"]) is bool, "fact must be a boolean")
+        require(type(fact["value"]) is (str if domain_mapping else bool), "incorrect fact type")
         require(type(fact["citations"]) is list and 0 < len(fact["citations"]) <= 8, "fact needs evidence")
+        if domain_mapping:
+            require(len(fact["citations"]) == 1 and fact["value"] == recipient_domain(content), "domain does not match captured envelope")
         for citation in fact["citations"]:
             exact(citation, ("field", "start", "end", "quote"))
             field, start, end, quote = (citation[key] for key in ("field", "start", "end", "quote"))
@@ -102,14 +120,20 @@ def validate_payload(payload, source):
             require(type(field) is str and field in content, "unknown evidence field")
             require(type(start) is int and type(end) is int and 0 <= start < end <= len(content[field]), "invalid evidence span")
             require(type(quote) is str and content[field][start:end] == quote, "unsupported evidence quote")
+            if domain_mapping:
+                require(start == 0 and end == len(content[field]), "domain citation must cover the whole recipient")
     missing = payload["missing_information"]
     require(type(missing) is list and all(type(item) is str for item in missing) and len(set(missing)) == len(missing) and set(missing) == set(absent), "missing evidence mismatch")
     if absent:
         require(payload["context"] == {} and payload["policy_eval"] is None and payload["assessment_status"] == "insufficient_evidence", "missing evidence cannot become an assessment result")
     else:
-        derived = all(payload["facts"][name]["value"] for name in FACTS)
-        exact(payload["context"], ("medical_external_disclosure",))
-        require(type(payload["context"]["medical_external_disclosure"]) is bool and payload["context"]["medical_external_disclosure"] is derived, "incorrect conjunction")
+        if domain_mapping:
+            exact(payload["context"], ("recipient_domain",))
+            require(payload["context"]["recipient_domain"] == payload["facts"]["recipient_domain"]["value"], "incorrect recipient domain context")
+        else:
+            derived = all(payload["facts"][name]["value"] for name in FACTS)
+            exact(payload["context"], ("medical_external_disclosure",))
+            require(type(payload["context"]["medical_external_disclosure"]) is bool and payload["context"]["medical_external_disclosure"] is derived, "incorrect conjunction")
         evidence = payload["policy_eval"]
         exact(evidence, ("input_sha256", "result"))
         require(type(evidence["input_sha256"]) is str and HEX.fullmatch(evidence["input_sha256"]), "invalid OPA input digest")

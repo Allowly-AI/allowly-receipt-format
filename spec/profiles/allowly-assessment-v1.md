@@ -52,12 +52,14 @@ The payload has exactly:
   `captured_at`. The accompanying `source_snapshot` contains those fields plus
   `content`, a bounded object of at most 32 string values. Its canonical bytes
   must match `source_sha256`. The full source is at most 64 KiB.
-- `application_reported_execution` is `sent`, `failed`, or `unknown`. It records
-  the application's report, independently of the policy result.
+- `application_reported_execution` is `sent`, `failed`, or `unknown`. The
+  `email-recipient-domain-v1` mapping additionally permits `accepted`, meaning
+  only that the application reports provider acceptance. None proves inbox
+  delivery. This field is independent of the policy result.
 
 ## Supported evidence mapping
 
-The one-action mapping `medical-external-v1` supports two facts:
+The mapping `medical-external-v1` supports two facts:
 `contains_medical_information` and `external_recipient`. Each fact is null or
 exactly `{value: boolean, citations: [...]}`. A present fact requires 1–8
 citations with exactly `field`, `start`, `end`, and `quote`. Offsets are Unicode
@@ -86,6 +88,52 @@ With missing facts, context is empty, evaluation is null, and status is
 `insufficient_evidence`. Unsupported work, failed models/OPA, and unfinished jobs
 remain `not_assessed` in the application, with a reason, rather than fabricated
 successful evidence. A pending signature does not mean verified.
+
+### One-recipient domain mapping
+
+`email-recipient-domain-v1` has exactly one fact, `recipient_domain`, which is
+null or exactly `{value: string, citations: [...]}`. Its reviewer version is
+exactly `deterministic:email-recipient-domain-v1`. It makes no semantic model
+call. The source content must contain `recipient`, `cc` and `bcc` string fields;
+both `cc` and `bcc` must be exactly empty. This mapping covers one To mailbox,
+with no Cc/Bcc recipients. Additional captured sender, subject, body, attachments
+and provider-status strings remain committed source evidence, not additional
+recipient coverage or proof of execution.
+
+The accepted recipient is a single plain ASCII mailbox with no whitespace,
+display name, comments, quoting, group/list syntax, CR/LF, Unicode or address
+literal. The local part comprises one or more nonempty dot-separated atoms
+matching this character class:
+
+```text
+[A-Za-z0-9!#$%&'*+/=?^_`{|}~-]+
+```
+
+The local part is at most 64 characters. The domain has at least two dot-separated
+labels; each is 1–63 ASCII letters/digits/hyphens with alphanumeric ends. The
+domain is at most 253 characters and the entire mailbox at most 254 characters.
+Only the domain is lowercased. Subdomains remain separate domains.
+
+A present fact has exactly one citation. It must use `field: recipient`, start
+at zero, end at the complete recipient length, and quote the entire recipient.
+The fact value must equal the lowercased parsed domain. Runtime and both source
+verifiers recompute it from the captured source, including the empty Cc/Bcc
+requirement. Unsupported or missing envelope evidence cannot support a present
+fact. It remains null with exactly `missing_information: ["recipient_domain"]`,
+empty context, null evaluation and `insufficient_evidence`. A present fact uses
+an empty missing list and exactly `{recipient_domain: <domain>}` context.
+
+The exact approved policy declares `recipient_domain: string`, allow/deny
+decisions, no execution guards and no executable grants. An internal-only example
+uses default allow and deny when `recipient_domain ne "allowly.ai"`. The allowed
+domain is part of the approved definition digest, not separate mapping settings.
+OPA evaluates that retained edition. Its recorded decision/status meanings are
+unchanged. Neither mapping may use the other mapping's facts or context.
+
+This addition preserves the top-level assessment shape and historical medical
+mapping. Earlier source tools reject the new mapping; update both assessment
+tools together before using it. Receipt wire 5 and published package APIs and
+versions remain unchanged.
 
 ## Persistence and human judgment
 
