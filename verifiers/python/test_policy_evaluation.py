@@ -67,6 +67,25 @@ def test_input_hash_is_complete_and_preserves_missing_null_and_order():
     assert canonicalize({"a": 1, "b": 2}) == canonicalize({"b": 2, "a": 1})
 
 
+def test_optional_evidence_is_committed_without_rewriting_old_definitions():
+    case = copy.deepcopy(VECTORS["signature_cases"][0])
+    original = canonicalize(case["definition"])
+    assert "evidence" not in case["definition"]["actions"][0]
+    assert replay(case)["diagnostic"] == "replay_artifact_unavailable"
+    assert canonicalize(case["definition"]) == original
+    case["definition"]["actions"][0]["evidence"] = {
+        "risk": {"sources": ["record"], "instruction": "Extract the recorded risk score."}
+    }
+    payload = decode_receipt(case["receipt"])
+    payload["policy_ref"]["definition_sha256"] = hashlib.sha256(canonicalize(case["definition"])).hexdigest()
+    case["receipt"] = signed(payload)
+    assert replay(case)["diagnostic"] == "replay_artifact_unavailable"
+    case["definition"]["actions"][0]["evidence"] = None
+    payload["policy_ref"]["definition_sha256"] = hashlib.sha256(canonicalize(case["definition"])).hexdigest()
+    case["receipt"] = signed(payload)
+    assert replay(case)["diagnostic"] == "invalid_replay_artifact_or_opa_result"
+
+
 def test_manifest_is_complete_and_authenticated_before_binary_execution():
     case = VECTORS["signature_cases"][0]
     manifest = copy.deepcopy(MANIFEST)
