@@ -9,15 +9,12 @@ import re
 from datetime import datetime, timedelta, timezone
 
 from allowly_receipt_format import canonicalize, load_keys_from_json, public_key_fingerprint
+from allowly_receipt_format.evidence import evidence_context, validate_policy_definition
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 
-FIELDS = set("schema_version assessment_id workspace_id job_id project_id agent_id action issued_at policy_ref mapping_version reviewer_version engine_version source source_sha256 request_sha256 facts missing_information context policy_eval assessment_status application_reported_execution mode intervention".split())
-FACTS = ("contains_medical_information", "external_recipient")
+FIELDS = set("schema_version assessment_id workspace_id job_id project_id agent_id action issued_at policy_ref mapping_version mapping_sha256 reviewer_version engine_version source source_sha256 request_sha256 facts missing_information context policy_eval assessment_status application_reported_execution mode intervention".split())
 HEX = re.compile(r"[0-9a-f]{64}\Z")
 STAMP = re.compile(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z\Z")
-DOT_ATOM = r"[A-Za-z0-9!#$%&'*+/=?^_`{|}~-]+"
-DOMAIN_LABEL = r"[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?"
-MAILBOX = re.compile(rf"({DOT_ATOM}(?:\.{DOT_ATOM})*)@({DOMAIN_LABEL}(?:\.{DOMAIN_LABEL})+)")
 
 
 class AssessmentError(ValueError):
@@ -59,30 +56,16 @@ def encoded_json(value):
         raise AssessmentError("invalid canonical assessment JSON") from exc
 
 
-def recipient_domain(content):
-    recipient = content.get("recipient", "")
-    if content.get("cc") != "" or content.get("bcc") != "" or len(recipient) > 254:
-        return None
-    mailbox = MAILBOX.fullmatch(recipient)
-    if mailbox is None or len(mailbox[1]) > 64 or len(mailbox[2]) > 253:
-        return None
-    return mailbox[2].lower()
-
-
-def validate_payload(payload, source):
+def validate_payload(payload, source, definition, mapping):
     exact(payload, FIELDS)
-    for field in ("assessment_id", "workspace_id", "job_id", "project_id", "agent_id", "action", "reviewer_version"):
+    for field in ("assessment_id", "workspace_id", "job_id", "project_id", "agent_id", "action", "reviewer_version", "mapping_version"):
         require(type(payload[field]) is str and 0 < len(payload[field]) <= 512, "invalid identifier")
     require(payload["schema_version"] == "allowly.assessment.v1", "unsupported assessment schema")
-    require(payload["mapping_version"] in ("medical-external-v1", "email-recipient-domain-v1"), "unsupported mapping")
-    domain_mapping = payload["mapping_version"] == "email-recipient-domain-v1"
-    fact_names = ("recipient_domain",) if domain_mapping else FACTS
-    require(not domain_mapping or payload["reviewer_version"] == "deterministic:email-recipient-domain-v1", "invalid deterministic reviewer")
     require(payload["mode"] == "observe" and payload["intervention"] == "none", "invalid Observe mode")
-    require(payload["application_reported_execution"] in (("sent", "accepted", "failed", "unknown") if domain_mapping else ("sent", "failed", "unknown")), "invalid reported execution")
+    require(payload["application_reported_execution"] in ("sent", "accepted", "failed", "unknown"), "invalid reported execution")
     issued = timestamp(payload["issued_at"])
     require(issued <= datetime.now(timezone.utc) + timedelta(minutes=5), "future assessment")
-    for field in ("source_sha256", "request_sha256"):
+    for field in ("source_sha256", "request_sha256", "mapping_sha256"):
         require(type(payload[field]) is str and HEX.fullmatch(payload[field]) is not None, "invalid digest")
     require(type(payload["engine_version"]) is str and re.fullmatch(r"sha256:[0-9a-f]{64}", payload["engine_version"]), "invalid engine digest")
     ref = payload["policy_ref"]
@@ -90,6 +73,16 @@ def validate_payload(payload, source):
     require(type(ref["policy_id"]) is str and bool(ref["policy_id"]), "invalid policy id")
     require(type(ref["policy_version"]) is int and 0 < ref["policy_version"] <= 2**53 - 1, "invalid policy version")
     require(type(ref["definition_sha256"]) is str and HEX.fullmatch(ref["definition_sha256"]), "invalid policy digest")
+    validate_policy_definition(definition)
+    digest = lambda value: hashlib.sha256(canonicalize(value)).hexdigest()
+    require(digest(definition) == ref["definition_sha256"] and definition["agent_id"] == payload["agent_id"], "policy definition binding mismatch")
+    entries = [entry for entry in definition["actions"] if entry["policy"]["action"] == payload["action"]]
+    require(len(entries) == 1, "selected action missing")
+    entry = entries[0]
+    policy = entry["policy"]
+    require("evidence" in entry and entry["guards"] == {} and entry["executable_operations"] == []
+            and all(choice["decision"] in ("allow", "deny") for choice in [policy, *policy["rules"]]), "unsupported Observe policy")
+    require(digest(mapping) == payload["mapping_sha256"] and mapping.get("mapping_version") == payload["mapping_version"], "mapping binding mismatch")
     exact(source, ("project_id", "trace_id", "observation_id", "observed_at", "captured_at", "content"))
     metadata = {key: value for key, value in source.items() if key != "content"}
     require(payload["source"] == metadata and source["project_id"] == payload["project_id"], "source binding mismatch")
@@ -97,56 +90,34 @@ def validate_payload(payload, source):
         require(type(source[field]) is str and 0 < len(source[field]) <= 512, "invalid source id")
     observed, captured = timestamp(source["observed_at"]), timestamp(source["captured_at"])
     require(observed <= captured + timedelta(minutes=5) and captured <= datetime.now(timezone.utc) + timedelta(minutes=5), "invalid source time")
-    content = source["content"]
-    require(type(content) is dict and len(content) <= 32 and all(type(k) is str and type(v) is str for k, v in content.items()), "invalid source content")
-    require(len(canonicalize(source)) <= 65536, "source too large")
-    require(hashlib.sha256(canonicalize(source)).hexdigest() == payload["source_sha256"], "source digest mismatch")
-    exact(payload["facts"], fact_names)
-    absent = []
-    for name in fact_names:
-        fact = payload["facts"][name]
-        if fact is None:
-            absent.append(name)
-            continue
-        exact(fact, ("value", "citations"))
-        require(type(fact["value"]) is (str if domain_mapping else bool), "incorrect fact type")
-        require(type(fact["citations"]) is list and 0 < len(fact["citations"]) <= 8, "fact needs evidence")
-        if domain_mapping:
-            require(len(fact["citations"]) == 1 and fact["value"] == recipient_domain(content), "domain does not match captured envelope")
-        for citation in fact["citations"]:
-            exact(citation, ("field", "start", "end", "quote"))
-            field, start, end, quote = (citation[key] for key in ("field", "start", "end", "quote"))
-            require(field == ("body" if name == "contains_medical_information" else "recipient"), "unsupported evidence mapping")
-            require(type(field) is str and field in content, "unknown evidence field")
-            require(type(start) is int and type(end) is int and 0 <= start < end <= len(content[field]), "invalid evidence span")
-            require(type(quote) is str and content[field][start:end] == quote, "unsupported evidence quote")
-            if domain_mapping:
-                require(start == 0 and end == len(content[field]), "domain citation must cover the whole recipient")
-    missing = payload["missing_information"]
-    require(type(missing) is list and all(type(item) is str for item in missing) and len(set(missing)) == len(missing) and set(missing) == set(absent), "missing evidence mismatch")
-    if absent:
-        require(payload["context"] == {} and payload["policy_eval"] is None and payload["assessment_status"] == "insufficient_evidence", "missing evidence cannot become an assessment result")
+    require(len(canonicalize(source)) <= 65536 and digest(source) == payload["source_sha256"], "source digest or size mismatch")
+    context = evidence_context(policy["fields"], entry["evidence"], source["content"], payload["facts"], payload["missing_information"], mapping)
+    require(canonicalize(payload["context"]) == canonicalize(context), "incorrect derived context")
+    request_fields = ("job_id", "project_id", "agent_id", "action", "policy_ref", "mapping_version", "reviewer_version", "source_sha256", "facts", "missing_information", "application_reported_execution", "mapping_sha256")
+    request = {name: payload[name] for name in request_fields}
+    request.update(source_snapshot=source, mapping_snapshot=mapping)
+    require(len(canonicalize(request)) <= 65536 and digest(request) == payload["request_sha256"], "request commitment mismatch")
+    if payload["missing_information"]:
+        require(payload["policy_eval"] is None and payload["assessment_status"] == "insufficient_evidence", "missing evidence cannot become an assessment result")
     else:
-        if domain_mapping:
-            exact(payload["context"], ("recipient_domain",))
-            require(payload["context"]["recipient_domain"] == payload["facts"]["recipient_domain"]["value"], "incorrect recipient domain context")
-        else:
-            derived = all(payload["facts"][name]["value"] for name in FACTS)
-            exact(payload["context"], ("medical_external_disclosure",))
-            require(type(payload["context"]["medical_external_disclosure"]) is bool and payload["context"]["medical_external_disclosure"] is derived, "incorrect conjunction")
-        evidence = payload["policy_eval"]
-        exact(evidence, ("input_sha256", "result"))
-        require(type(evidence["input_sha256"]) is str and HEX.fullmatch(evidence["input_sha256"]), "invalid OPA input digest")
-        result = evidence["result"]
+        evaluation = payload["policy_eval"]
+        exact(evaluation, ("input_sha256", "result"))
+        require(evaluation["input_sha256"] == digest({"policy": policy, "action": payload["action"], "context": context}), "OPA input commitment mismatch")
+        result = evaluation["result"]
         exact(result, ("profile", "status", "decision", "target", "matched_rule_id", "evaluated_fields"))
         require(result["profile"] == "allowly.basic.v1" and result["status"] == "ok" and result["decision"] in ("allow", "deny") and result["target"] is None, "invalid OPA result")
-        require(result["matched_rule_id"] is None or type(result["matched_rule_id"]) is str, "invalid matched rule")
-        require(type(result["evaluated_fields"]) is dict, "invalid evaluated fields")
+        rule_id = result["matched_rule_id"]
+        require(rule_id is None or type(rule_id) is str and 0 < len(rule_id) <= 128, "invalid matched rule")
+        rules = [rule for rule in policy["rules"] if rule["id"] == rule_id]
+        require(rule_id is None or len(rules) == 1, "unknown matched rule")
+        choice = rules[0] if rules else policy
+        expected_fields = {condition["field"]: context[condition["field"]] for condition in choice.get("conditions", [])}
+        require(result["decision"] == choice["decision"] and canonicalize(result["evaluated_fields"]) == canonicalize(expected_fields), "inconsistent OPA explanation")
         require(payload["assessment_status"] == ("violation_detected" if result["decision"] == "deny" else "no_violation_found"), "result/status mismatch")
     return payload
 
 
-def verify_assessment(envelope, keys_document, source_snapshot, *, expected_workspace_id, expected_project_id, trusted_key_fingerprints):
+def verify_assessment(envelope, keys_document, source_snapshot, policy_definition, mapping_snapshot, *, expected_workspace_id, expected_project_id, trusted_key_fingerprints):
     """Authenticate the recorded bundle and cited source, not their real-world truth."""
     try:
         exact(envelope, ("protected", "payload", "signature"))
@@ -165,7 +136,7 @@ def verify_assessment(envelope, keys_document, source_snapshot, *, expected_work
         signature = b64(envelope["signature"])
         require(len(signature) == 64, "invalid signature length")
         Ed25519PublicKey.from_public_bytes(key.public_key_bytes).verify(signature, (envelope["protected"] + "." + envelope["payload"]).encode("ascii"))
-        return validate_payload(payload, source_snapshot)
+        return validate_payload(payload, source_snapshot, policy_definition, mapping_snapshot)
     except AssessmentError:
         raise
     except Exception as exc:
@@ -174,7 +145,7 @@ def verify_assessment(envelope, keys_document, source_snapshot, *, expected_work
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("bundle", help="JSON with signed_assessment and source_snapshot")
+    parser.add_argument("bundle", help="JSON with signed_assessment, source_snapshot, policy_definition and mapping_snapshot")
     parser.add_argument("keys")
     parser.add_argument("--workspace-id", required=True)
     parser.add_argument("--project-id", required=True)
@@ -185,7 +156,7 @@ def main():
             bundle = json.load(stream)
         with open(args.keys) as stream:
             keys = json.load(stream)
-        result = verify_assessment(bundle["signed_assessment"], keys, bundle["source_snapshot"], expected_workspace_id=args.workspace_id, expected_project_id=args.project_id, trusted_key_fingerprints=set(args.trusted_key_fingerprint))
+        result = verify_assessment(bundle["signed_assessment"], keys, bundle["source_snapshot"], bundle["policy_definition"], bundle["mapping_snapshot"], expected_workspace_id=args.workspace_id, expected_project_id=args.project_id, trusted_key_fingerprints=set(args.trusted_key_fingerprint))
         print(f"Verified recorded assessment {result['assessment_id']}: {result['assessment_status']}")
         return 0
     except Exception:
