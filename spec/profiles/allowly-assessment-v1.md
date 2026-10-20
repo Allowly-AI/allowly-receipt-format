@@ -28,7 +28,7 @@ Duplicate members, floats, unsafe integers and alternate encodings are rejected.
 The caller supplies trusted workspace and project IDs and Ed25519 public-key
 fingerprints obtained independently. A bundled key document cannot establish its
 own trust. Workspace binding, selected fingerprint and key validity at
-`issued_at` are mandatory. The verifier has no Langfuse or other provider calls.
+`issued_at` are mandatory. The verifier makes no provider calls.
 
 The verification bundle contains `signed_assessment`, `source_snapshot`,
 `policy_definition`, and `mapping_snapshot`. Only the signed JWS is authority;
