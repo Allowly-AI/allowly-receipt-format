@@ -30,7 +30,7 @@ trust. Keep source data private; the fictional vectors are safe test inputs.
 
 Both tools authenticate the frozen record, policy/mapping/source commitments,
 exact citations, typed facts, derived context, reconstructed request and OPA
-input commitments. No Langfuse connection is required. Success does not prove
+input commitments. No provider connection is required. Success does not prove
 AI interpretation, upstream truth, independent OPA replay, action execution,
 enforcement, delivery, human identity or complete capture. Read the separate
 application-reported execution claim independently of the policy result.
