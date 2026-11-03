@@ -82,6 +82,15 @@ def validate_mapping(mapping):
     canonicalize(mapping)
 
 
+def validate_input_descriptions(fields, guidance):
+    """Validate optional author guidance without changing policy calculation."""
+    _require(type(guidance) is dict and set(guidance) == {"description", "resource", "fields"}, "invalid input descriptions")
+    descriptions = guidance["fields"]
+    _require(type(descriptions) is dict and set(descriptions) == set(fields), "input descriptions must cover policy fields exactly")
+    _require(all(_text(value, 2048) and value.strip() for value in
+                 [guidance["description"], guidance["resource"], *descriptions.values()]), "invalid input description text")
+
+
 def domain_value(content, requirement):
     """Return a complete single-mailbox domain, or unavailable evidence."""
     _require(type(content) is dict and type(requirement) is dict
@@ -156,7 +165,8 @@ def validate_policy_definition(definition):
     _require(type(actions) is list and 1 <= len(actions) <= 32, "invalid policy actions")
     names, grants_seen = set(), set()
     for entry in actions:
-        _require(type(entry) is dict and set(entry) in ({"policy", "guards", "executable_operations"}, {"policy", "guards", "executable_operations", "evidence"}), "invalid policy action")
+        _require(type(entry) is dict and {"policy", "guards", "executable_operations"} <= set(entry)
+                 <= {"policy", "guards", "executable_operations", "evidence", "input_descriptions"}, "invalid policy action")
         policy = entry["policy"]
         _require(type(policy) is dict and set(policy) == {"profile", "action", "decision", "target", "fields", "rules"}
                  and policy["profile"] == "allowly.basic.v1" and _text(policy["action"], 64)
@@ -168,6 +178,8 @@ def validate_policy_definition(definition):
             _text(name, 128) and type(kind) is str and kind in _TYPES for name, kind in fields.items()), "invalid policy fields")
         if "evidence" in entry:
             validate_evidence(fields, entry["evidence"])
+        if "input_descriptions" in entry:
+            validate_input_descriptions(fields, entry["input_descriptions"])
         rules = policy["rules"]
         _require(type(rules) is list and len(rules) <= 32, "invalid policy rules")
         rule_ids = set()

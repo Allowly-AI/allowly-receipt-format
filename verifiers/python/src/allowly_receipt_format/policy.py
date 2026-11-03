@@ -16,7 +16,7 @@ from typing import Any
 from .verifier import (PublicKey, SchemaError, VerificationError, _PUBLIC_KEY_FINGERPRINT_RE,
     _check_exact_keys, _check_policy_result, _load_json_file, canonicalize,
     load_keys_from_json, verify_receipt)
-from .evidence import validate_evidence
+from .evidence import validate_evidence, validate_input_descriptions
 
 OPA_COMMIT = "2a109e54103370d2ef288782ef3cb4c8a37902b2"
 OPA_ARTIFACTS = {
@@ -191,6 +191,9 @@ def replay_policy(
             if isinstance(action, dict) and "evidence" in action:
                 fields.add("evidence")
                 validate_evidence(action["policy"]["fields"], action["evidence"])
+            if isinstance(action, dict) and "input_descriptions" in action:
+                fields.add("input_descriptions")
+                validate_input_descriptions(action["policy"]["fields"], action["input_descriptions"])
             _exact(action, fields, "policy action")
         names = [action["policy"]["action"] for action in actions]
         selected = [action["policy"] for action in actions if action["policy"]["action"] == receipt["action"]]

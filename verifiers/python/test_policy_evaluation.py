@@ -86,6 +86,55 @@ def test_optional_evidence_is_committed_without_rewriting_old_definitions():
     assert replay(case)["diagnostic"] == "invalid_replay_artifact_or_opa_result"
 
 
+@pytest.mark.parametrize("with_evidence", [False, True])
+def test_input_descriptions_are_retained_and_authenticated_by_replay(with_evidence):
+    from allowly_receipt_format.evidence import validate_policy_definition
+
+    case = copy.deepcopy(VECTORS["signature_cases"][0])
+    entry = case["definition"]["actions"][0]
+    entry["input_descriptions"] = {"description": "Perform the configured action", "resource": "Exact target",
+                                   "fields": {name: "Recorded value" for name in entry["policy"]["fields"]}}
+    if with_evidence:
+        entry["evidence"] = {name: {"sources": ["record"], "instruction": "Extract the recorded value."}
+                             for name in entry["policy"]["fields"]}
+    validate_policy_definition(case["definition"])
+    original = canonicalize(case["definition"])
+    payload = decode_receipt(case["receipt"])
+    payload["policy_ref"]["definition_sha256"] = hashlib.sha256(original).hexdigest()
+    case["receipt"] = signed(payload)
+    assert replay(case)["diagnostic"] == "replay_artifact_unavailable"
+    assert canonicalize(case["definition"]) == original
+    paths = {key: os.getenv(env) for key, env in [
+        ("opa_binary", "ALLOWLY_OPA_BINARY"), ("rego_file", "ALLOWLY_OPA_MODULE_FILE"),
+        ("runtime_artifact", "ALLOWLY_OPA_RUNTIME_ARTIFACT")]}
+    if all(paths.values()):
+        assert replay(case, **paths)["policy_replay"] == "matched"
+    entry["input_descriptions"]["resource"] = "Different target meaning"
+    assert replay(case)["diagnostic"] == "policy_definition_digest_mismatch"
+
+
+@pytest.mark.parametrize("guidance", [None, {},
+    {"description": " ", "resource": "Target", "fields": {"risk": "Value"}},
+    {"description": "x" * 2049, "resource": "Target", "fields": {"risk": "Value"}},
+    {"description": "Action", "resource": "Target\0", "fields": {"risk": "Value"}},
+    {"description": "Action", "resource": "Target", "fields": {}},
+    {"description": "Action", "resource": "Target", "fields": {"risk": "Value", "extra": "Value"}},
+    {"description": "Action", "resource": "Target", "fields": {"risk": False}},
+    {"description": "Action", "resource": "Target", "fields": {"risk": "Value"}, "extra": True},
+])
+def test_invalid_input_descriptions_are_rejected_by_definition_and_replay(guidance):
+    from allowly_receipt_format.evidence import validate_policy_definition
+
+    case = copy.deepcopy(VECTORS["signature_cases"][0])
+    case["definition"]["actions"][0]["input_descriptions"] = guidance
+    with pytest.raises(ValueError):
+        validate_policy_definition(case["definition"])
+    payload = decode_receipt(case["receipt"])
+    payload["policy_ref"]["definition_sha256"] = hashlib.sha256(canonicalize(case["definition"])).hexdigest()
+    case["receipt"] = signed(payload)
+    assert replay(case)["diagnostic"] == "invalid_replay_artifact_or_opa_result"
+
+
 def test_manifest_is_complete_and_authenticated_before_binary_execution():
     case = VECTORS["signature_cases"][0]
     manifest = copy.deepcopy(MANIFEST)

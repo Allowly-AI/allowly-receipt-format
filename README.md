@@ -9,9 +9,8 @@ Every receipt carries `policy_ref`, naming its immutable policy edition or null 
 Format 5 uses standard flattened JWS: `{protected, payload, signature}`. Its
 protected header is `{alg: "EdDSA", kid: "<key id>", typ: "allowly-receipt+jws"}`.
 PyJWT and jose verify the exact stored bytes with Ed25519 keys. Allowly adds
-strict evidence validation, workspace binding and key-window checks. This
-5.0.0 rebuild is local and unpublished; earlier flat receipt formats are not
-accepted.
+strict evidence validation, workspace binding and key-window checks. Verifier
+5.x accepts wire 5; earlier flat receipt formats are not accepted.
 
 Specification Appendix A also defines an optional `hmac-v1` convention for
 customer-recomputable pseudonymous values inside `context`; it does not change
@@ -121,9 +120,10 @@ try {
 
 ### Receipt wire format and replay
 
-Both local verifier packages are version `5.0.0` and accept only receipt wire
-`"5"`. There is no compatibility parser or client/data migration in this fresh
-local build. Published packages and historical artifacts remain unchanged.
+Both verifier packages are version `5.1.0` and accept only receipt wire `"5"`.
+The release adds policy evidence helpers and optional input-description validation
+and replay support. Published 5.0.0 artifacts and historical receipts remain
+unchanged.
 
 The ordinary Python, TypeScript and generated browser verifier checks the
 recorded evidence schema, caller-trusted workspace/key binding and signature.
@@ -136,7 +136,7 @@ Ed25519/KMS and TLSNotary verification remain separate.
 
 See [the replay profile](spec/profiles/allowly-opa-evaluation-v1.md) and
 [Python command instructions](verifiers/python/README.md).
-Package publication and deployment remain outside this local build.
+Package publication and runtime deployment are separate release steps.
 
 ## Licensing
 
