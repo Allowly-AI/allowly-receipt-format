@@ -45,6 +45,20 @@ window above do not apply. Published `4.2.0` artifacts remain unchanged and
 continue to reject the new event. All other breaking changes follow the
 normal rules above.
 
+### Approved unpublished exception: policy-defined evidence
+
+On 2026-10-18 the maintainer explicitly approved a breaking policy/evidence
+revision without package, HTTP, policy/basic, assessment or receipt version
+bumps because no external clients use this source contract. Optional approved
+action evidence metadata and generic assessment facts replace named-use-case
+branches. The ordinary wire-5 JWS fields and public receipt-verifier exports
+remain unchanged. All active definition consumers and source assessment tools
+must align in the same batch. Original signed assessments, historical vectors
+and published policy definitions remain immutable. This exception authorizes
+neither package publication nor production deployment/migrations; normal review,
+checks and required approvals still apply. Other breaking changes retain the
+normal rules above.
+
 ## Who are the maintainers
 
 Listed in `MAINTAINERS.md`. Maintainers are added when they've made sustained contributions to the spec, verifiers, or test vectors, and are nominated by an existing maintainer. Removal happens when a maintainer is inactive for 12+ months or steps down.

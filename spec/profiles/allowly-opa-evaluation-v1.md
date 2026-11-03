@@ -13,10 +13,20 @@ alternate JSON canonicalizer is used.
 
 The exact `allowly.policy.v1` envelope has `profile`, nonempty `agent_id`,
 nonempty ordered `actions`, and required `default_expiry_days` (null or a strict
-integer 1..3650). Each action has exactly `policy`, `guards`, and
-`executable_operations`. Nested `policy.action` names are unique. The entire
-definition is validated, normalized once, stored and hashed; bookkeeping IDs,
-timestamps, descriptions and archive status are excluded.
+integer 1..3650). Each action has required `policy`, `guards`, and
+`executable_operations`, with optional `evidence` metadata as defined in the
+[assessment profile](allowly-assessment-v1.md). Absent evidence stays absent in
+normalized JSON; explicit null is invalid. Evidence is included in the complete
+definition digest and does not change BasicPolicy or OPA rule semantics. Nested `policy.action` names are unique. The entire
+definition is validated, normalized once, stored and hashed; external bookkeeping
+IDs, timestamps, descriptions and archive status are excluded.
+
+An action may also include `input_descriptions` with exactly `description`,
+`resource`, and `fields`. The first two members and every field description are
+nonblank strings of at most 2,048 characters without NUL. The `fields` object
+covers exactly the BasicPolicy field names. Absent guidance stays absent;
+explicit null is invalid. This optional guidance is committed in the full
+definition digest and does not change OPA rule semantics.
 
 `guards` has only optional `resource_pattern` (nonempty string),
 `allowed_initiators` (nonempty unique list of nonempty strings), and

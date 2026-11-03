@@ -3,9 +3,9 @@ import { readFileSync } from 'node:fs';
 import { verifyAssessment } from './verify.mjs';
 import { verifyReceipt, loadKeysFromJson } from '../verifiers/typescript/dist/verifier.js';
 
-const cases = JSON.parse(readFileSync(new URL('./vectors.json', import.meta.url), 'utf8')).cases;
+const cases = JSON.parse(readFileSync(new URL('./evidence-vectors.json', import.meta.url), 'utf8')).cases;
 for (const test of cases) {
-  const call = () => verifyAssessment(test.signed_assessment, test.keys, test.source_snapshot, { expectedWorkspaceId: test.workspace_id, expectedProjectId: test.project_id, trustedKeyFingerprints: test.fingerprints });
+  const call = () => verifyAssessment(test.signed_assessment, test.keys, test.source_snapshot, test.policy_definition, test.mapping_snapshot, { expectedWorkspaceId: test.workspace_id, expectedProjectId: test.project_id, trustedKeyFingerprints: test.fingerprints });
   if (test.valid) {
     const result = await call();
     assert.equal(result.assessment_id, 'asm_fictional', test.name);

@@ -1,5 +1,17 @@
 # Changelog
 
+## v5.1.0 — 2026-11-02
+
+- Publish the retained policy-defined evidence validation helpers already used
+  by the deployed Observe runtime, and preserve optional action input descriptions
+  in strict policy validation and offline replay.
+- Include evidence and input descriptions in the exact retained definition
+  digest while keeping absent optional members absent. Invalid metadata fails
+  closed; it never changes OPA rule calculation.
+- Advance both verifier packages together. Receipt wire 5, JWS framing,
+  canonicalization, signed receipt fields, key documents and signature
+  verification are unchanged. Published 5.0.0 artifacts remain immutable.
+
 ## v5.0.0 — 2026-10-09 (local, unpublished)
 
 - Replace the custom signature wrapper with strict RFC 7515 flattened JWS,
